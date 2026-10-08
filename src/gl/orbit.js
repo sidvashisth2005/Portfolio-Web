@@ -40,7 +40,7 @@ export function createOrbit(canvas, textures) {
   window.addEventListener('resize', resize);
 
   const total = cards.length;
-  const spacing = 0.95; // radians between cards: wide enough that every photo reads on its own
+  const spacing = isMobile() ? 0.8 : 0.64; // radians between cards: just enough for a small gap at the edges
   return {
     state,
     render() {

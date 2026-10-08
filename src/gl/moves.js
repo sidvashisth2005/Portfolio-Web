@@ -27,9 +27,9 @@ void main(){
   float r = texture2D(uMap, vUv + o).r;
   float g = texture2D(uMap, vUv).g;
   float b = texture2D(uMap, vUv - o).b;
-  vec3 col = vec3(r, g, b);
+  vec3 col = pow(max(vec3(r, g, b), 0.0), vec3(1.0 / 2.2)); // linear → display, keeps the photos at their real brightness
   float edge = smoothstep(0.0, 0.02, vUv.x) * smoothstep(1.0, 0.98, vUv.x) * smoothstep(0.0, 0.03, vUv.y) * smoothstep(1.0, 0.97, vUv.y);
-  col *= 0.92 + uHover * 0.08;
+  col *= 0.94 + uHover * 0.06;
   gl_FragColor = vec4(col, uOpacity * edge);
 }`;
 
@@ -44,20 +44,20 @@ function poster(move, img) {
     const ia = img.width / img.height, ca = W / H;
     let sw = img.width, sh = img.height, sx = 0, sy = 0;
     if (ia > ca) { sw = img.height * ca; sx = (img.width - sw) / 2; } else { sh = img.width / ca; sy = (img.height - sh) / 2; }
-    g.filter = 'contrast(1.06) brightness(0.98) saturate(1.05)';
+    g.filter = 'contrast(1.03) saturate(1.04)';
     g.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
     g.filter = 'none';
   }
   const grad = g.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, 'rgba(6,6,8,0)');
-  grad.addColorStop(0.5, 'rgba(6,6,8,0.05)');
-  grad.addColorStop(0.72, 'rgba(6,6,8,0.55)');
-  grad.addColorStop(1, 'rgba(6,6,8,0.94)');
+  grad.addColorStop(0.58, 'rgba(6,6,8,0)');
+  grad.addColorStop(0.8, 'rgba(6,6,8,0.5)');
+  grad.addColorStop(1, 'rgba(6,6,8,0.85)');
   g.fillStyle = grad;
   g.fillRect(0, 0, W, H);
   // crimson speed lines from the right edge
   g.save();
-  g.globalAlpha = 0.1;
+  g.globalAlpha = 0.06;
   g.strokeStyle = '#E0182D';
   g.lineWidth = 3;
   for (let i = 0; i < 26; i++) {

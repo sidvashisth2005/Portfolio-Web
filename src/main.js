@@ -228,7 +228,7 @@ function setupScroll({ gl, scrollTo }) {
     const welcome = $('#welcome');
     const strip = $('#welcome-strip');
     const tl = gsap.timeline({
-      scrollTrigger: { trigger: '#top', start: 'top top', end: () => `+=${mobile ? 2600 : 4600}`, pin: true, scrub: mobile ? 0.3 : 0.6, anticipatePin: 1, invalidateOnRefresh: true },
+      scrollTrigger: { trigger: '#top', start: 'top top', end: () => `+=${mobile ? 2200 : 3600}`, pin: true, scrub: mobile ? 0.3 : 0.6, anticipatePin: 1, invalidateOnRefresh: true },
     });
     tl.to('#hero-card', { scale: 0.44, borderRadius: 18, boxShadow: '0 30px 100px rgba(0,0,0,.95), 0 0 0 1px rgba(224,24,45,.5)', ease: 'power1.inOut', duration: 0.2 }, 0)
       .to('.hero__copy, .hero__rank, .hero__hint', { autoAlpha: 0, duration: 0.08 }, 0.02);
@@ -247,7 +247,7 @@ function setupScroll({ gl, scrollTo }) {
 
   // ABOUT: lanyards swing with scroll, headline words rise, spots open on hover / tap / focus
   if (!reduce) {
-    gsap.timeline({ scrollTrigger: { trigger: '#about', start: 'top 85%', end: () => `+=${(mobile ? 1500 : 2200) + window.innerHeight}`, scrub: 1, invalidateOnRefresh: true } })
+    gsap.timeline({ scrollTrigger: { trigger: '#about', start: 'top 85%', end: 'bottom 15%', scrub: 1 } })
       .fromTo(['#lanyard-left', '#lanyard-right'], { y: -260, rotate: (i) => (i ? 14 : -14) }, { y: 0, rotate: 0, ease: 'power2.out', duration: 0.4 })
       .to('#lanyard-left', { rotate: 8, duration: 0.3 }, 0.4).to('#lanyard-right', { rotate: -10, duration: 0.3 }, 0.4)
       .to(['#lanyard-left', '#lanyard-right'], { y: -120, rotate: 0, duration: 0.3 }, 0.7);
@@ -265,21 +265,23 @@ function setupScroll({ gl, scrollTo }) {
     s.classList.remove('is-active');
     gsap.to(s.querySelector('.spot__card'), { width: 0, height: 0, duration: reduce ? 0 : 0.35, ease: 'power3.out', overwrite: 'auto' });
   };
-  // While the headline is pinned, the squares open one after another as you scroll.
+  // No pin: the headline keeps scrolling, and whichever square is passing the middle of the screen
+  // pops its photo out. Only one is open at a time.
   let autoSpot = -1;
   if (!reduce) {
-    ScrollTrigger.create({
-      trigger: '#about', start: 'top top', end: () => `+=${mobile ? 1500 : 2200}`, pin: true, invalidateOnRefresh: true,
-      onUpdate: (self) => {
-        const p = self.progress;
-        const idx = p < 0.08 ? -1 : p < 0.38 ? 0 : p < 0.68 ? 1 : p < 0.96 ? 2 : -1;
-        if (idx === autoSpot) return;
-        autoSpot = idx;
-        if (idx < 0) spots.forEach(closeSpot); else openSpot(spots[idx]);
-      },
-      onLeave: () => { autoSpot = -1; spots.forEach(closeSpot); },
-      onLeaveBack: () => { autoSpot = -1; spots.forEach(closeSpot); },
-    });
+    const pick = () => {
+      const mid = window.innerHeight * 0.5;
+      let best = -1, bd = window.innerHeight * 0.16;
+      spots.forEach((sp, i) => {
+        const r = sp.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < bd) { bd = d; best = i; }
+      });
+      if (best === autoSpot) return;
+      autoSpot = best;
+      if (best < 0) spots.forEach(closeSpot); else openSpot(spots[best]);
+    };
+    ScrollTrigger.create({ trigger: '.spot-head', start: 'top bottom', end: 'bottom top', onUpdate: pick, onLeave: () => { autoSpot = -1; spots.forEach(closeSpot); }, onLeaveBack: () => { autoSpot = -1; spots.forEach(closeSpot); } });
   }
   spots.forEach((s) => {
     s.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && openSpot(s));

@@ -56,6 +56,8 @@ void main(){
   vec2 iuv = (frag - origin) / vec2(imgW, imgH);
   if (iuv.x < 0.0 || iuv.x > 1.0 || iuv.y < 0.0 || iuv.y > 1.0) { gl_FragColor = vec4(0.0); return; }
   vec4 tex = texture2D(uTex, iuv);
+  // the texture is decoded to linear light; bring it back to display (sRGB) values so the photo keeps its true tones
+  tex.rgb = pow(max(tex.rgb, 0.0), vec3(1.0 / 2.2));
   float mask = texture2D(uTrail, vUv).r;
   mask = smoothstep(0.3, 0.55, mask);
 
@@ -72,11 +74,11 @@ void main(){
   ink = mix(ink, hot, smoothstep(0.62, 0.95, lum) * 0.7);
   ink = mix(ink, inkDark, ht * 0.55 * (1.0 - tone));
 
-  vec3 colour = tex.rgb * 1.04;
+  vec3 colour = tex.rgb;
   vec3 col = mix(ink, colour, mask);
   // glowing rim where ink meets colour
   float rim = smoothstep(0.0, 0.5, mask) * (1.0 - smoothstep(0.5, 1.0, mask));
-  col += crimson * rim * 1.2;
+  col += crimson * rim * 0.8;
   // fade the feet into the floor
   float a = tex.a * smoothstep(0.0, 0.12, iuv.y);
   gl_FragColor = vec4(col * a, a);
