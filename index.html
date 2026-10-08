@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Schibsted+Grotesk:wght@400;500;700&family=Azeret+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A%E4%BA%8C%E9%9D%A2%E4%B8%80%E9%96%83" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A%E4%BA%8C%E9%9D%A2%E4%B8%80%E9%96%83%E4%B8%BB" />
   <link rel="preload" as="image" href="img/hero-cutout.webp" />
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"Person","name":"Siddhant Vashisth","jobTitle":"Business strategist and builder","alumniOf":"Jaypee University of Engineering and Technology","email":"mailto:siddhantvashisth05@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Guna","addressRegion":"Madhya Pradesh","addressCountry":"IN"},"sameAs":["https://www.linkedin.com/in/siddhant-vashisth-04887b29b/","https://github.com/sidvashisth2005"],"award":"Rank 1, HackNITR 7.0"}
@@ -79,14 +79,17 @@
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
   <!-- Fixed header -->
-  <header class="header">
-    <a href="resume.pdf" class="pill pill--red header__resume" download>Résumé ↓</a>
-    <a href="#top" class="header__logo" id="header-logo" aria-label="Siddhant Vashisth, back to top">
-      <span class="seal seal--sm"><span>SV</span></span>
+  <header class="header" id="header">
+    <a href="#top" class="brand" id="header-logo" aria-label="Siddhant Vashisth, back to top">
+      <span class="seal seal--sm" aria-hidden="true"><span>SV</span></span>
+      <span class="brand__name" aria-hidden="true"><b>Siddhant Vashisth</b><small>Strategist · Builder</small></span>
     </a>
-    <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
-      <span class="menu-btn__line"></span><span class="menu-btn__line"></span><span class="menu-btn__line"></span>
-    </button>
+    <div class="header__right">
+      <a href="resume.pdf" class="pill pill--red header__resume" download>Résumé ↓</a>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+        <span class="menu-btn__line"></span><span class="menu-btn__line"></span><span class="menu-btn__line"></span>
+      </button>
+    </div>
   </header>
 
   <!-- Fullscreen menu -->
@@ -191,10 +194,10 @@
         <header class="stats__head">
           <p class="label label--red">戦績 · Battle stats</p>
           <h2 class="h2" id="numbers-h">Six cards.<br /><span class="red">All real.</span></h2>
-          <p class="label muted stats__hint">Scroll to draw a card<span class="hover-only"> · hover for foil</span></p>
+          <p class="label muted stats__hint">Scroll to draw a card<span class="hover-only"> · there’s a secret seventh</span></p>
         </header>
         <div class="stats__track" id="stats-track"></div>
-        <p class="stats__count label" aria-hidden="true">Card <span id="stats-idx">01</span> / 06</p>
+        <p class="stats__count label" aria-hidden="true">Card <span id="stats-idx">01</span> / 07</p>
       </div>
     </section>
 
@@ -328,7 +331,7 @@
   </nav>
 
   <div class="transition" id="transition" aria-hidden="true"></div>
-  <div class="cursor" id="cursor" aria-hidden="true"><span id="cursor-label"></span></div>
+  <div class="cursor" id="cursor" aria-hidden="true"><div class="cursor__frame"><i></i><span id="cursor-label"></span></div><div class="cursor__dot"><i></i></div></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module" src="/src/main.js"></script>

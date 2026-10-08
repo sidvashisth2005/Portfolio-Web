@@ -106,7 +106,15 @@ main, .footer { position: relative; z-index: 1; }
 
 .header { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between; padding: calc(16px + env(safe-area-inset-top, 0px)) var(--gutter) 16px; pointer-events: none; }
 .header > * { pointer-events: auto; }
-.header__logo { text-decoration: none; }
+.header__right { display: flex; align-items: center; gap: 12px; }
+.brand { display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: var(--paper); }
+.brand .seal { flex: 0 0 auto; transition: transform .5s var(--ease-out); }
+.brand:hover .seal { transform: rotate(-12deg) scale(1.05); }
+.brand__name { display: flex; flex-direction: column; gap: 3px; overflow: hidden; max-width: 220px; transition: max-width .6s var(--ease-out), opacity .4s, transform .6s var(--ease-out); }
+.brand__name b { font: 900 19px/.9 var(--f-display); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.brand__name small { font: 500 10px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.header.is-compact .brand__name { max-width: 0; opacity: 0; transform: translateX(-10px); }
+.header.is-compact .brand:hover .brand__name, .header.is-compact .brand:focus-visible .brand__name { max-width: 220px; opacity: 1; transform: none; }
 .menu-btn { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(244, 242, 238, .35); background: rgba(6, 6, 8, .55); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: background .3s, border-color .3s; }
 .menu-btn__line { width: 18px; height: 2px; background: var(--paper); border-radius: 2px; transition: transform .4s var(--ease-out), opacity .3s, width .3s; }
 .menu-btn__line:nth-child(2) { width: 12px; margin-left: 6px; }
@@ -242,15 +250,23 @@ main, .footer { position: relative; z-index: 1; }
 .tcard__back .seal { transform: rotate(-6deg) scale(1.4); }
 .tcard__back .label { color: var(--muted); }
 .tcard__front { display: flex; flex-direction: column; padding: 12px; background: linear-gradient(160deg, #1b1b22, #0b0b0f 60%); border: 2px solid rgba(224, 24, 45, .65); box-shadow: 0 40px 90px rgba(0, 0, 0, .8), 0 0 40px rgba(224, 24, 45, .25); }
-/* UR cards: a crimson light runs around the border */
+/* every card: a light runs around the border. UR is brighter and faster */
 @property --sweep { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-.tcard[data-rarity='UR'] .tcard__front {
+.tcard__front {
   border: 2px solid transparent;
+  background:
+    linear-gradient(160deg, #1b1b22, #0b0b0f 60%) padding-box,
+    conic-gradient(from var(--sweep), rgba(224, 24, 45, .28) 0deg, rgba(224, 24, 45, .28) 250deg, #ff4a5c 300deg, #ffd0d6 318deg, #ff4a5c 330deg, rgba(224, 24, 45, .28) 360deg) border-box;
+  animation: sweep 6s linear infinite;
+}
+.tcard:nth-child(2n) .tcard__front { animation-delay: -2.4s; }
+.tcard:nth-child(3n) .tcard__front { animation-delay: -4.1s; }
+.tcard[data-rarity='UR'] .tcard__front, .tcard[data-rarity='SP'] .tcard__front {
   background:
     linear-gradient(160deg, #1b1b22, #0b0b0f 60%) padding-box,
     conic-gradient(from var(--sweep), rgba(224, 24, 45, .35) 0deg, #ff4a5c 40deg, #fff 58deg, #ff4a5c 76deg, rgba(224, 24, 45, .35) 130deg, rgba(224, 24, 45, .35) 180deg, #ff4a5c 220deg, #ffd0d6 238deg, #ff4a5c 256deg, rgba(224, 24, 45, .35) 310deg) border-box;
   box-shadow: 0 40px 90px rgba(0, 0, 0, .8), 0 0 46px rgba(224, 24, 45, .45);
-  animation: sweep 3.2s linear infinite;
+  animation-duration: 3.2s;
 }
 @keyframes sweep { to { --sweep: 360deg; } }
 .tcard__top { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px 10px; font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -269,11 +285,17 @@ main, .footer { position: relative; z-index: 1; }
 .tcard__meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--crimson-deep), var(--crimson) 50%, var(--crimson-hot)); box-shadow: 0 0 12px rgba(224, 24, 45, .7); }
 .tcard__foot { display: flex; justify-content: space-between; margin: 8px 6px 2px; font: 500 10px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .tcard__foot .stars { color: var(--crimson-hot); letter-spacing: .2em; }
-.tcard__foil, .tcard__glare { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 5; }
-.tcard__foil { background: linear-gradient(115deg, transparent 22%, rgba(255, 70, 100, .5) 36%, rgba(255, 214, 10, .42) 46%, rgba(90, 210, 255, .38) 56%, rgba(200, 90, 255, .35) 64%, transparent 78%); background-size: 260% 260%; background-position: var(--mx, 50%) var(--my, 50%); mix-blend-mode: color-dodge; opacity: .35; transition: opacity .3s; }
-.tcard__glare { background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .35), transparent 45%); mix-blend-mode: overlay; opacity: 0; transition: opacity .3s; }
-.tcard:hover .tcard__foil { opacity: .9; }
-.tcard:hover .tcard__glare { opacity: 1; }
+.tcard__glint { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 5; overflow: hidden; }
+/* one clean pass of light across the card on hover, like a blade catching the sun */
+.tcard__glint::before { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 38%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .0) 20%, rgba(255, 255, 255, .22) 50%, rgba(255, 255, 255, 0) 80%, transparent); transform: skewX(-18deg) translateX(0); opacity: 0; }
+.tcard:hover .tcard__glint::before { animation: glint .9s var(--ease-out) forwards; }
+@keyframes glint { 0% { opacity: 1; transform: skewX(-18deg) translateX(0); } 100% { opacity: 1; transform: skewX(-18deg) translateX(560%); } }
+/* the secret card */
+.tcard[data-rarity='SP'] .tcard__rarity { background: #fff; color: var(--void); box-shadow: 0 0 18px rgba(255, 255, 255, .5); }
+.tcard__art--photo { padding: 14px; background: radial-gradient(circle at 50% 30%, #3b0a12, #12060a 70%); }
+.tcard__art--photo img { position: absolute; left: 50%; bottom: 0; height: 108%; width: auto; max-width: none; transform: translateX(-50%); filter: drop-shadow(0 0 1px rgba(255, 74, 92, .9)) drop-shadow(0 12px 30px rgba(0, 0, 0, .7)); }
+.tcard__art--photo .tcard__kanji { color: rgba(224, 24, 45, .35); right: auto; left: -4%; }
+.tcard__art--photo .tcard__meaning { z-index: 1; align-self: flex-start; background: rgba(6, 6, 8, .7); padding: 6px 8px; border-radius: 4px; }
 
 /* ---------- Moves ---------- */
 .moves { position: relative; height: 100vh; height: 100svh; }
@@ -387,11 +409,24 @@ main, .footer { position: relative; z-index: 1; }
 /* ---------- Dock, transition, cursor, toast ---------- */
 .dock { display: none; }
 .transition { position: fixed; inset: 0; z-index: 110; background: var(--crimson); clip-path: circle(0% at 50% 50%); pointer-events: none; }
-.cursor { position: fixed; left: 0; top: 0; z-index: 130; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--crimson); pointer-events: none; mix-blend-mode: normal; display: grid; place-items: center; transition: width .3s var(--ease-out), height .3s var(--ease-out), margin .3s var(--ease-out); opacity: 0; }
-.cursor span { font: 500 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: #fff; opacity: 0; transition: opacity .2s; }
-.cursor.is-big { width: 74px; height: 74px; margin: -37px 0 0 -37px; }
-.cursor.is-big span { opacity: 1; }
-.cursor.is-ring { width: 240px; height: 240px; margin: -120px 0 0 -120px; background: transparent; border: 1px solid rgba(255, 74, 92, .8); box-shadow: 0 0 30px rgba(224, 24, 45, .35), inset 0 0 30px rgba(224, 24, 45, .25); }
+.cursor { position: fixed; left: 0; top: 0; z-index: 130; pointer-events: none; opacity: 0; transition: opacity .3s; }
+.cursor__dot, .cursor__frame { position: absolute; left: 0; top: 0; will-change: transform; }
+.cursor__dot i { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; background: var(--crimson-hot); transform: rotate(39deg); box-shadow: 0 0 8px rgba(255, 74, 92, .8); transition: transform .3s var(--ease-out), opacity .2s; }
+/* the frame is the SV seal in miniature: a hairline square tilted the same way */
+.cursor__frame i { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border: 1px solid rgba(244, 242, 238, .5); border-radius: 3px; transform: rotate(-6deg); transition: width .45s var(--ease-out), height .45s var(--ease-out), margin .45s var(--ease-out), transform .45s var(--ease-out), border-color .3s, background-color .3s, border-radius .3s; }
+.cursor__frame span { position: absolute; left: 0; top: 14px; transform: translateX(-50%); font: 500 10px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--paper); white-space: nowrap; opacity: 0; transition: opacity .25s, top .45s var(--ease-out); }
+/* over anything clickable the seal draws itself into one stroke: 一 */
+.cursor.is-hover .cursor__frame i { width: 44px; height: 2px; margin: -1px 0 0 -22px; border-color: var(--paper); background: var(--paper); border-radius: 0; transform: rotate(0deg); box-shadow: 0 0 10px rgba(255, 74, 92, .9), 0 0 2px rgba(6, 6, 8, .6); }
+.cursor.is-hover .cursor__dot i { transform: rotate(39deg) scale(0); }
+.cursor.is-hover.has-label .cursor__frame span { opacity: 1; top: 12px; }
+.cursor.is-down .cursor__frame i { transform: rotate(39deg) scale(.6); border-color: var(--crimson-hot); }
+.cursor.is-hover.is-down .cursor__frame i { transform: scaleX(.6); }
+.cursor.is-light .cursor__frame i { border-color: rgba(6, 6, 8, .55); }
+.cursor.is-light.is-hover .cursor__frame i { background: var(--void); border-color: var(--void); }
+.cursor.is-light .cursor__frame span { color: var(--void); }
+.cursor.is-text { opacity: 0 !important; }
+html.has-cursor, html.has-cursor * { cursor: none !important; }
+html.has-cursor input, html.has-cursor textarea, html.has-cursor select { cursor: text !important; }
 .toast { position: fixed; left: 50%; bottom: 30px; transform: translate(-50%, 160%); z-index: 140; background: var(--paper); color: var(--void); padding: 12px 18px; border-radius: 999px; font-weight: 700; visibility: hidden; opacity: 0; transition: transform .5s var(--ease-out), opacity .3s, visibility 0s .5s; }
 .toast.is-on { transform: translate(-50%, 0); visibility: visible; opacity: 1; transition: transform .5s var(--ease-out), opacity .3s; }
 .shades { position: fixed; left: 50%; top: 40%; z-index: 146; transform-origin: 50% 50%; margin-left: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; translate: -50% -50%; filter: drop-shadow(0 6px 0 rgba(224, 24, 45, .9)); }
@@ -409,6 +444,7 @@ main, .footer { position: relative; z-index: 1; }
 @media (max-width: 760px) {
   body { font-size: 16px; }
   .header__resume { display: none; }
+  .brand__name b { font-size: 17px; }
   .hero__rank { top: 92px; bottom: auto; }
   .hero__rank-num { font-size: 76px; }
   .hero__hint { display: none; }

@@ -41,12 +41,32 @@ function renderContent() {
             <p class="tcard__label">${s.label}</p>
             <div class="tcard__meter" aria-hidden="true"><i></i></div>
             <div class="tcard__foot"><span>Siddhant V.</span><span class="stars" aria-label="${s.stars} of 5 stars">${'★'.repeat(s.stars)}${'☆'.repeat(5 - s.stars)}</span></div>
-            <span class="tcard__foil"></span><span class="tcard__glare"></span>
+            <span class="tcard__glint" aria-hidden="true"></span>
           </div>
           <div class="tcard__face tcard__back" aria-hidden="true"><span class="seal seal--md"><span>SV</span></span><span class="label">Tournament arc · 2026</span></div>
         </div>
       </div>
-    </article>`).join('');
+    </article>`).join('') + `
+    <article class="tcard tcard--sp" data-rarity="SP" data-special="1">
+      <div class="tcard__tilt">
+        <div class="tcard__inner">
+          <div class="tcard__face tcard__front">
+            <div class="tcard__top"><span class="tcard__rarity">SP</span><span>No. 000 · Secret</span></div>
+            <div class="tcard__art tcard__art--photo">
+              <span class="tcard__kanji" aria-hidden="true">主</span>
+              <img src="img/maincharacter.webp" alt="Siddhant in sunglasses that read I don't care" loading="eager" />
+              <span class="tcard__meaning">主 · main character</span>
+            </div>
+            <div class="tcard__type"><span>Type · Protagonist</span><span>Power ∞</span></div>
+            <p class="tcard__label">Didn’t care that it was 6,200 to 1.</p>
+            <div class="tcard__meter" aria-hidden="true"><i></i></div>
+            <div class="tcard__foot"><span>Siddhant V.</span><span class="stars">Secret card</span></div>
+            <span class="tcard__glint" aria-hidden="true"></span>
+          </div>
+          <div class="tcard__face tcard__back" aria-hidden="true"><span class="seal seal--md"><span>SV</span></span><span class="label">Tournament arc · 2026</span></div>
+        </div>
+      </div>
+    </article>`;
   $('#dojos').innerHTML = dojos.map((d) => `
     <li class="dojo">
       <span class="dojo__period">${d.period}</span>
@@ -327,6 +347,11 @@ function setupScroll({ gl, scrollTo }) {
   // BATTLE STATS: pinned horizontal run; each card flips from its back, counts up and fills its meter
   const cardsEls = $$('.tcard');
   const setCard = (card, p) => {
+    if (card.dataset.special) {
+      card.querySelector('.tcard__inner').style.transform = `rotateY(${180 - 180 * p}deg)`;
+      card.querySelector('.tcard__meter i').style.width = `${100 * Math.min(1, Math.max(0, (p - 0.5) / 0.5))}%`;
+      return;
+    }
     const target = +card.dataset.count;
     const suffix = card.dataset.suffix;
     card.querySelector('.tcard__inner').style.transform = `rotateY(${180 - 180 * p}deg)`;
@@ -367,15 +392,13 @@ function setupScroll({ gl, scrollTo }) {
   } else {
     cardsEls.forEach((c) => setCard(c, 1));
   }
-  // Holo foil + tilt that follow the pointer
+  // Tilt that follows the pointer
   if (window.matchMedia('(hover: hover)').matches) {
     cardsEls.forEach((c) => {
       const tilt = c.querySelector('.tcard__tilt');
       c.addEventListener('pointermove', (e) => {
         const r = c.getBoundingClientRect();
         const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-        c.style.setProperty('--mx', `${x * 100}%`);
-        c.style.setProperty('--my', `${y * 100}%`);
         if (!reduce) tilt.style.transform = `rotateX(${(0.5 - y) * 14}deg) rotateY(${(x - 0.5) * 18}deg)`;
       });
       c.addEventListener('pointerleave', () => { tilt.style.transform = ''; });
@@ -443,6 +466,8 @@ function setupScroll({ gl, scrollTo }) {
       gsap.from('#footer-char', { yPercent: 40, autoAlpha: 0, duration: 1.2, ease: 'expo.out' });
     },
   });
+  // the wordmark tucks into the seal once you leave the top of the page
+  ScrollTrigger.create({ start: 160, end: 'max', onToggle: (self) => $('#header').classList.toggle('is-compact', self.isActive) });
   ScrollTrigger.create({
     trigger: '#contact', start: 'top 40%',
     onEnter: () => gsap.to('#header-logo', { autoAlpha: 0, y: -20, duration: 0.3 }),
@@ -514,24 +539,38 @@ function setupMisc() {
   // Magnetic buttons
   if (!reduce && window.matchMedia('(hover: hover)').matches) $$('.magnetic').forEach((el) => magnetic(el));
 
-  // Cursor
+  // Cursor: a tiny crimson diamond with the SV seal as a hairline frame trailing it.
+  // Over anything clickable the frame draws itself into a single stroke, 一.
   const cursor = $('#cursor'), label = $('#cursor-label');
-  if (window.matchMedia('(hover: hover)').matches && !reduce) {
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches && !reduce) {
+    document.documentElement.classList.add('has-cursor');
+    const dot = cursor.querySelector('.cursor__dot'), frame = cursor.querySelector('.cursor__frame');
     const pos = { x: -100, y: -100 }, cur = { x: -100, y: -100 };
-    window.addEventListener('pointermove', (e) => { pos.x = e.clientX; pos.y = e.clientY; cursor.style.opacity = 1; }, { passive: true });
-    gsap.ticker.add(() => { cur.x += (pos.x - cur.x) * 0.2; cur.y += (pos.y - cur.y) * 0.2; cursor.style.transform = `translate(${cur.x}px, ${cur.y}px)`; });
-    const heroCard = $('#hero-card');
-    heroCard.addEventListener('pointerenter', () => { label.textContent = ''; cursor.classList.add('is-ring'); });
-    heroCard.addEventListener('pointerleave', () => cursor.classList.remove('is-ring'));
-    $$('.hero__copy a, .hero__rank').forEach((el) => {
-      el.addEventListener('pointerenter', () => cursor.classList.remove('is-ring'));
-      el.addEventListener('pointerleave', () => cursor.classList.add('is-ring'));
+    const labels = [['.spot', 'View'], ['.move-pill', 'Pick'], ['.ladder', 'Switch'], ['.footer__cta, .hero__ctas .pill--red, a[href^="mailto"]', 'Say hi'], ['a[download]', 'Save'], ['a[target="_blank"]', 'Open'], ['[data-cursor]', '']];
+    const lightSel = '.duality__sticky:not(.is-b), .footer__card';
+    window.addEventListener('pointermove', (e) => {
+      pos.x = e.clientX; pos.y = e.clientY; cursor.style.opacity = 1;
+      dot.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+    }, { passive: true });
+    document.addEventListener('pointerleave', () => (cursor.style.opacity = 0));
+    window.addEventListener('pointerdown', () => cursor.classList.add('is-down'));
+    window.addEventListener('pointerup', () => cursor.classList.remove('is-down'));
+    document.addEventListener('pointerover', (e) => {
+      const t = e.target;
+      if (t.closest('input, textarea, select')) { cursor.classList.add('is-text'); return; }
+      cursor.classList.remove('is-text');
+      const hit = t.closest('a, button, label, [role="button"], .spot, .ladder, [data-cursor]');
+      cursor.classList.toggle('is-hover', !!hit);
+      let text = '';
+      if (hit) { const m = labels.find(([sel]) => hit.matches(sel)); text = hit.dataset.cursor || (m ? m[1] : ''); }
+      label.textContent = text;
+      cursor.classList.toggle('has-label', !!text);
+      cursor.classList.toggle('is-light', !!t.closest(lightSel));
     });
-    const hoverables = [['.spot', 'View'], ['.move-pill', 'Pick'], ['.footer__cta, .hero__ctas .pill--red', 'Say hi']];
-    hoverables.forEach(([sel, text]) => $$(sel).forEach((el) => {
-      el.addEventListener('pointerenter', () => { label.textContent = text; cursor.classList.add('is-big'); });
-      el.addEventListener('pointerleave', () => cursor.classList.remove('is-big'));
-    }));
+    gsap.ticker.add(() => {
+      cur.x += (pos.x - cur.x) * 0.22; cur.y += (pos.y - cur.y) * 0.22;
+      frame.style.transform = `translate(${cur.x}px, ${cur.y}px)`;
+    });
   }
 
   // Konami reward: pixel "deal with it" shades drop down the screen

@@ -41,12 +41,18 @@ void main(){
   vec2 wrapA = vec2(X, Y * uScreen);
 
   // fold: two planes meeting at a ridge, seen from slightly above
-  float zf = 1.6 + sqrt(u * u + 0.01) * 1.1 - uMouse.x * u * 0.25;
+  // a shallow ridge, so the middle letters stay close in size to the outer ones
+  float depth = 0.68;
+  float zf = 1.6 + sqrt(u * u + 0.01) * depth - uMouse.x * u * 0.2;
   float xw = u * 1.5;
-  // shorter words get taller letters, so scale the fold by the word's aspect to keep it on screen
   float fb = mix(1.7, 1.85, uMob) * clamp(uAspB / 4.6, 0.68, 1.0);
-  float yw = v * 1.5 / uAspB - 0.18 + uMouse.y * 0.05;
-  vec2 foldB = vec2(fb * xw / zf, (fb * yw / zf + 0.16) * uScreen);
+  // keep the tallest (centre) letters under ~36% of the screen and the ends inside the edges
+  float zc = 1.6 + 0.1 * depth, ze = 1.6 + 1.005 * depth;
+  float natH = fb * 1.5 / (uAspB * zc) * uScreen;
+  float natW = fb * 1.5 / ze;
+  float k = min(1.0, min(0.36 / natH, 0.94 / natW));
+  float yw = v * 1.5 / uAspB - 0.12 + uMouse.y * 0.05;
+  vec2 foldB = vec2(k * fb * xw / zf, (k * fb * yw / zf + 0.1) * uScreen);
 
   vec2 a = mix(flatA, wrapA, w);
   vec2 b = mix(flatB, foldB, w);
