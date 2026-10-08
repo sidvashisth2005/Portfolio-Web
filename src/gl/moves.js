@@ -44,13 +44,14 @@ function poster(move, img) {
     const ia = img.width / img.height, ca = W / H;
     let sw = img.width, sh = img.height, sx = 0, sy = 0;
     if (ia > ca) { sw = img.height * ca; sx = (img.width - sw) / 2; } else { sh = img.width / ca; sy = (img.height - sh) / 2; }
-    g.filter = 'grayscale(0.25) contrast(1.1) brightness(0.5)';
+    g.filter = 'grayscale(0.15) contrast(1.08) brightness(0.78)';
     g.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
     g.filter = 'none';
   }
   const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(6,6,8,0.1)');
-  grad.addColorStop(1, 'rgba(6,6,8,0.95)');
+  grad.addColorStop(0, 'rgba(6,6,8,0)');
+  grad.addColorStop(0.45, 'rgba(6,6,8,0.15)');
+  grad.addColorStop(1, 'rgba(6,6,8,0.92)');
   g.fillStyle = grad;
   g.fillRect(0, 0, W, H);
   // crimson speed lines from the right edge
@@ -127,9 +128,9 @@ export function createMoves(canvas, moves, images) {
   function resize() {
     fitRenderer(renderer, camera, canvas);
     const wide = window.innerWidth >= 1100;
-    const s = window.innerWidth < 900 ? 0.62 : wide ? 0.84 : 0.8;
+    const s = window.innerWidth < 900 ? 0.62 : wide ? 0.78 : 0.8;
     scene.scale.setScalar(s);
-    scene.position.set(wide ? 0.9 : 0, window.innerWidth < 1100 ? 0.9 : 0, 0);
+    scene.position.set(wide ? 1.7 : 0, window.innerWidth < 1100 ? 0.9 : 0, 0);
   }
   resize();
   window.addEventListener('resize', resize);
