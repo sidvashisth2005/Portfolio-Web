@@ -120,8 +120,8 @@ async function boot() {
   if (webgl) {
     const orbitSrc = gallery.slice(0, mobile ? 10 : 16).map((g) => g.src);
     const [heroTex, polo, orbitTex, moveImgs] = await Promise.all([
-      loadTexture('/img/hero-cutout.webp', manager),
-      loadTexture('/img/polo-cutout.webp', manager),
+      loadTexture('img/hero-cutout.webp', manager),
+      loadTexture('img/polo-cutout.webp', manager),
       Promise.all(orbitSrc.map((s) => loadTexture(s, manager))),
       Promise.all(moves.map((m) => loadImage(m.image, manager))),
       fontsReady,

@@ -6,5 +6,6 @@ const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 process.env.VITE_SITE_URL ||= host ? `https://${host}` : 'http://localhost:4173';
 
 export default defineConfig({
+  base: './',
   build: { chunkSizeWarningLimit: 800 },
 });
