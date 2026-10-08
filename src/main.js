@@ -13,6 +13,7 @@ import { createDuality } from './gl/duality.js';
 import { rollify, stripReveal, magnetic } from './ui/textfx.js';
 import { initPodcast } from './ui/podcast.js';
 import { createLoader } from './ui/loader.js';
+import { initServices } from './ui/services.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -510,7 +511,7 @@ function setupMenu(scrollTo) {
       .to(overlay, { clipPath: `circle(0% at ${window.innerWidth / 2}px ${window.innerHeight / 2}px)`, duration: 0.7, ease: 'expo.inOut', delay: 0.1 });
   };
   items.forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); circleTo(a.getAttribute('href'), e.clientX || window.innerWidth / 2, e.clientY || window.innerHeight / 2); }));
-  $$('a[href^="#"]:not(.menu__item)').forEach((a) => a.addEventListener('click', (e) => {
+  $$('a[href^="#"]:not(.menu__item):not([data-scroll-open])').forEach((a) => a.addEventListener('click', (e) => {
     const href = a.getAttribute('href');
     if (href.length < 2) return;
     e.preventDefault();
@@ -653,3 +654,6 @@ function updateLadders(st) {
 }
 
 boot();
+
+// backend features (AI clone, contact, live counters) boot on their own, independent of WebGL
+initServices();

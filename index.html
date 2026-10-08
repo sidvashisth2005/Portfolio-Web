@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Schibsted+Grotesk:wght@400;500;700&family=Azeret+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A%E4%BA%8C%E9%9D%A2%E4%B8%80%E9%96%83%E4%B8%BB" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A%E4%BA%8C%E9%9D%A2%E4%B8%80%E9%96%83%E4%B8%BB%E5%BD%B1%E5%88%86%E8%BA%AB%E5%B7%BB%E7%89%A9%E9%97%98%E5%8A%9B%E4%B8%AD%E3%82%B9%E3%82%AB%E3%82%A6%E3%82%BF%E3%83%BC" />
   <link rel="preload" as="image" href="img/hero-cutout.webp" />
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"Person","name":"Siddhant Vashisth","jobTitle":"Business strategist and builder","alumniOf":"Jaypee University of Engineering and Technology","email":"mailto:siddhantvashisth05@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Guna","addressRegion":"Madhya Pradesh","addressCountry":"IN"},"sameAs":["https://www.linkedin.com/in/siddhant-vashisth-04887b29b/","https://github.com/sidvashisth2005"],"award":"Rank 1, HackNITR 7.0"}
@@ -85,6 +85,9 @@
       <span class="brand__name" aria-hidden="true"><b>Siddhant Vashisth</b><small>Strategist · Builder</small></span>
     </a>
     <div class="header__right">
+      <button class="clone-fab" id="clone-fab" type="button" aria-haspopup="dialog" aria-controls="clone" data-cursor="Summon">
+        <span class="clone-fab__kj" aria-hidden="true">影</span><span class="clone-fab__txt">Ask my clone</span>
+      </button>
       <a href="resume.pdf" class="pill pill--red header__resume" download>Résumé ↓</a>
       <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
         <span class="menu-btn__line"></span><span class="menu-btn__line"></span><span class="menu-btn__line"></span>
@@ -129,7 +132,7 @@
             <h1 class="hero__name"><span>Siddhant</span><span>Vashisth</span></h1>
             <p class="hero__lede">Business strategist and builder. I turn raw market signal into products and pitches across AgriTech, AR and AI.</p>
             <div class="hero__ctas">
-              <a class="pill pill--red pill--lg magnetic" href="#contact">Hire me ↗</a>
+              <a class="pill pill--red pill--lg magnetic" href="#contact" data-scroll-open>Hire me ↗</a>
               <a class="pill pill--ghost pill--lg magnetic" href="#about">Watch the arc ↓</a>
             </div>
           </div>
@@ -230,6 +233,11 @@
           <h2 class="h2">Every belt</h2>
           <ol class="awards" id="awards"></ol>
           <p class="edu"><strong>B.Tech, Computer Science and Engineering</strong><br />Jaypee University of Engineering and Technology, Guna · 2023–2027 · CGPA 7.5<br /><span class="muted">Certifications: Machine Learning (Skill Dzire), Flutter Development (Trustique), Google Cloud Platform</span></p>
+          <div class="ghfeed" id="ghfeed" hidden>
+            <p class="label label--red"><i class="live-dot" aria-hidden="true"></i>修行中 · Live from GitHub</p>
+            <ul class="ghfeed__list" id="ghfeed-list"></ul>
+            <a class="roll ghfeed__all" data-roll id="ghfeed-all" href="https://github.com/sidvashisth2005" target="_blank" rel="noopener">All repos ↗</a>
+          </div>
         </div>
       </div>
     </section>
@@ -316,10 +324,15 @@
         </nav>
       </div>
       <img class="footer__char" id="footer-char" src="img/polo-cutout.webp" alt="Siddhant Vashisth in a red polo, smiling" />
-      <a class="pill pill--red pill--lg footer__cta magnetic" href="mailto:siddhantvashisth05@gmail.com">Hire me ↗</a>
+      <a class="pill pill--red pill--lg footer__cta magnetic" href="mailto:siddhantvashisth05@gmail.com" data-scroll-open>Hire me ↗</a>
     </div>
     <div class="footer__bar">
       <p>© 2026 Siddhant Vashisth · Designed &amp; built by me</p>
+      <div class="power" id="power" hidden>
+        <p class="power__lvl"><span class="power__kj" aria-hidden="true">戦闘力</span> Power level <b id="power-num">0</b><span class="power__over" id="power-over" hidden>It’s over 9000!</span></p>
+        <p class="power__live"><i class="live-dot" aria-hidden="true"></i><span id="power-live">1</span> watching now</p>
+        <button class="kiai" id="kiai" type="button" data-cursor="Hold"><span class="kiai__ring" aria-hidden="true"></span><span class="kiai__txt">Hold to charge ki</span><span class="kiai__num" id="kiai-num"></span></button>
+      </div>
       <p>Showtime in Guna · <span id="clock">--:--:--</span> IST</p>
     </div>
   </footer>
@@ -327,8 +340,83 @@
   <!-- Mobile dock: résumé + hire, always reachable -->
   <nav class="dock" aria-label="Quick actions">
     <a href="resume.pdf" class="pill pill--ghost" download>Résumé ↓</a>
-    <a href="#contact" class="pill pill--red">Hire me ↗</a>
+    <a href="#contact" class="pill pill--red" data-scroll-open>Hire me ↗</a>
   </nav>
+
+  <!-- 影分身 · Shadow clone: AI chat + job scouter -->
+  <div class="dlg clone" id="clone" role="dialog" aria-modal="true" aria-labelledby="clone-title" hidden>
+    <div class="dlg__scrim" data-close></div>
+    <div class="dlg__box clone__box">
+      <header class="clone__head">
+        <span class="clone__face" aria-hidden="true"><img src="img/hero-cutout.webp" alt="" /></span>
+        <div class="clone__who">
+          <p class="label label--red">影分身 · Shadow clone</p>
+          <h2 id="clone-title">Siddhant <small>AI</small></h2>
+        </div>
+        <div class="clone__tabs" role="tablist" aria-label="Mode">
+          <button type="button" role="tab" id="tab-talk" aria-controls="pane-talk" aria-selected="true" data-tab="talk">Talk</button>
+          <button type="button" role="tab" id="tab-scout" aria-controls="pane-scout" aria-selected="false" data-tab="scout" tabindex="-1">Scouter</button>
+        </div>
+        <button class="dlg__x" type="button" data-close aria-label="Close">✕</button>
+      </header>
+      <section class="clone__pane" id="pane-talk" role="tabpanel" aria-labelledby="tab-talk">
+        <div class="clone__log" id="clone-log" aria-live="polite" data-lenis-prevent></div>
+        <div class="clone__chips" id="clone-chips"></div>
+        <form class="clone__form" id="clone-form" autocomplete="off">
+          <label class="sr-only" for="clone-input">Your question</label>
+          <input id="clone-input" maxlength="600" placeholder="Ask about my work, wins, or why I fit your team" />
+          <button class="clone__send" type="submit" aria-label="Send">↗</button>
+        </form>
+        <p class="clone__note" id="clone-note">An AI clone that only knows what’s on this site. The real me answers scrolls.</p>
+      </section>
+      <section class="clone__pane" id="pane-scout" role="tabpanel" aria-labelledby="tab-scout" hidden data-lenis-prevent>
+        <form class="scout" id="scout-form">
+          <label class="label" for="scout-jd">スカウター · Paste a job description</label>
+          <textarea id="scout-jd" rows="7" maxlength="8000" placeholder="Paste the role. The scouter reads my power level against it and tells you, honestly, where I fit and where I don’t."></textarea>
+          <button class="pill pill--red" type="submit" id="scout-btn">Scan the role ⟶</button>
+        </form>
+        <div class="scout__out" id="scout-out" hidden></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 巻物 · Send a scroll: contact form -->
+  <div class="dlg scrollm" id="scroll" role="dialog" aria-modal="true" aria-labelledby="scroll-title" hidden>
+    <div class="dlg__scrim" data-close></div>
+    <div class="dlg__box scrollm__box" data-lenis-prevent>
+      <button class="dlg__x" type="button" data-close aria-label="Close">✕</button>
+      <form class="scrollm__form" id="scroll-form" novalidate>
+        <p class="label label--red">巻物 · Send a scroll</p>
+        <h2 class="scrollm__title" id="scroll-title">Start the <span class="red">next arc</span></h2>
+        <div class="scrollm__row">
+          <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" required maxlength="80" autocomplete="name" /><small class="field__err" id="e-name"></small></div>
+          <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" required maxlength="120" autocomplete="email" /><small class="field__err" id="e-email"></small></div>
+        </div>
+        <div class="field"><label for="f-company">Company <span class="muted">(optional)</span></label><input id="f-company" name="company" maxlength="100" autocomplete="organization" /></div>
+        <fieldset class="intent">
+          <legend>What’s this about?</legend>
+          <label><input type="radio" name="intent" value="Full-time role" checked /><span>Full-time role</span></label>
+          <label><input type="radio" name="intent" value="Internship" /><span>Internship</span></label>
+          <label><input type="radio" name="intent" value="Collab / project" /><span>Collab</span></label>
+          <label><input type="radio" name="intent" value="Speaking / podcast" /><span>Podcast</span></label>
+          <label><input type="radio" name="intent" value="Just saying hi" /><span>Just hi</span></label>
+        </fieldset>
+        <div class="field"><label for="f-msg">Message</label><textarea id="f-msg" name="message" rows="5" required maxlength="3000" placeholder="The role, the team, the timeline. Or just say hi."></textarea><small class="field__err" id="e-message"></small></div>
+        <div class="hp" aria-hidden="true"><label for="f-web">Website</label><input id="f-web" name="website" tabindex="-1" autocomplete="off" /></div>
+        <div class="scrollm__foot">
+          <button class="pill pill--red pill--lg" type="submit" id="scroll-send">Send scroll ↗</button>
+          <p class="scrollm__alt muted">or email <a href="mailto:siddhantvashisth05@gmail.com">siddhantvashisth05@gmail.com</a></p>
+        </div>
+        <p class="scrollm__status" id="scroll-status" role="status" aria-live="polite"></p>
+      </form>
+      <div class="scrollm__done" id="scroll-done" hidden>
+        <span class="stamp" aria-hidden="true">送</span>
+        <h3>Scroll delivered.</h3>
+        <p>It’s in my inbox. I’ll get back to you soon.</p>
+        <button class="pill pill--ghost" type="button" data-close>Back to the site</button>
+      </div>
+    </div>
+  </div>
 
   <div class="transition" id="transition" aria-hidden="true"></div>
   <div class="cursor" id="cursor" aria-hidden="true"><div class="cursor__frame"><i></i><span id="cursor-label"></span></div><div class="cursor__dot"><i></i></div></div>
