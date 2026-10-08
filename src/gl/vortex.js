@@ -24,7 +24,8 @@ export function createVortex(canvas, textures, fallerTex) {
     fitCover(tex, pw / ph);
     const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0.96 });
     const m = new THREE.Mesh(geo, mat);
-    const a = i * 0.62;
+    // each strip covers pw / radius radians of the circle; step just past that so neighbours never overlap
+    const a = i * (pw / radius + 0.035);
     const pivot = new THREE.Group();
     pivot.rotation.y = a;
     pivot.position.y = -i * 0.5 + 5;

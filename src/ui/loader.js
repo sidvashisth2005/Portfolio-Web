@@ -101,20 +101,22 @@ export function createLoader(root) {
     finish(onLift) {
       return new Promise((resolve) => {
         const done = () => { gsap.ticker.remove(drawSparks); window.removeEventListener('resize', layout); resolve(); };
-        setBar(1);
         if (reduce) {
+          setBar(1);
           gsap.timeline({ onComplete: done }).add(() => onLift?.()).to(root, { autoAlpha: 0, duration: 0.4 });
           return;
         }
         gsap.ticker.add(drawSparks);
         const cutA = 'polygon(0% 0%, 100% 0%, 100% 38%, 0% 62%)';
         const cutB = 'polygon(0% 62%, 100% 38%, 100% 100%, 0% 100%)';
-        gsap.timeline({ onComplete: done })
-          .to(intro, { progress: 1, duration: 0.3 })
-          // the breath before the cut: camera pushes in, the stroke glows
-          .to('.pl-content', { scale: 1.045, duration: 0.7, ease: 'power2.in' })
-          .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255,74,92,.9))', duration: 0.7, ease: 'power2.in' }, '<')
-          .to(['.pl-top', '.pl-bottom', '.pl-sub'], { autoAlpha: 0, duration: 0.35 }, '<0.3')
+        const tl = gsap.timeline({ onComplete: done });
+        const bar = { v: shown };
+        tl.to(bar, { v: 1, duration: 0.32, ease: 'power2.out', onUpdate: () => setBar(bar.v) }, 0);
+        if (intro.progress() < 1) tl.to(intro, { progress: 1, duration: 0.2, ease: 'none' }, 0);
+        // the breath before the cut: camera pushes in, the stroke glows (starts moving at once, no dead air)
+        tl.to('.pl-content', { scale: 1.04, duration: 0.5, ease: 'sine.in' }, 0.12)
+          .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255,74,92,.9))', duration: 0.5, ease: 'sine.in' }, '<')
+          .to(['.pl-top', '.pl-bottom', '.pl-sub'], { autoAlpha: 0, duration: 0.3 }, '<0.24')
           // the cut
           .set('.pl-half--a', { clipPath: cutA })
           .set('.pl-half--b', { clipPath: cutB })
@@ -127,7 +129,7 @@ export function createLoader(root) {
           // halves slide apart along the cut
           .set(root, { backgroundColor: 'transparent' })
           .add(() => onLift?.())
-          .to('.pl-half--a', { x: () => -W * 0.06, y: () => -H * 0.75, rotation: -3, duration: 1.15, ease: 'expo.inOut' }, '+=0.05')
+          .to('.pl-half--a', { x: () => -W * 0.06, y: () => -H * 0.75, rotation: -3, duration: 1.15, ease: 'expo.inOut' }, '+=0.02')
           .to('.pl-half--b', { x: () => W * 0.06, y: () => H * 0.75, rotation: 3, duration: 1.15, ease: 'expo.inOut' }, '<')
           .to(slash, { autoAlpha: 0, scaleY: 6, duration: 0.5, ease: 'power2.out' }, '<');
       });

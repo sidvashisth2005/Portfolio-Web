@@ -64,7 +64,7 @@ on AI calls (`AI_DAILY_LIMIT`), input caps, and a strict Content-Security-Policy
 | Two sides | STRATEGIST wraps a cylinder, BUILDER folds into a ridge; scroll flips between them |
 | Battle stats | Trading cards that flip as they scroll past, with a running border light and a secret seventh card |
 | Special moves | Pinned 3D showcase of four projects; RGB-split glitch on movement; letter-roll pills |
-| Training / Trophy room | Experience, leadership, awards, education |
+| Training arc | Pinned level-up screen: each internship is a stage that slices in, LV ticks up, a stat sheet grows, LEVEL UP / CLASS CHANGE bursts; then the trophy room and side quests |
 | Flashbacks | Pinned spiral tower of 24 real photos with a free-falling cut-out |
 | On air | Corner cut-outs slide in; the player card expands; waveform reacts to the audio |
 | Footer | Notched card, strip-reveal tagline, letter-roll links, live IST clock, power level and hold-to-charge ki |

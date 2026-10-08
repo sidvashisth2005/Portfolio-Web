@@ -75,14 +75,18 @@ function poster(move, img) {
   g.shadowBlur = 0;
   g.textAlign = 'left';
   g.textBaseline = 'alphabetic';
+  // bottom type sits on the photo, so it gets a soft shadow to stay legible
+  g.shadowColor = 'rgba(0,0,0,0.85)';
+  g.shadowBlur = 22;
   g.fillStyle = '#FF4A5C';
-  g.font = '500 30px "Azeret Mono", monospace';
-  g.fillText(`${move.category}  ·  ${move.technique}`.toUpperCase(), 64, H - 330);
+  g.font = '600 34px "Azeret Mono", monospace';
+  g.fillText(`${move.category}  ·  ${move.technique}`.toUpperCase(), 64, H - 336);
   g.fillStyle = '#F4F2EE';
   g.font = '900 230px "Big Shoulders Display", sans-serif';
-  g.fillText(move.big, 56, H - 120);
-  g.font = '700 40px "Schibsted Grotesk", sans-serif';
-  g.fillText(move.bigLabel, 64, H - 60);
+  g.fillText(move.big, 56, H - 126);
+  g.font = '800 50px "Schibsted Grotesk", sans-serif';
+  g.fillText(move.bigLabel, 64, H - 58);
+  g.shadowBlur = 0;
   if (move.award) {
     g.font = '500 28px "Azeret Mono", monospace';
     const t = move.award.toUpperCase();

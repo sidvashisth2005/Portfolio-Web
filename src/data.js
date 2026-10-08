@@ -131,6 +131,9 @@ export const dojos = [
     where: 'Lucknow',
     period: 'Jun – Aug 2025',
     metric: '+30%',
+    metricLabel: 'platform user base',
+    classChange: 'Intern → Team Lead',
+    stats: { str: 84, bld: 70, dat: 74, ldr: 92 },
     notes: [
       'Ran discovery sessions with partners to define a B2B marketplace app; drove 30% growth in the platform user base.',
       'Promoted to Team Lead; directed 3 cross-functional teams of 15–18 people at 100% on-time delivery.',
@@ -143,6 +146,8 @@ export const dojos = [
     where: 'Remote',
     period: 'Dec 2024 – Jan 2025',
     metric: '+15%',
+    metricLabel: 'ML model accuracy',
+    stats: { str: 38, bld: 64, dat: 72, ldr: 24 },
     notes: ['Improved ML classification accuracy by 15% through data cleaning and EDA in Python and Excel.'],
   },
   {
@@ -151,6 +156,8 @@ export const dojos = [
     where: 'Remote',
     period: 'Jun – Jul 2024',
     metric: '−20%',
+    metricLabel: 'code-review cycles',
+    stats: { str: 30, bld: 60, dat: 22, ldr: 18 },
     notes: ['Cut code-review cycles by 20% by shipping 3 modular components with Agile methods.'],
   },
 ];
@@ -163,10 +170,18 @@ export const awards = [
   { title: 'Published · JUET National Conference', scope: 'Research', desc: 'Authored and presented a paper on Social and Library Sciences to 100+ attendees.' },
 ];
 
+// Stat sheet for the level-up screen: a self-assessed read of how each internship grew each skill (0–100)
+export const statNames = [
+  { key: 'str', label: 'Strategy', short: 'STR' },
+  { key: 'bld', label: 'Build', short: 'BLD' },
+  { key: 'dat', label: 'Data', short: 'DAT' },
+  { key: 'ldr', label: 'Lead', short: 'LDR' },
+];
+
 export const leadership = [
   'Joint Secretary, VRARMR Club: led 50+ members and ran screening interviews for 20+ candidates.',
   'Organiser, TACHYON 2025: logistics, sponsorship and partners for a tech fest of 2,000+ attendees.',
-  'Sole pitcher on 6+ hackathon stages, national and international.',
+  'Sole pitcher: 6+ hackathon stages, national and international.',
 ];
 
 export const episodes = [

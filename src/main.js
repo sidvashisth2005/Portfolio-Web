@@ -2,7 +2,7 @@ import './styles.css';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { gallery, moves, stats, dojos, awards, leadership, episodes } from './data.js';
+import { gallery, moves, stats, dojos, awards, leadership, episodes, statNames } from './data.js';
 import { hasWebGL, loadTexture, isMobile } from './gl/utils.js';
 import { createBackground } from './gl/background.js';
 import { createHero } from './gl/hero.js';
@@ -68,14 +68,23 @@ function renderContent() {
         </div>
       </div>
     </article>`;
-  $('#dojos').innerHTML = dojos.map((d) => `
-    <li class="dojo">
-      <span class="dojo__period">${d.period}</span>
-      <div><span class="dojo__co">${d.company}</span><span class="dojo__role">${d.role} · ${d.where}</span></div>
-      <span class="dojo__metric">${d.metric}</span>
-      <ul>${d.notes.map((n) => `<li>${n}</li>`).join('')}</ul>
-    </li>`).join('');
-  $('#leadership').innerHTML = leadership.map((l) => `<li>${l}</li>`).join('');
+  // level-up screen: stages in date order
+  const stages = [...dojos].reverse();
+  const NUMERALS = ['壱', '弐', '参'];
+  $('#lvl-stage').innerHTML = stages.map((d, i) => `
+    <article class="lvl__card${i === 0 ? ' is-on' : ''}" data-i="${i}" aria-hidden="${i !== 0}">
+      <p class="lvl__ep"><span>Stage ${String(i + 1).padStart(2, '0')}</span><span>${d.period}</span><span>${d.where}</span></p>
+      <h3 class="lvl__co">${d.company.replace(/ Pvt\. Ltd\./, '')}</h3>
+      <p class="lvl__role">${d.role}</p>
+      ${d.classChange ? `<p class="lvl__class"><span>Class change</span>${d.classChange}</p>` : ''}
+      <p class="lvl__metric"><b>${d.metric}</b><span>${d.metricLabel}</span></p>
+      <ul class="lvl__notes">${d.notes.map((n) => `<li>${n}</li>`).join('')}</ul>
+    </article>`).join('');
+  $('#lvl-stats').innerHTML = statNames.map((st) => `
+    <li data-k="${st.key}"><span class="lvl__sn">${st.short}<small>${st.label}</small></span><span class="lvl__bar"><i></i></span><b class="lvl__sv">0</b><em class="lvl__gain"></em></li>`).join('');
+  $('#lvl-track').innerHTML = stages.map((d, i) => `
+    <li><button type="button" data-i="${i}"${i === 0 ? ' aria-current="step"' : ''}><span class="lvl__dot">${NUMERALS[i]}</span><span class="lvl__tn">${d.company.replace(/ Pvt\. Ltd\.| Assists/g, '')}</span><span class="lvl__ty">${d.period.replace(/.*(\d{4})$/, '$1')}</span></button></li>`).join('');
+  $('#lvl-stage').dataset.numerals = NUMERALS.join('');
   $('#awards').innerHTML = awards.map((a) => `
     <li class="award"><div class="award__top"><span class="award__title">${a.title}</span><span class="award__scope">${a.scope}</span></div><p>${a.desc}</p></li>`).join('');
 
@@ -125,6 +134,12 @@ function loadImage(src, manager) {
   });
 }
 
+// A refresh always starts fresh: loader first, then the top of the page (no restored scroll, no hash jump)
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+window.scrollTo(0, 0);
+window.addEventListener('beforeunload', () => window.scrollTo(0, 0));
+
 async function boot() {
   renderContent();
   setMoveInfo(0);
@@ -135,7 +150,8 @@ async function boot() {
   });
 
   const loader = createLoader($('#preloader'));
-  const manager = createManager((p) => loader.setProgress(p));
+  // assets fill the bar to 90%; the last 10% is the scene setup, so 100% means ready to cut
+  const manager = createManager((p) => loader.setProgress(p * 0.9));
   let entry = 0;
   const tick = () => { entry = loader.tick(); };
   gsap.ticker.add(tick);
@@ -162,14 +178,16 @@ async function boot() {
   } else {
     await fontsReady;
   }
-  loader.setProgress(1);
-  // let the entry ripple finish before the elimination starts
-  await new Promise((r) => { const wait = () => (entry >= 1 ? r() : requestAnimationFrame(wait)); wait(); });
-  gsap.ticker.remove(tick);
-  // paint the full count before the heavier scene setup runs
+  loader.setProgress(0.9);
+  const until = (v) => new Promise((r) => { const wait = () => (entry >= v ? r() : requestAnimationFrame(wait)); wait(); });
+  await until(0.895);
+  // paint 90% before the heavier scene setup blocks the main thread
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  start(tex, loader);
+  const reveal = start(tex, loader);
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  gsap.ticker.remove(tick);
+  // the bar runs its last 10% while the cut winds up, so there's no pause at 100%
+  reveal();
 }
 
 /* ---------------- Start ---------------- */
@@ -183,7 +201,9 @@ function start(tex, loader) {
   }
   window.lenis = lenis;
   const scrollTo = (target, immediate = false) => {
-    if (lenis) lenis.scrollTo(target, { immediate, duration: 1.4 });
+    // the hero is pinned, so its element offset lands at the end of the pin; home is always 0
+    if (target === $('#top')) target = 0;
+    if (lenis) lenis.scrollTo(target, { immediate, duration: 1.4, force: true });
     else (typeof target === 'number' ? window.scrollTo(0, target) : target.scrollIntoView());
   };
 
@@ -208,13 +228,13 @@ function start(tex, loader) {
     .add(() => gl.hero && gsap.to(gl.hero.uniforms.uReveal, { value: 1, duration: 1.6, ease: 'expo.out' }), 0);
   // Compile every scene's shaders now, while the loader still covers the page, so nothing hitches later.
   Object.values(gl).forEach((m) => { try { m.render?.(0); } catch { /* ignore */ } });
-  const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  nextFrame().then(() => loader.finish(() => { if (!reduce) heroIn.play(); })).then(() => {
+  const reveal = () => loader.finish(() => { if (!reduce) heroIn.play(); }).then(() => {
     pre.remove();
     document.body.classList.remove('is-loading');
     gsap.ticker.lagSmoothing(0);
     ScrollTrigger.refresh();
   });
+  lenis?.scrollTo(0, { immediate: true, force: true });
   if (reduce) heroIn.progress(1);
   if (reduce && gl.hero) gl.hero.uniforms.uReveal.value = 1;
 
@@ -236,7 +256,7 @@ function start(tex, loader) {
     frames++;
     const now = performance.now();
     if (now - last > 500) { fps = Math.round((frames * 1000) / (now - last)); frames = 0; last = now; const j = $('#judge'); if (j) j.textContent = `${fps} FPS · ${webgl ? 'WebGL' : 'no WebGL'} · ${mobile ? 'mobile' : 'desktop'} tier`; }
-  });
+  });  return reveal;
 }
 
 /* ---------------- Scroll choreography ---------------- */
@@ -322,12 +342,13 @@ function setupScroll({ gl, scrollTo }) {
   };
   if (gl.duality && !reduce) {
     dualST = ScrollTrigger.create({
-      trigger: '#duality', start: 'top top', end: () => `+=${mobile ? 1800 : 2600}`, pin: true, invalidateOnRefresh: true,
+      trigger: '#duality', start: 'top top', end: () => `+=${mobile ? 1300 : 1700}`, pin: true, invalidateOnRefresh: true,
       onUpdate: (self) => {
         const p = self.progress;
         const st = gl.duality.state;
-        st.targetWarp = Math.min(1, p / 0.14);
-        const b = p > 0.52;
+        st.targetWarp = Math.min(1, p / 0.15);
+        // flips soon after STRATEGIST is fully bent
+        const b = p > 0.32;
         st.targetCurve = b ? 1 : 0;
         setSide(b, st.targetWarp > 0.6);
       },
@@ -342,7 +363,7 @@ function setupScroll({ gl, scrollTo }) {
     if (!dualST) return;
     const r = btn.getBoundingClientRect();
     const toB = (e.clientY - r.top) / r.height >= 0.5;
-    scrollTo(dualST.start + (dualST.end - dualST.start) * (toB ? 0.78 : 0.3));
+    scrollTo(dualST.start + (dualST.end - dualST.start) * (toB ? 0.62 : 0.22));
   }));
 
   // BATTLE STATS: pinned horizontal run; each card flips from its back, counts up and fills its meter
@@ -428,10 +449,9 @@ function setupScroll({ gl, scrollTo }) {
     else { if (gl.moves) gl.moves.state.target = i; active = i; setMoveInfo(i); }
   }));
 
-  // TRAINING: rows rise in
-  if (!reduce) {
-    ScrollTrigger.batch('.dojo, .award', { start: 'top 88%', onEnter: (els) => gsap.from(els, { y: 40, autoAlpha: 0, duration: 0.8, stagger: 0.08, ease: 'power3.out' }) });
-  }
+  // TRAINING: the level-up screen pins here (created in page order so later pins measure correctly)
+  setupLevel(scrollTo);
+  $$('.award, .quests li').forEach((el) => gsap.from(el, { y: 40, autoAlpha: 0, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } }));
 
   // VORTEX: pinned spiral, header lifts away, counter climbs
   const counter = $('#vortex-count');
@@ -476,6 +496,73 @@ function setupScroll({ gl, scrollTo }) {
   });
 
   window.addEventListener('load', () => ScrollTrigger.refresh());
+}
+
+/* ---------------- Level-up screen ---------------- */
+// Pinned. Each internship is a stage: the card slices in on a diagonal, LV ticks up, the stat bars grow
+// and float their gains, and a LEVEL UP (or CLASS CHANGE) burst hits once per stage.
+function setupLevel(scrollTo) {
+  const cards = $$('.lvl__card'), trackBtns = $$('#lvl-track button'), rows = $$('#lvl-stats li');
+  const numerals = [...$('#lvl-stage').dataset.numerals];
+  const n = cards.length;
+  const stages = [...dojos].reverse();
+  const num = $('#lvl-num'), kanji = $('#lvl-kanji'), burst = $('#lvl-burst'), burstTxt = $('#lvl-burst-txt'), burstSub = $('#lvl-burst-sub');
+  const shown = Object.fromEntries(statNames.map((s) => [s.key, 0]));
+  let cur = -1;
+
+  const paintStats = (i, animate) => {
+    const target = stages[i].stats, prev = i > 0 ? stages[i - 1].stats : null;
+    rows.forEach((row) => {
+      const k = row.dataset.k, bar = row.querySelector('i'), val = row.querySelector('.lvl__sv'), gain = row.querySelector('.lvl__gain');
+      const o = { v: shown[k] };
+      gsap.to(o, { v: target[k], duration: animate ? 1 : 0, ease: 'expo.out', overwrite: 'auto', onUpdate: () => { shown[k] = o.v; val.textContent = Math.round(o.v); bar.style.transform = `scaleX(${o.v / 100})`; } });
+      const d = target[k] - (prev ? prev[k] : 0);
+      row.classList.toggle('is-up', !!prev && d > 0);
+      if (animate && prev && d > 0) {
+        gain.textContent = `+${d}`;
+        gsap.fromTo(gain, { y: 8, autoAlpha: 0 }, { y: -10, autoAlpha: 1, duration: 0.5, ease: 'back.out(2)', onComplete: () => gsap.to(gain, { autoAlpha: 0, y: -18, duration: 0.5, delay: 0.9 }) });
+      }
+    });
+  };
+
+  const go = (i, animate = true) => {
+    if (i === cur) return;
+    const dir = i > cur ? 1 : -1, from = cards[cur];
+    cur = i;
+    num.textContent = String(i + 1).padStart(2, '0');
+    kanji.textContent = numerals[i];
+    trackBtns.forEach((b, j) => { if (j === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); b.classList.toggle('is-done', j < i); });
+    $('#lvl').style.setProperty('--stage', i / Math.max(1, n - 1));
+    cards.forEach((c, j) => { c.classList.toggle('is-on', j === i); c.setAttribute('aria-hidden', j !== i); });
+    paintStats(i, animate);
+    if (!animate || reduce) { cards.forEach((c, j) => gsap.set(c, { autoAlpha: j === i ? 1 : 0, clipPath: 'none', x: 0 })); return; }
+    // the new stage is cut in along a diagonal, the old one slides out the other way
+    if (from) gsap.to(from, { autoAlpha: 0, x: -60 * dir, duration: 0.45, ease: 'power2.in', overwrite: 'auto' });
+    gsap.fromTo(cards[i],
+      { autoAlpha: 1, x: 60 * dir, clipPath: dir > 0 ? 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)' : 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)' },
+      { x: 0, clipPath: 'polygon(0% 0%, 115% 0%, 100% 100%, -15% 100%)', duration: 0.8, delay: 0.15, ease: 'expo.out', overwrite: 'auto', onComplete: () => gsap.set(cards[i], { clipPath: 'none' }) });
+    gsap.fromTo([num.parentElement, kanji], { yPercent: 30 * dir, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.7, ease: 'expo.out', overwrite: 'auto' });
+    if (dir > 0 && i > 0) {
+      const cc = stages[i].classChange;
+      burstTxt.textContent = cc ? 'Class change!' : 'Level up!';
+      burstSub.textContent = cc || `LV. ${String(i + 1).padStart(2, '0')} · ${stages[i].company.replace(/ Pvt\. Ltd\./, '')}`;
+      gsap.timeline({ overwrite: 'auto' })
+        .fromTo(burst, { autoAlpha: 0, scale: 1.6, skewX: -14 }, { autoAlpha: 1, scale: 1, skewX: -8, duration: 0.45, ease: 'back.out(2)' })
+        .fromTo('.lvl__rays', { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1, duration: 0.5, ease: 'expo.out' }, 0)
+        .to([burst, '.lvl__rays'], { autoAlpha: 0, scale: 1.08, duration: 0.5, ease: 'power2.in' }, 1.1);
+    }
+  };
+  go(0, false);
+
+  if (reduce) { $('#lvl').classList.add('is-static'); return; }
+  const st = ScrollTrigger.create({
+    trigger: '#lvl', start: 'top top', end: () => `+=${(mobile ? 650 : 800) * n}`, pin: true, invalidateOnRefresh: true,
+    onUpdate: (self) => {
+      $('#lvl').style.setProperty('--p', self.progress);
+      go(Math.min(n - 1, Math.floor(self.progress * n * 0.999 + 0.0001)));
+    },
+  });
+  trackBtns.forEach((b) => b.addEventListener('click', () => scrollTo(st.start + ((+b.dataset.i + 0.5) / n) * (st.end - st.start))));
 }
 
 /* ---------------- Menu + circular transitions ---------------- */
