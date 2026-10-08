@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Schibsted+Grotesk:wght@400;500;700&family=Azeret+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A" />
   <link rel="preload" as="image" href="img/hero-cutout.webp" />
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"Person","name":"Siddhant Vashisth","jobTitle":"Business strategist and builder","alumniOf":"Jaypee University of Engineering and Technology","email":"mailto:siddhantvashisth05@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Guna","addressRegion":"Madhya Pradesh","addressCountry":"IN"},"sameAs":["https://www.linkedin.com/in/siddhant-vashisth-04887b29b/","https://github.com/sidvashisth2005"],"award":"Rank 1, HackNITR 7.0"}
@@ -61,7 +61,7 @@
     <div class="menu__list">
       <a class="menu__item" href="#top"><span class="menu__idx">01</span><span class="menu__label">Opening</span><span class="menu__jp" aria-hidden="true">開幕</span><span class="menu__line"></span></a>
       <a class="menu__item" href="#about"><span class="menu__idx">02</span><span class="menu__label">The arc</span><span class="menu__jp" aria-hidden="true">大会編</span><span class="menu__line"></span></a>
-      <a class="menu__item" href="#numbers"><span class="menu__idx">03</span><span class="menu__label">Numbers</span><span class="menu__jp" aria-hidden="true">数字</span><span class="menu__line"></span></a>
+      <a class="menu__item" href="#numbers"><span class="menu__idx">03</span><span class="menu__label">Battle stats</span><span class="menu__jp" aria-hidden="true">戦績</span><span class="menu__line"></span></a>
       <a class="menu__item" href="#moves"><span class="menu__idx">04</span><span class="menu__label">Special moves</span><span class="menu__jp" aria-hidden="true">必殺技</span><span class="menu__line"></span></a>
       <a class="menu__item" href="#training"><span class="menu__idx">05</span><span class="menu__label">Training</span><span class="menu__jp" aria-hidden="true">修行編</span><span class="menu__line"></span></a>
       <a class="menu__item" href="#flashbacks"><span class="menu__idx">06</span><span class="menu__label">Flashbacks</span><span class="menu__jp" aria-hidden="true">回想</span><span class="menu__line"></span></a>
@@ -135,12 +135,17 @@
       <p class="about__lede">3rd-year B.Tech CSE at JUET Guna. Sole pitcher on six-plus hackathon stages, Team Lead of three 15–18 person teams at 19, and host of a podcast about all of it. <span class="muted">Tap the red squares.</span></p>
     </section>
 
-    <!-- 03 · NUMBERS: glass cards, counters, bars -->
-    <section class="numbers" id="numbers" aria-labelledby="numbers-h">
-      <div class="wrap">
-        <p class="label label--red">数字 · Numbers</p>
-        <h2 class="h2" id="numbers-h">Numbers I don’t<br />have to explain away</h2>
-        <div class="numbers__grid" id="numbers-grid"></div>
+    <!-- 03 · BATTLE STATS: pinned horizontal run of collectible cards that flip, count and shine -->
+    <section class="stats" id="numbers" aria-labelledby="numbers-h">
+      <div class="stats__sticky">
+        <div class="stats__bgtype" aria-hidden="true"><span id="stats-bgtype">Battle stats ✦ 戦績 ✦ Battle stats ✦ 戦績 ✦ Battle stats ✦ 戦績 ✦</span></div>
+        <header class="stats__head">
+          <p class="label label--red">戦績 · Battle stats</p>
+          <h2 class="h2" id="numbers-h">Six cards.<br /><span class="red">All real.</span></h2>
+          <p class="label muted stats__hint">Scroll to draw a card<span class="hover-only"> · hover for foil</span></p>
+        </header>
+        <div class="stats__track" id="stats-track"></div>
+        <p class="stats__count label" aria-hidden="true">Card <span id="stats-idx">01</span> / 06</p>
       </div>
     </section>
 

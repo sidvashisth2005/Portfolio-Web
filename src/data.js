@@ -116,12 +116,12 @@ export const moves = [
 ];
 
 export const stats = [
-  { value: 6200, suffix: '+', label: 'Participants outranked at HackNITR 7.0', bar: 1 },
-  { value: 65, suffix: '%', label: 'Cost cut per head, livestock monitor', bar: 0.65 },
-  { value: 30, suffix: '%', label: 'Platform user growth, B2B marketplace', bar: 0.3 },
-  { value: 25, suffix: '%', label: 'Footfall increase for a superstore client', bar: 0.25 },
-  { value: 15, suffix: '%', label: 'ML model accuracy gain', bar: 0.15 },
-  { value: 100, suffix: '%', label: 'On-time delivery across 3 teams', bar: 1 },
+  { value: 6200, suffix: '+', label: 'Participants outranked at HackNITR 7.0', bar: 1, kanji: '勝', meaning: 'victory', type: 'Pitch', rarity: 'UR', stars: 5 },
+  { value: 65, suffix: '%', label: 'Cost cut per head on the livestock monitor', bar: 0.65, kanji: '削', meaning: 'cut', type: 'Build', rarity: 'SSR', stars: 5 },
+  { value: 30, suffix: '%', label: 'Platform user growth for a B2B marketplace', bar: 0.3, kanji: '成', meaning: 'growth', type: 'Growth', rarity: 'SSR', stars: 4 },
+  { value: 25, suffix: '%', label: 'Footfall increase for a superstore client', bar: 0.25, kanji: '客', meaning: 'customers', type: 'Strategy', rarity: 'SR', stars: 4 },
+  { value: 15, suffix: '%', label: 'Accuracy gain on an ML classification model', bar: 0.15, kanji: '精', meaning: 'precision', type: 'Data', rarity: 'SR', stars: 3 },
+  { value: 100, suffix: '%', label: 'On-time delivery leading 3 teams of 15–18', bar: 1, kanji: '隊', meaning: 'squad', type: 'Lead', rarity: 'UR', stars: 5 },
 ];
 
 export const dojos = [

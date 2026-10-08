@@ -24,12 +24,27 @@ if (!webgl) document.documentElement.classList.add('no-webgl');
 /* ---------------- Content ---------------- */
 function renderContent() {
   const fmt = (n) => n.toLocaleString('en-IN');
-  $('#numbers-grid').innerHTML = stats.map((s) => {
-    const on = Math.round(s.bar * 20);
-    const bars = Array.from({ length: 20 }, (_, i) => `<i class="${i < on ? 'on' : ''}" style="height:${30 + ((i * 37) % 70)}%"></i>`).join('');
-    return `<article class="stat"><p class="stat__num" data-count="${s.value}" data-suffix="${s.suffix}">${fmt(s.value)}<small>${s.suffix}</small></p><p class="stat__label">${s.label}</p><div class="stat__bars" aria-hidden="true">${bars}</div></article>`;
-  }).join('');
-
+  $('#stats-track').innerHTML = stats.map((s, i) => `
+    <article class="tcard" data-rarity="${s.rarity}" data-count="${s.value}" data-suffix="${s.suffix}" data-bar="${s.bar}">
+      <div class="tcard__tilt">
+        <div class="tcard__inner">
+          <div class="tcard__face tcard__front">
+            <div class="tcard__top"><span class="tcard__rarity">${s.rarity}</span><span>No. ${String(i + 1).padStart(3, '0')} / ${String(stats.length).padStart(3, '0')}</span></div>
+            <div class="tcard__art">
+              <span class="tcard__kanji" aria-hidden="true">${s.kanji}</span>
+              <span class="tcard__num">${fmt(s.value)}<small>${s.suffix}</small></span>
+              <span class="tcard__meaning">${s.kanji} · ${s.meaning}</span>
+            </div>
+            <div class="tcard__type"><span>Type · ${s.type}</span><span>Power ${Math.round(s.bar * 100)}</span></div>
+            <p class="tcard__label">${s.label}</p>
+            <div class="tcard__meter" aria-hidden="true"><i></i></div>
+            <div class="tcard__foot"><span>Siddhant V.</span><span class="stars" aria-label="${s.stars} of 5 stars">${'★'.repeat(s.stars)}${'☆'.repeat(5 - s.stars)}</span></div>
+            <span class="tcard__foil"></span><span class="tcard__glare"></span>
+          </div>
+          <div class="tcard__face tcard__back" aria-hidden="true"><span class="seal seal--md"><span>SV</span></span><span class="label">Tournament arc · 2026</span></div>
+        </div>
+      </div>
+    </article>`).join('');
   $('#dojos').innerHTML = dojos.map((d) => `
     <li class="dojo">
       <span class="dojo__period">${d.period}</span>
@@ -232,7 +247,7 @@ function setupScroll({ gl, scrollTo }) {
 
   // ABOUT: lanyards swing with scroll, headline words rise, spots open on hover / tap / focus
   if (!reduce) {
-    gsap.timeline({ scrollTrigger: { trigger: '#about', start: 'top 85%', end: 'bottom 15%', scrub: 1 } })
+    gsap.timeline({ scrollTrigger: { trigger: '#about', start: 'top 85%', end: () => `+=${(mobile ? 1500 : 2200) + window.innerHeight}`, scrub: 1, invalidateOnRefresh: true } })
       .fromTo(['#lanyard-left', '#lanyard-right'], { y: -260, rotate: (i) => (i ? 14 : -14) }, { y: 0, rotate: 0, ease: 'power2.out', duration: 0.4 })
       .to('#lanyard-left', { rotate: 8, duration: 0.3 }, 0.4).to('#lanyard-right', { rotate: -10, duration: 0.3 }, 0.4)
       .to(['#lanyard-left', '#lanyard-right'], { y: -120, rotate: 0, duration: 0.3 }, 0.7);
@@ -250,6 +265,22 @@ function setupScroll({ gl, scrollTo }) {
     s.classList.remove('is-active');
     gsap.to(s.querySelector('.spot__card'), { width: 0, height: 0, duration: reduce ? 0 : 0.35, ease: 'power3.out', overwrite: 'auto' });
   };
+  // While the headline is pinned, the squares open one after another as you scroll.
+  let autoSpot = -1;
+  if (!reduce) {
+    ScrollTrigger.create({
+      trigger: '#about', start: 'top top', end: () => `+=${mobile ? 1500 : 2200}`, pin: true, invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        const p = self.progress;
+        const idx = p < 0.08 ? -1 : p < 0.38 ? 0 : p < 0.68 ? 1 : p < 0.96 ? 2 : -1;
+        if (idx === autoSpot) return;
+        autoSpot = idx;
+        if (idx < 0) spots.forEach(closeSpot); else openSpot(spots[idx]);
+      },
+      onLeave: () => { autoSpot = -1; spots.forEach(closeSpot); },
+      onLeaveBack: () => { autoSpot = -1; spots.forEach(closeSpot); },
+    });
+  }
   spots.forEach((s) => {
     s.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && openSpot(s));
     s.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && closeSpot(s));
@@ -258,22 +289,63 @@ function setupScroll({ gl, scrollTo }) {
     s.addEventListener('click', () => (s.classList.contains('is-active') ? closeSpot(s) : openSpot(s)));
   });
 
-  // NUMBERS: counters + bars
-  $$('.stat').forEach((card, i) => {
-    const num = card.querySelector('.stat__num');
-    const target = +num.dataset.count;
-    const suffix = num.dataset.suffix;
-    ScrollTrigger.create({
-      trigger: card, start: 'top 85%', once: true,
-      onEnter: () => {
-        if (reduce) return;
-        const o = { v: 0 };
-        gsap.to(o, { v: target, duration: 1.8, delay: i * 0.08, ease: 'power3.out', onUpdate: () => { num.innerHTML = `${Math.round(o.v).toLocaleString('en-IN')}<small>${suffix}</small>`; } });
-        gsap.from(card.querySelectorAll('.stat__bars i'), { scaleY: 0, duration: 0.6, stagger: 0.025, delay: 0.2 + i * 0.08, ease: 'power2.out' });
-        gsap.from(card, { y: 40, autoAlpha: 0, duration: 0.9, delay: i * 0.06, ease: 'power3.out' });
-      },
+  // BATTLE STATS: pinned horizontal run; each card flips from its back, counts up and fills its meter
+  const cardsEls = $$('.tcard');
+  const setCard = (card, p) => {
+    const target = +card.dataset.count;
+    const suffix = card.dataset.suffix;
+    card.querySelector('.tcard__inner').style.transform = `rotateY(${180 - 180 * p}deg)`;
+    const v = Math.round(target * Math.min(1, Math.max(0, (p - 0.45) / 0.55)));
+    card.querySelector('.tcard__num').innerHTML = `${v.toLocaleString('en-IN')}<small>${suffix}</small>`;
+    card.querySelector('.tcard__meter i').style.width = `${+card.dataset.bar * 100 * Math.min(1, Math.max(0, (p - 0.5) / 0.5))}%`;
+  };
+  if (!reduce) {
+    const track = $('#stats-track');
+    const last = cardsEls[cardsEls.length - 1];
+    const dist = () => last.offsetLeft + last.offsetWidth / 2 - window.innerWidth / 2;
+    const update = () => {
+          const mid = window.innerWidth / 2;
+          let best = 0, bd = Infinity;
+          cardsEls.forEach((c, i) => {
+            const r = c.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const d = Math.abs(cx - mid);
+            if (d < bd) { bd = d; best = i; }
+            // flip as the card travels from the right edge to just right of centre
+            const p = Math.min(1, Math.max(0, (window.innerWidth * 0.98 - cx) / (window.innerWidth * 0.34)));
+            setCard(c, p);
+            c.style.transform = `translateY(${(1 - p) * 40}px) scale(${0.86 + p * 0.14})`;
+          });
+          $('#stats-idx').textContent = String(best + 1).padStart(2, '0');
+          // the heading steps back as the first card slides underneath it
+          const head = $('.stats__head');
+          const firstLeft = cardsEls[0].getBoundingClientRect().left;
+          const hr = head.getBoundingClientRect().right;
+          head.style.opacity = window.innerWidth <= 760 ? 1 : Math.min(1, Math.max(0.08, (firstLeft - hr + 60) / 240));
+    };
+    gsap.to(track, {
+      x: () => -dist(), ease: 'none', onUpdate: update,
+      scrollTrigger: { trigger: '#numbers', start: 'top top', end: () => `+=${dist() * 1.15}`, pin: true, scrub: 0.6, invalidateOnRefresh: true },
     });
-  });
+    gsap.to('#stats-bgtype', { xPercent: -30, ease: 'none', scrollTrigger: { trigger: '#numbers', start: 'top top', end: () => `+=${dist() * 1.15}`, scrub: 1, invalidateOnRefresh: true } });
+    cardsEls.forEach((c) => setCard(c, 0));
+  } else {
+    cardsEls.forEach((c) => setCard(c, 1));
+  }
+  // Holo foil + tilt that follow the pointer
+  if (window.matchMedia('(hover: hover)').matches) {
+    cardsEls.forEach((c) => {
+      const tilt = c.querySelector('.tcard__tilt');
+      c.addEventListener('pointermove', (e) => {
+        const r = c.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        c.style.setProperty('--mx', `${x * 100}%`);
+        c.style.setProperty('--my', `${y * 100}%`);
+        if (!reduce) tilt.style.transform = `rotateX(${(0.5 - y) * 14}deg) rotateY(${(x - 0.5) * 18}deg)`;
+      });
+      c.addEventListener('pointerleave', () => { tilt.style.transform = ''; });
+    });
+  }
 
   // MOVES: pinned, scroll walks through the four techniques
   let active = 0;
@@ -413,7 +485,14 @@ function setupMisc() {
     const pos = { x: -100, y: -100 }, cur = { x: -100, y: -100 };
     window.addEventListener('pointermove', (e) => { pos.x = e.clientX; pos.y = e.clientY; cursor.style.opacity = 1; }, { passive: true });
     gsap.ticker.add(() => { cur.x += (pos.x - cur.x) * 0.2; cur.y += (pos.y - cur.y) * 0.2; cursor.style.transform = `translate(${cur.x}px, ${cur.y}px)`; });
-    const hoverables = [['.spot', 'View'], ['.move-pill', 'Pick'], ['.footer__cta, .hero__ctas .pill--red', 'Say hi'], ['#hero-canvas', 'Reveal']];
+    const heroCard = $('#hero-card');
+    heroCard.addEventListener('pointerenter', () => { label.textContent = ''; cursor.classList.add('is-ring'); });
+    heroCard.addEventListener('pointerleave', () => cursor.classList.remove('is-ring'));
+    $$('.hero__copy a, .hero__rank').forEach((el) => {
+      el.addEventListener('pointerenter', () => cursor.classList.remove('is-ring'));
+      el.addEventListener('pointerleave', () => cursor.classList.add('is-ring'));
+    });
+    const hoverables = [['.spot', 'View'], ['.move-pill', 'Pick'], ['.footer__cta, .hero__ctas .pill--red', 'Say hi']];
     hoverables.forEach(([sel, text]) => $$(sel).forEach((el) => {
       el.addEventListener('pointerenter', () => { label.textContent = text; cursor.classList.add('is-big'); });
       el.addEventListener('pointerleave', () => cursor.classList.remove('is-big'));

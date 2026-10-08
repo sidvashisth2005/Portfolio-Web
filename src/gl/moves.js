@@ -29,7 +29,7 @@ void main(){
   float b = texture2D(uMap, vUv - o).b;
   vec3 col = vec3(r, g, b);
   float edge = smoothstep(0.0, 0.02, vUv.x) * smoothstep(1.0, 0.98, vUv.x) * smoothstep(0.0, 0.03, vUv.y) * smoothstep(1.0, 0.97, vUv.y);
-  col *= 0.85 + uHover * 0.15;
+  col *= 0.92 + uHover * 0.08;
   gl_FragColor = vec4(col, uOpacity * edge);
 }`;
 
@@ -44,19 +44,20 @@ function poster(move, img) {
     const ia = img.width / img.height, ca = W / H;
     let sw = img.width, sh = img.height, sx = 0, sy = 0;
     if (ia > ca) { sw = img.height * ca; sx = (img.width - sw) / 2; } else { sh = img.width / ca; sy = (img.height - sh) / 2; }
-    g.filter = 'grayscale(0.15) contrast(1.08) brightness(0.78)';
+    g.filter = 'contrast(1.06) brightness(0.98) saturate(1.05)';
     g.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
     g.filter = 'none';
   }
   const grad = g.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, 'rgba(6,6,8,0)');
-  grad.addColorStop(0.45, 'rgba(6,6,8,0.15)');
-  grad.addColorStop(1, 'rgba(6,6,8,0.92)');
+  grad.addColorStop(0.5, 'rgba(6,6,8,0.05)');
+  grad.addColorStop(0.72, 'rgba(6,6,8,0.55)');
+  grad.addColorStop(1, 'rgba(6,6,8,0.94)');
   g.fillStyle = grad;
   g.fillRect(0, 0, W, H);
   // crimson speed lines from the right edge
   g.save();
-  g.globalAlpha = 0.18;
+  g.globalAlpha = 0.1;
   g.strokeStyle = '#E0182D';
   g.lineWidth = 3;
   for (let i = 0; i < 26; i++) {
@@ -64,11 +65,14 @@ function poster(move, img) {
     g.beginPath(); g.moveTo(W, H * 0.4); g.lineTo(W * 0.55, y); g.stroke();
   }
   g.restore();
-  g.fillStyle = 'rgba(224,24,45,0.85)';
-  g.font = '520px "Dela Gothic One", sans-serif';
+  g.fillStyle = 'rgba(224,24,45,0.92)';
+  g.shadowColor = 'rgba(0,0,0,0.6)';
+  g.shadowBlur = 40;
+  g.font = '440px "Dela Gothic One", sans-serif';
   g.textAlign = 'right';
   g.textBaseline = 'middle';
-  g.fillText(move.kanji, W - 40, H * 0.42);
+  g.fillText(move.kanji, W - 50, H * 0.36);
+  g.shadowBlur = 0;
   g.textAlign = 'left';
   g.textBaseline = 'alphabetic';
   g.fillStyle = '#FF4A5C';
@@ -149,7 +153,7 @@ export function createMoves(canvas, moves, images) {
         const s = 1 - Math.min(ad, 1.5) * 0.18;
         m.scale.setScalar(s);
         const u = m.material.uniforms;
-        u.uOpacity.value = 1 - smooth(0.25, 0.9, ad);
+        u.uOpacity.value = 1 - smooth(0.12, 0.6, ad);
         u.uBend.value = 0.012 + Math.min(ad, 1.2) * 0.03;
         u.uShift.value = speed * 0.012 * (d > 0 ? 1 : -1) + 0.0015;
         u.uSpeed.value = speed;

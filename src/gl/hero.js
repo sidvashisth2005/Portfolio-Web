@@ -23,15 +23,16 @@ float segDist(vec2 p, vec2 a, vec2 b){
 }
 void main(){
   // soft diffusion so the trail spreads like ink in water
-  float c = texture2D(uPrev, vUv).r * 0.6;
-  c += texture2D(uPrev, vUv + vec2(uTexel.x, 0.0)).r * 0.1;
-  c += texture2D(uPrev, vUv - vec2(uTexel.x, 0.0)).r * 0.1;
-  c += texture2D(uPrev, vUv + vec2(0.0, uTexel.y)).r * 0.1;
-  c += texture2D(uPrev, vUv - vec2(0.0, uTexel.y)).r * 0.1;
+  float c = texture2D(uPrev, vUv).r * 0.88;
+  c += texture2D(uPrev, vUv + vec2(uTexel.x, 0.0)).r * 0.03;
+  c += texture2D(uPrev, vUv - vec2(uTexel.x, 0.0)).r * 0.03;
+  c += texture2D(uPrev, vUv + vec2(0.0, uTexel.y)).r * 0.03;
+  c += texture2D(uPrev, vUv - vec2(0.0, uTexel.y)).r * 0.03;
   c *= uDecay;
   vec2 asp = vec2(uAspect, 1.0);
   float d = segDist(vUv * asp, uPrevMouse * asp, uMouse * asp);
-  float brush = smoothstep(0.11, 0.0, d) * uStrength;
+  // solid core with a short soft edge, so the revealed area is crisp
+  float brush = smoothstep(0.13, 0.095, d) * uStrength;
   gl_FragColor = vec4(max(c, brush), 0.0, 0.0, 1.0);
 }
 `;
@@ -56,7 +57,7 @@ void main(){
   if (iuv.x < 0.0 || iuv.x > 1.0 || iuv.y < 0.0 || iuv.y > 1.0) { gl_FragColor = vec4(0.0); return; }
   vec4 tex = texture2D(uTex, iuv);
   float mask = texture2D(uTrail, vUv).r;
-  mask = smoothstep(0.05, 0.75, mask);
+  mask = smoothstep(0.3, 0.55, mask);
 
   float lum = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
   // halftone dots in the shadows
@@ -66,7 +67,7 @@ void main(){
   vec3 inkDark = vec3(0.05, 0.015, 0.025);
   vec3 crimson = vec3(0.878, 0.094, 0.176);
   vec3 hot = vec3(1.0, 0.55, 0.5);
-  float tone = smoothstep(0.08, 0.75, lum);
+  float tone = smoothstep(0.04, 0.62, lum);
   vec3 ink = mix(inkDark, crimson, tone);
   ink = mix(ink, hot, smoothstep(0.62, 0.95, lum) * 0.7);
   ink = mix(ink, inkDark, ht * 0.55 * (1.0 - tone));
@@ -74,8 +75,8 @@ void main(){
   vec3 colour = tex.rgb * 1.04;
   vec3 col = mix(ink, colour, mask);
   // glowing rim where ink meets colour
-  float rim = smoothstep(0.02, 0.35, mask) * (1.0 - smoothstep(0.35, 0.9, mask));
-  col += crimson * rim * 0.9;
+  float rim = smoothstep(0.0, 0.5, mask) * (1.0 - smoothstep(0.5, 1.0, mask));
+  col += crimson * rim * 1.2;
   // fade the feet into the floor
   float a = tex.a * smoothstep(0.0, 0.12, iuv.y);
   gl_FragColor = vec4(col * a, a);
@@ -98,7 +99,7 @@ export function createHero(canvas, texture, image, { auto = true } = {}) {
     uPrevMouse: { value: new THREE.Vector2(0.5, 0.62) },
     uStrength: { value: 0 },
     uAspect: { value: 1 },
-    uDecay: { value: 0.972 },
+    uDecay: { value: 0.993 },
     uTexel: { value: new THREE.Vector2(1 / size, 1 / size) },
   };
   const trailScene = new THREE.Scene();
@@ -154,10 +155,9 @@ export function createHero(canvas, texture, image, { auto = true } = {}) {
         const a = time * 0.9;
         mouse.set(0.5 + Math.cos(a) * 0.16, 0.6 + Math.sin(a * 1.3) * 0.12);
       }
-      const moved = prev.distanceTo(mouse);
       trailU.uPrevMouse.value.copy(prev);
       trailU.uMouse.value.copy(mouse);
-      trailU.uStrength.value = Math.min(1, moved * 40 + (userActive ? 0.25 : 0.18));
+      trailU.uStrength.value = 1;
       trailU.uPrev.value = rts[ping].texture;
       renderer.setRenderTarget(rts[1 - ping]);
       renderer.render(trailScene, cam);
