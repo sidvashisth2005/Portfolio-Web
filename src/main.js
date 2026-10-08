@@ -9,8 +9,10 @@ import { createHero } from './gl/hero.js';
 import { createOrbit } from './gl/orbit.js';
 import { createMoves } from './gl/moves.js';
 import { createVortex } from './gl/vortex.js';
+import { createDuality } from './gl/duality.js';
 import { rollify, stripReveal, magnetic } from './ui/textfx.js';
 import { initPodcast } from './ui/podcast.js';
+import { createLoader } from './ui/loader.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -111,16 +113,11 @@ async function boot() {
     el.innerHTML = `<span class="first">${t.charAt(0)}</span>${t.slice(1)}`;
   });
 
-  const fill = $('#seal-fill'), pctEl = $('#loader-pct'), leftEl = $('#loader-left');
-  let shown = 0, real = 0;
-  const manager = createManager((p) => { real = p; });
-  const tick = () => {
-    shown += (real - shown) * 0.12;
-    const p = Math.min(shown, 1);
-    fill.style.height = `${p * 100}%`;
-    pctEl.textContent = Math.round(p * 100);
-    leftEl.textContent = Math.max(1, Math.round(6200 * (1 - p))).toLocaleString('en-IN');
-  };
+  const loader = createLoader($('#preloader'));
+  document.fonts.load('900 100px "Big Shoulders Display"').catch(() => {}).then(() => gsap.to('.loader__ui', { autoAlpha: 1, duration: 0.5 }));
+  const manager = createManager((p) => loader.setProgress(p));
+  let entry = 0;
+  const tick = () => { entry = loader.tick(); };
   gsap.ticker.add(tick);
 
   manager.start('fonts');
@@ -145,25 +142,24 @@ async function boot() {
   } else {
     await fontsReady;
   }
-  real = 1;
-  await new Promise((r) => setTimeout(r, reduce ? 0 : 700));
+  loader.setProgress(1);
+  // let the entry ripple finish before the elimination starts
+  await new Promise((r) => { const wait = () => (entry >= 1 ? r() : requestAnimationFrame(wait)); wait(); });
   gsap.ticker.remove(tick);
-  fill.style.height = '100%';
-  pctEl.textContent = '100';
-  leftEl.textContent = '1';
+  // paint the full count before the heavier scene setup runs
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  start(tex);
+  start(tex, loader);
 }
 
 /* ---------------- Start ---------------- */
-function start(tex) {
+function start(tex, loader) {
   // Smooth scroll
   let lenis = null;
   if (!reduce) {
     lenis = new Lenis({ lerp: 0.08, smoothWheel: true, syncTouch: false });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add((t) => lenis.raf(t * 1000));
-    gsap.ticker.lagSmoothing(0);
   }
   window.lenis = lenis;
   const scrollTo = (target, immediate = false) => {
@@ -178,24 +174,28 @@ function start(tex) {
     if (tex.heroTex) gl.hero = createHero($('#hero-canvas'), tex.heroTex, tex.heroTex.image, { auto: !reduce });
     if (tex.orbitTex?.length) gl.orbit = createOrbit($('#orbit-canvas'), tex.orbitTex);
     gl.moves = createMoves($('#moves-canvas'), moves, tex.moveImgs);
+    gl.duality = createDuality($('#duality-canvas'), ['STRATEGIST', 'BUILDER']);
     if (tex.orbitTex?.length) gl.vortex = createVortex($('#vortex-canvas'), tex.orbitTex, tex.polo);
   }
   const podcast = initPodcast();
 
-  // Reveal the page: circle wipe out of the preloader
+  // Reveal: the loader plays its elimination; as its curtain lifts, the hero animates in underneath.
   const pre = $('#preloader');
-  const intro = gsap.timeline({ onComplete: () => { pre.remove(); document.body.classList.remove('is-loading'); ScrollTrigger.refresh(); } });
-  if (reduce) {
-    intro.set(pre, { autoAlpha: 0 });
-  } else {
-    intro.to('.preloader__inner', { scale: 0.9, autoAlpha: 0, duration: 0.45, ease: 'power2.in' })
-      .to(pre, { clipPath: 'circle(0% at 50% 50%)', duration: 0.9, ease: 'expo.inOut' }, '-=0.1')
-      .from('.hero__name span', { yPercent: 110, duration: 1.1, stagger: 0.08, ease: 'expo.out' }, '-=0.45')
-      .from('.hero__copy .label, .hero__lede, .hero__ctas, .hero__rank', { y: 30, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, '-=0.9')
-      .from('.marquee', { autoAlpha: 0, duration: 1.2 }, '-=1')
-      .add(() => gl.hero && gsap.to(gl.hero.uniforms.uReveal, { value: 1, duration: 1.6, ease: 'expo.out' }), '-=1.4');
-    gsap.set(pre, { clipPath: 'circle(150% at 50% 50%)' });
-  }
+  const heroIn = gsap.timeline({ paused: true })
+    .from('.hero__name span', { yPercent: 110, duration: 1.1, stagger: 0.08, ease: 'expo.out' }, 0.25)
+    .from('.hero__copy .label, .hero__lede, .hero__ctas, .hero__rank', { y: 30, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, 0.35)
+    .from('.marquee', { autoAlpha: 0, duration: 1.2 }, 0.2)
+    .add(() => gl.hero && gsap.to(gl.hero.uniforms.uReveal, { value: 1, duration: 1.6, ease: 'expo.out' }), 0);
+  // Compile every scene's shaders now, while the loader still covers the page, so nothing hitches later.
+  Object.values(gl).forEach((m) => { try { m.render?.(0); } catch { /* ignore */ } });
+  const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  nextFrame().then(() => loader.finish(() => { if (!reduce) heroIn.play(); })).then(() => {
+    pre.remove();
+    document.body.classList.remove('is-loading');
+    gsap.ticker.lagSmoothing(0);
+    ScrollTrigger.refresh();
+  });
+  if (reduce) heroIn.progress(1);
   if (reduce && gl.hero) gl.hero.uniforms.uReveal.value = 1;
 
   setupScroll({ gl, scrollTo, lenis });
@@ -204,7 +204,7 @@ function start(tex) {
 
   // Render loop: background always; other scenes only while their section is on screen.
   const views = [
-    ['hero', '#top .hero__sticky'], ['orbit', '#top .hero__sticky'], ['moves', '.moves__sticky'], ['vortex', '.vortex__sticky'],
+    ['hero', '#top .hero__sticky'], ['orbit', '#top .hero__sticky'], ['duality', '.duality__sticky'], ['moves', '.moves__sticky'], ['vortex', '.vortex__sticky'],
   ].map(([k, s]) => [k, $(s)]);
   const onScreen = (el) => { const r = el.getBoundingClientRect(); return r.bottom > -50 && r.top < window.innerHeight + 50; };
   let frames = 0, last = performance.now(), fps = 0;
@@ -212,6 +212,7 @@ function start(tex) {
     gl.bg?.render(time);
     views.forEach(([k, el]) => { if (gl[k] && el && onScreen(el)) gl[k].render(time); });
     if (onScreen($('.onair__sticky'))) podcast.render(time);
+    if (gl.duality && onScreen($('.duality__sticky'))) updateLadders(gl.duality.state);
     frames++;
     const now = performance.now();
     if (now - last > 500) { fps = Math.round((frames * 1000) / (now - last)); frames = 0; last = now; const j = $('#judge'); if (j) j.textContent = `${fps} FPS · ${webgl ? 'WebGL' : 'no WebGL'} · ${mobile ? 'mobile' : 'desktop'} tier`; }
@@ -290,6 +291,39 @@ function setupScroll({ gl, scrollTo }) {
     s.addEventListener('blur', () => closeSpot(s));
     s.addEventListener('click', () => (s.classList.contains('is-active') ? closeSpot(s) : openSpot(s)));
   });
+
+  // TWO SIDES: pinned. The word bends as you arrive, then one deliberate flip from STRATEGIST to BUILDER.
+  const dual = $('#duality-sticky');
+  let dualST = null;
+  const setSide = (b, warped) => {
+    dual.classList.toggle('is-b', b);
+    dual.classList.toggle('show-a', !b && warped);
+    dual.classList.toggle('show-b', b);
+  };
+  if (gl.duality && !reduce) {
+    dualST = ScrollTrigger.create({
+      trigger: '#duality', start: 'top top', end: () => `+=${mobile ? 1800 : 2600}`, pin: true, invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        const p = self.progress;
+        const st = gl.duality.state;
+        st.targetWarp = Math.min(1, p / 0.14);
+        const b = p > 0.52;
+        st.targetCurve = b ? 1 : 0;
+        setSide(b, st.targetWarp > 0.6);
+      },
+      onLeaveBack: () => { gl.duality.state.targetWarp = 0; gl.duality.state.targetCurve = 0; setSide(false, false); },
+    });
+  } else if (gl.duality) {
+    gl.duality.state.targetWarp = 0.75;
+    setSide(false, true);
+    dual.classList.add('show-b');
+  }
+  $$('[data-ladder]').forEach((btn) => btn.addEventListener('click', (e) => {
+    if (!dualST) return;
+    const r = btn.getBoundingClientRect();
+    const toB = (e.clientY - r.top) / r.height >= 0.5;
+    scrollTo(dualST.start + (dualST.end - dualST.start) * (toB ? 0.78 : 0.3));
+  }));
 
   // BATTLE STATS: pinned horizontal run; each card flips from its back, counts up and fills its meter
   const cardsEls = $$('.tcard');
@@ -536,6 +570,23 @@ function setupMisc() {
   });
 
   console.log('%c SV %c Built with Three.js, GSAP, Lenis and custom GLSL. Press J for judge mode. Try the Konami code. ', 'background:#E0182D;color:#fff;font-weight:700;padding:4px 6px', 'color:#E0182D');
+}
+
+/* ---------------- Tick ladders for the Two sides section ---------------- */
+const LADDER_BARS = 36;
+let ladderBars = null;
+function updateLadders(st) {
+  if (!ladderBars) {
+    ladderBars = $$('[data-ladder]').map((el) => {
+      el.innerHTML = '<i></i>'.repeat(LADDER_BARS);
+      return [...el.children];
+    });
+  }
+  const centre = Math.max(0.12, Math.min(0.88, 0.25 + st.curve * 0.5 - st.mouse.y * 0.07)) * (LADDER_BARS - 1);
+  ladderBars.forEach((bars) => bars.forEach((b, i) => {
+    const d = Math.abs(i - centre);
+    b.style.width = `${d <= 1.5 ? 26 : d <= 2.5 ? 22 : d <= 3.5 ? 18 : 14}px`;
+  }));
 }
 
 boot();
