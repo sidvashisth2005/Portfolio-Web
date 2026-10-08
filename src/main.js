@@ -545,7 +545,13 @@ function setupMisc() {
     k = e.key === code[k] || e.key.toLowerCase() === code[k] ? k + 1 : 0;
     if (k === code.length) {
       k = 0;
-      toast('Standing ovation. 6,200 → 1. You found the secret.');
+      toast('Deal with it. 6,200 → 1. You found the secret.');
+      const egg = $('#egg');
+      if (!egg.src) egg.src = 'img/dealwithit.webp';
+      egg.hidden = false;
+      requestAnimationFrame(() => requestAnimationFrame(() => egg.classList.add('is-on')));
+      clearTimeout(egg._t);
+      egg._t = setTimeout(() => egg.classList.remove('is-on'), 3600);
       if (reduce) return;
       for (let i = 0; i < 80; i++) {
         const c = document.createElement('span');
