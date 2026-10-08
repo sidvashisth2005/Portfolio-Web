@@ -37,7 +37,8 @@ export function createVortex(canvas, textures, fallerTex) {
   const fallerGroup = new THREE.Group();
   if (fallerTex) {
     const img = fallerTex.image;
-    const h = 4.6, w = h * (img.width / img.height);
+    const wide = img.width > img.height;
+    const h = wide ? 3.6 : 4.6, w = h * (img.width / img.height);
     const fg = new THREE.PlaneGeometry(w, h);
     const front = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: fallerTex, transparent: true, alphaTest: 0.02, side: THREE.DoubleSide }));
     const echo = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: fallerTex, color: 0xe0182d, transparent: true, opacity: 0.55, alphaTest: 0.02, side: THREE.DoubleSide }));

@@ -114,7 +114,6 @@ async function boot() {
   });
 
   const loader = createLoader($('#preloader'));
-  document.fonts.load('900 100px "Big Shoulders Display"').catch(() => {}).then(() => gsap.to('.loader__ui', { autoAlpha: 1, duration: 0.5 }));
   const manager = createManager((p) => loader.setProgress(p));
   let entry = 0;
   const tick = () => { entry = loader.tick(); };
@@ -131,14 +130,14 @@ async function boot() {
   let tex = {};
   if (webgl) {
     const orbitSrc = gallery.slice(0, mobile ? 10 : 16).map((g) => g.src);
-    const [heroTex, polo, orbitTex, moveImgs] = await Promise.all([
+    const [heroTex, faller, orbitTex, moveImgs] = await Promise.all([
       loadTexture('img/hero-cutout.webp', manager),
-      loadTexture('img/polo-cutout.webp', manager),
+      loadTexture('img/dealwithit.webp', manager),
       Promise.all(orbitSrc.map((s) => loadTexture(s, manager))),
       Promise.all(moves.map((m) => loadImage(m.image, manager))),
       fontsReady,
     ]);
-    tex = { heroTex, polo, orbitTex: orbitTex.filter(Boolean), moveImgs };
+    tex = { heroTex, faller, orbitTex: orbitTex.filter(Boolean), moveImgs };
   } else {
     await fontsReady;
   }
@@ -175,7 +174,7 @@ function start(tex, loader) {
     if (tex.orbitTex?.length) gl.orbit = createOrbit($('#orbit-canvas'), tex.orbitTex);
     gl.moves = createMoves($('#moves-canvas'), moves, tex.moveImgs);
     gl.duality = createDuality($('#duality-canvas'), ['STRATEGIST', 'BUILDER']);
-    if (tex.orbitTex?.length) gl.vortex = createVortex($('#vortex-canvas'), tex.orbitTex, tex.polo);
+    if (tex.orbitTex?.length) gl.vortex = createVortex($('#vortex-canvas'), tex.orbitTex, tex.faller);
   }
   const podcast = initPodcast();
 
@@ -535,6 +534,30 @@ function setupMisc() {
     }));
   }
 
+  // Konami reward: pixel "deal with it" shades drop down the screen
+  const dealWithIt = () => {
+    if (document.querySelector('.shades')) return;
+    const px = [
+      '1111111111111111111111',
+      '1111111111111111111111',
+      '0111111110001111111100',
+      '0110011110001100111100',
+      '0011001100000110011000',
+      '0001111000000011110000',
+    ];
+    const cell = Math.max(6, Math.min(16, Math.round(window.innerWidth / 70)));
+    const rects = px.flatMap((row, y) => [...row].map((c, x) => (c === '1' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : ''))).join('');
+    const el = document.createElement('div');
+    el.className = 'shades';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = `<svg viewBox="0 0 22 6" width="${22 * cell}" height="${6 * cell}" shape-rendering="crispEdges"><g fill="#060608">${rects}</g><g fill="#fff" opacity=".8"><rect x="3" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/></g></svg><span>Deal with it.</span>`;
+    document.body.appendChild(el);
+    gsap.timeline({ onComplete: () => el.remove() })
+      .fromTo(el, { y: -window.innerHeight * 0.6, rotation: -8 }, { y: 0, rotation: 0, duration: 1.1, ease: 'steps(12)' })
+      .fromTo(el.querySelector('span'), { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1, duration: 0.3, ease: 'back.out(3)' })
+      .to(el, { y: window.innerHeight, rotation: 12, duration: 0.7, ease: 'power2.in' }, '+=1.6');
+  };
+
   // Toast helper
   const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.classList.add('is-on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('is-on'), 3200); };
 
@@ -546,12 +569,7 @@ function setupMisc() {
     if (k === code.length) {
       k = 0;
       toast('Deal with it. 6,200 → 1. You found the secret.');
-      const egg = $('#egg');
-      if (!egg.src) egg.src = 'img/dealwithit.webp';
-      egg.hidden = false;
-      requestAnimationFrame(() => requestAnimationFrame(() => egg.classList.add('is-on')));
-      clearTimeout(egg._t);
-      egg._t = setTimeout(() => egg.classList.remove('is-on'), 3600);
+      dealWithIt();
       if (reduce) return;
       for (let i = 0; i < 80; i++) {
         const c = document.createElement('span');

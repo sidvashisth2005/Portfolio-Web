@@ -1,142 +1,135 @@
-// The tournament loader.
-// 1. ENTRY: 6,200 points of light ripple onto the screen from the centre while assets load; the counter climbs to 6,200.
-// 2. ELIMINATION: the field goes dark from the outside in; the counter falls 6,200 → 1.
-// 3. THE ONE: the last point flares crimson, swells to fill the screen, and the curtain lifts.
+// 一閃 (issen, "one flash"). The name rises over a crimson brush stroke of 一 ("one") while a hairline loads.
+// When everything is ready the camera pushes in, a blade of light cuts the screen diagonally,
+// an impact frame flashes, and the two halves slide apart onto the hero.
 import gsap from 'gsap';
 
-const TOTAL = 6200;
-
 export function createLoader(root) {
-  const canvas = root.querySelector('#loader-canvas');
-  const ctx = canvas.getContext('2d');
-  const numEl = root.querySelector('#loader-num');
-  const stateEl = root.querySelector('#loader-state');
-  const pctEl = root.querySelector('#loader-pct');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const halfA = root.querySelector('.pl-half--a');
 
-  let W = 0, H = 0, dpr = 1;
-  let dots = []; // { x, y, d (0..1 distance from centre), r (random), out (elimination time 0..1) }
-  let winner = null;
-  let cell = 8;
+  // split the name into letters, then clone the whole layer for the second half of the cut
+  halfA.querySelectorAll('.pl-name .pl-word').forEach((w) => {
+    const t = w.textContent;
+    w.textContent = '';
+    [...t].forEach((c) => { const s = document.createElement('span'); s.className = 'pl-ch'; s.textContent = c; w.append(s); });
+  });
+  const halfB = halfA.cloneNode(true);
+  halfB.classList.replace('pl-half--a', 'pl-half--b');
+  halfB.setAttribute('aria-hidden', 'true');
+  halfB.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+  halfA.after(halfB);
 
+  const slash = root.querySelector('.pl-slash');
+  const flash = root.querySelector('.pl-flash');
+  const sparks = root.querySelector('.pl-sparks');
+  const sctx = sparks.getContext('2d');
+  const bars = root.querySelectorAll('.pl-bar i');
+  const pcts = root.querySelectorAll('.pl-pct');
+
+  // geometry of the cut: from (0, 62%) to (100%, 38%)
+  let W = 0, H = 0, dpr = 1, angle = 0;
   function layout() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth; H = window.innerHeight;
-    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
-    canvas.style.width = `${W}px`; canvas.style.height = `${H}px`;
-    // choose a grid with ~6,200 cells matching the screen's shape
-    const cols = Math.round(Math.sqrt(TOTAL * (W / H)));
-    const rows = Math.ceil(TOTAL / cols);
-    cell = Math.min(W / cols, H / rows);
-    const ox = (W - cols * cell) / 2 + cell / 2, oy = (H - rows * cell) / 2 + cell / 2;
-    const cx = W / 2, cy = H / 2, maxD = Math.hypot(cx, cy);
-    dots = [];
-    let best = Infinity;
-    for (let i = 0; i < TOTAL; i++) {
-      const c = i % cols, r = Math.floor(i / cols);
-      const x = ox + c * cell, y = oy + r * cell;
-      const d = Math.hypot(x - cx, y - cy) / maxD;
-      const rnd = Math.random();
-      const dot = { x, y, d, r: rnd, out: Math.min(0.97, Math.max(0, (1 - d) * 0.82 + rnd * 0.18)) };
-      dots.push(dot);
-      if (d < best) { best = d; winner = dot; }
-    }
-    winner.out = 2; // never eliminated
-    dots.sort((a, b) => a.out - b.out);
+    W = window.innerWidth; H = window.innerHeight; dpr = Math.min(window.devicePixelRatio || 1, 2);
+    sparks.width = W * dpr; sparks.height = H * dpr;
+    sparks.style.width = `${W}px`; sparks.style.height = `${H}px`;
+    angle = Math.atan2(-0.24 * H, W);
+    gsap.set(slash, { rotation: (angle * 180) / Math.PI });
   }
   layout();
-
-  const s = { entry: 0, elim: 0, flare: 0, swell: 0 };
-  let running = true;
-
-  function draw(time) {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-    const size = Math.max(1.6, cell * 0.28);
-    // entry ripple radius (0..1.15 so the edge feathers in)
-    const reach = s.entry * 1.15;
-    // draw in 6 brightness buckets to keep state changes low
-    const buckets = [[], [], [], [], [], []];
-    for (let i = 0; i < dots.length; i++) {
-      const p = dots[i];
-      if (p === winner) continue;
-      const appear = Math.min(1, Math.max(0, (reach - p.d) / 0.12));
-      if (appear <= 0) continue;
-      const gone = Math.min(1, Math.max(0, (s.elim - p.out) / 0.06));
-      const a = appear * (1 - gone);
-      if (a <= 0.02) continue;
-      const tw = 0.8 + 0.2 * Math.sin(time * 2.4 + p.r * 40);
-      buckets[Math.min(5, Math.floor(a * tw * 6))].push(p);
-    }
-    ctx.fillStyle = '#F4F2EE';
-    for (let b = 0; b < 6; b++) {
-      if (!buckets[b].length) continue;
-      ctx.globalAlpha = 0.22 + b * 0.14;
-      ctx.beginPath();
-      for (const p of buckets[b]) ctx.rect(p.x - size / 2, p.y - size / 2, size, size);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    // the winner
-    if (winner && s.entry > 0.05) {
-      const glow = s.flare;
-      const r = size * (1 + glow * 2.2) + s.swell * Math.hypot(W, H);
-      if (glow > 0) {
-        const g = ctx.createRadialGradient(winner.x, winner.y, 0, winner.x, winner.y, r * 6 + 40);
-        g.addColorStop(0, `rgba(224,24,45,${0.55 * glow})`);
-        g.addColorStop(1, 'rgba(224,24,45,0)');
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, W, H);
-      }
-      ctx.fillStyle = glow > 0.01 ? '#E0182D' : '#F4F2EE';
-      ctx.beginPath();
-      ctx.arc(winner.x, winner.y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  const loop = (time) => { if (running) draw(time); };
-  gsap.ticker.add(loop);
   window.addEventListener('resize', layout);
 
-  // The visible entry follows the real loading progress, but never runs faster than ~1.3s end to end.
-  let real = 0;
+  // intro: letters rise out of blur, the brush paints 一, small type settles
+  const intro = gsap.timeline({ paused: true, defaults: { ease: 'expo.out' } })
+    .fromTo('.pl-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, ease: 'power1.out' }, 0)
+    .fromTo('.pl-ichi', { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'power3.inOut' }, 0.15)
+    .fromTo('.pl-ichi', { scale: 1.08, filter: 'blur(6px)' }, { scale: 1, filter: 'blur(0px)', duration: 1.4 }, 0.15)
+    .fromTo('.pl-drop', { scale: 0, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.5, stagger: 0.06, ease: 'back.out(3)' }, 1.0)
+    .fromTo('.pl-ch', { yPercent: 115, rotate: 8, filter: 'blur(10px)' }, { yPercent: 0, rotate: 0, filter: 'blur(0px)', duration: 1.1, stagger: 0.035 }, 0.35)
+    .fromTo(['.pl-top', '.pl-sub', '.pl-bottom'], { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8, stagger: 0.08 }, 0.7);
+
+  const begin = () => (reduce ? intro.progress(1) : intro.play());
+  if (document.fonts) document.fonts.load('900 100px "Big Shoulders Display"').catch(() => {}).then(begin);
+  else begin();
+
+  // hairline follows the real progress, never faster than ~1.8s end to end
+  let real = 0, shown = 0;
   const t0 = performance.now();
-  const fmt = (n) => n.toLocaleString('en-IN');
+  const setBar = (p) => {
+    bars.forEach((b) => (b.style.transform = `scaleX(${p})`));
+    pcts.forEach((e) => (e.textContent = String(Math.round(p * 100)).padStart(3, '0')));
+  };
+
+  // sparks thrown off the blade
+  let parts = [];
+  function burst() {
+    const cx = W / 2, cy = H / 2;
+    const dx = Math.cos(angle), dy = Math.sin(angle);
+    for (let i = 0; i < 160; i++) {
+      const t = (Math.random() - 0.5) * Math.hypot(W, H) * 0.9;
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const sp = 4 + Math.random() * 14;
+      parts.push({
+        x: cx + dx * t, y: cy + dy * t,
+        vx: dx * (Math.random() - 0.3) * 10 - dy * side * sp, vy: dy * (Math.random() - 0.3) * 10 + dx * side * sp,
+        life: 1, decay: 0.012 + Math.random() * 0.025,
+        c: i % 5 === 0 ? '255,214,10' : i % 3 === 0 ? '255,255,255' : '255,74,92',
+      });
+    }
+  }
+  function drawSparks() {
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sctx.clearRect(0, 0, W, H);
+    parts = parts.filter((p) => p.life > 0);
+    for (const p of parts) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.vx *= 0.97; p.vy *= 0.97; p.life -= p.decay;
+      sctx.strokeStyle = `rgba(${p.c},${Math.max(0, p.life)})`;
+      sctx.lineWidth = 2;
+      sctx.beginPath(); sctx.moveTo(p.x, p.y); sctx.lineTo(p.x - p.vx * 2.2, p.y - p.vy * 2.2); sctx.stroke();
+    }
+  }
 
   return {
     setProgress(p) { real = Math.max(real, Math.min(1, p)); },
     tick() {
-      const cap = reduce ? 1 : Math.min(1, (performance.now() - t0) / 1300);
+      const cap = reduce ? 1 : Math.min(1, (performance.now() - t0) / 1800);
       const target = Math.min(real, cap);
-      s.entry += (target - s.entry) * 0.12;
-      if (target >= 1 && s.entry > 0.995) s.entry = 1;
-      numEl.textContent = fmt(Math.round(TOTAL * s.entry));
-      pctEl.textContent = `${String(Math.round(s.entry * 100)).padStart(3, '0')}%`;
-      return s.entry;
+      shown += (target - shown) * 0.1;
+      if (target >= 1 && shown > 0.996) shown = 1;
+      setBar(shown);
+      return shown;
     },
     finish(onLift) {
       return new Promise((resolve) => {
-        stateEl.textContent = 'Still standing';
-        const counter = { v: TOTAL };
-        const tl = gsap.timeline({
-          onComplete: () => { running = false; gsap.ticker.remove(loop); window.removeEventListener('resize', layout); resolve(); },
-        });
+        const done = () => { gsap.ticker.remove(drawSparks); window.removeEventListener('resize', layout); resolve(); };
+        setBar(1);
         if (reduce) {
-          numEl.textContent = '1';
-          tl.add(() => onLift?.()).to(root, { autoAlpha: 0, duration: 0.3 });
+          gsap.timeline({ onComplete: done }).add(() => onLift?.()).to(root, { autoAlpha: 0, duration: 0.4 });
           return;
         }
-        tl.to(s, { entry: 1, duration: 0.2, ease: 'power1.out' })
-          .to(s, { elim: 1, duration: 1.5, ease: 'power2.inOut' }, '+=0.15')
-          .to(counter, { v: 1, duration: 1.5, ease: 'power2.inOut', onUpdate: () => { numEl.textContent = fmt(Math.max(1, Math.round(counter.v))); } }, '<')
-          .add(() => { stateEl.textContent = 'Rank 1 · HackNITR 7.0'; root.classList.add('is-one'); })
-          .to(s, { flare: 1, duration: 0.5, ease: 'expo.out' })
-          .to('.loader__ui', { autoAlpha: 0, y: -12, duration: 0.35, ease: 'power2.in' }, '+=0.25')
-          .to(s, { swell: 1, duration: 0.9, ease: 'expo.in' }, '<')
-          .set(root, { backgroundColor: '#E0182D' })
+        gsap.ticker.add(drawSparks);
+        const cutA = 'polygon(0% 0%, 100% 0%, 100% 38%, 0% 62%)';
+        const cutB = 'polygon(0% 62%, 100% 38%, 100% 100%, 0% 100%)';
+        gsap.timeline({ onComplete: done })
+          .to(intro, { progress: 1, duration: 0.3 })
+          // the breath before the cut: camera pushes in, the stroke glows
+          .to('.pl-content', { scale: 1.045, duration: 0.7, ease: 'power2.in' })
+          .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255,74,92,.9))', duration: 0.7, ease: 'power2.in' }, '<')
+          .to(['.pl-top', '.pl-bottom', '.pl-sub'], { autoAlpha: 0, duration: 0.35 }, '<0.3')
+          // the cut
+          .set('.pl-half--a', { clipPath: cutA })
+          .set('.pl-half--b', { clipPath: cutB })
+          .fromTo(slash, { scaleX: 0, autoAlpha: 1 }, { scaleX: 1, duration: 0.16, ease: 'expo.out' })
+          .add(burst, '<0.04')
+          // impact frame: white, then inverted, then back
+          .set(flash, { autoAlpha: 1, backgroundColor: '#fff', mixBlendMode: 'normal' }, '<0.08')
+          .set(flash, { mixBlendMode: 'difference' }, '+=0.05')
+          .set(flash, { autoAlpha: 0 }, '+=0.06')
+          // halves slide apart along the cut
+          .set(root, { backgroundColor: 'transparent' })
           .add(() => onLift?.())
-          .to(root, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.95, ease: 'expo.inOut' });
+          .to('.pl-half--a', { x: () => -W * 0.06, y: () => -H * 0.75, rotation: -3, duration: 1.15, ease: 'expo.inOut' }, '+=0.05')
+          .to('.pl-half--b', { x: () => W * 0.06, y: () => H * 0.75, rotation: 3, duration: 1.15, ease: 'expo.inOut' }, '<')
+          .to(slash, { autoAlpha: 0, scaleY: 6, duration: 0.5, ease: 'power2.out' }, '<');
       });
     },
   };

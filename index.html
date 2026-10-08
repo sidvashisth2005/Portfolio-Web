@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Schibsted+Grotesk:wght@400;500;700&family=Azeret+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A%E4%BA%8C%E9%9D%A2" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A%E4%BA%8C%E9%9D%A2%E4%B8%80%E9%96%83" />
   <link rel="preload" as="image" href="img/hero-cutout.webp" />
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"Person","name":"Siddhant Vashisth","jobTitle":"Business strategist and builder","alumniOf":"Jaypee University of Engineering and Technology","email":"mailto:siddhantvashisth05@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Guna","addressRegion":"Madhya Pradesh","addressCountry":"IN"},"sameAs":["https://www.linkedin.com/in/siddhant-vashisth-04887b29b/","https://github.com/sidvashisth2005"],"award":"Rank 1, HackNITR 7.0"}
@@ -29,22 +29,50 @@
 <body class="is-loading">
   <a class="skip" href="#main">Skip to content</a>
 
-  <!-- Preloader: 6,200 points of light, eliminated down to one -->
+  <!-- Preloader: 一閃, one flash. A brush stroke of 一 ("one"), then a blade cut that splits the screen. -->
   <div class="preloader" id="preloader" role="status" aria-label="Loading the site">
-    <canvas id="loader-canvas" aria-hidden="true"></canvas>
-    <div class="loader__ui">
-      <div class="loader__row">
-        <span class="loader__brand"><span class="seal seal--sm"><span>SV</span></span><span class="label">Siddhant Vashisth</span></span>
-        <span class="label muted">Loading the arc · <span id="loader-pct">000%</span></span>
-      </div>
-      <div class="loader__row loader__row--end">
-        <div class="loader__count">
-          <span class="label label--red loader__state" id="loader-state">Entered</span>
-          <span class="loader__num" id="loader-num">0</span>
+    <div class="pl-half pl-half--a">
+      <div class="pl-content">
+        <div class="pl-top">
+          <span class="pl-brand"><span class="seal seal--sm"><span>SV</span></span><span class="label">Siddhant Vashisth</span></span>
+          <span class="label muted">Portfolio · 2026</span>
         </div>
-        <span class="label muted loader__meta">HackNITR 7.0<br />20+ countries · 1 winner</span>
+        <div class="pl-stage">
+          <svg class="pl-ichi" viewBox="0 0 1000 300" aria-hidden="true">
+            <defs>
+              <filter id="pl-ink" x="-5%" y="-30%" width="110%" height="160%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.012 0.09" numOctaves="3" seed="7" result="n" />
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" />
+              </filter>
+              <linearGradient id="pl-ink-g" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#ff4a5c" />
+                <stop offset=".55" stop-color="#e0182d" />
+                <stop offset="1" stop-color="#8e0e1c" />
+              </linearGradient>
+            </defs>
+            <g filter="url(#pl-ink)">
+              <path fill="url(#pl-ink-g)" d="M58,170 C64,118 138,108 232,124 C420,150 642,132 832,116 C884,111 934,118 954,140 C967,154 955,176 922,180 C760,198 520,186 300,192 C200,195 112,210 72,200 C48,193 50,182 58,170 Z" />
+              <path fill="#e0182d" opacity=".55" d="M300,196 C470,200 640,196 820,186 C700,206 480,214 300,206 Z" />
+              <path fill="#ff4a5c" opacity=".35" d="M250,128 C420,140 600,130 780,118 C620,126 430,136 250,136 Z" />
+            </g>
+            <circle class="pl-drop" cx="968" cy="112" r="9" fill="#e0182d" />
+            <circle class="pl-drop" cx="985" cy="140" r="4" fill="#e0182d" />
+            <circle class="pl-drop" cx="40" cy="210" r="5" fill="#e0182d" />
+          </svg>
+          <p class="pl-kanji" aria-hidden="true">一閃</p>
+          <h2 class="pl-name"><span class="pl-word">Siddhant</span> <span class="pl-word">Vashisth</span></h2>
+          <p class="pl-sub label">Strategist who builds · Rank 1 of 6,200</p>
+        </div>
+        <div class="pl-bottom">
+          <span class="label muted">Loading the arc</span>
+          <span class="pl-bar"><i></i></span>
+          <span class="label pl-pct">000</span>
+        </div>
       </div>
     </div>
+    <div class="pl-slash" aria-hidden="true"></div>
+    <canvas class="pl-sparks" aria-hidden="true"></canvas>
+    <div class="pl-flash" aria-hidden="true"></div>
   </div>
 
   <!-- Fixed WebGL background: topographic contours + silk ribbons -->
@@ -226,8 +254,8 @@
           <path d="M-100,520 C350,320 750,770 1540,470" stroke="rgba(244,242,238,.14)" stroke-width="1.4" stroke-dasharray="4 4" />
           <ellipse cx="720" cy="470" rx="560" ry="380" stroke="rgba(244,242,238,.1)" stroke-width="1.4" />
         </svg>
-        <img class="onair__corner onair__corner--l" id="corner-l" src="img/drape-cutout.webp" alt="" aria-hidden="true" loading="lazy" />
-        <img class="onair__corner onair__corner--r" id="corner-r" src="img/formal-cutout.webp" alt="" aria-hidden="true" loading="lazy" />
+        <img class="onair__corner onair__corner--l" id="corner-l" src="img/drape-cutout.webp" alt="" aria-hidden="true" />
+        <img class="onair__corner onair__corner--r" id="corner-r" src="img/formal-cutout.webp" alt="" aria-hidden="true" />
         <h2 class="onair__title h2 h2--xl" id="onair-h">Tune in to<br /><span class="red">the podcast</span></h2>
         <div class="player" id="player">
           <div class="player__top">
@@ -284,7 +312,7 @@
           <p class="muted">+91 88715 92579</p>
         </nav>
       </div>
-      <img class="footer__char" id="footer-char" src="img/plaid-cutout.webp" alt="Siddhant Vashisth in a blue plaid shirt, smiling" loading="lazy" />
+      <img class="footer__char" id="footer-char" src="img/polo-cutout.webp" alt="Siddhant Vashisth in a red polo, smiling" />
       <a class="pill pill--red pill--lg footer__cta magnetic" href="mailto:siddhantvashisth05@gmail.com">Hire me ↗</a>
     </div>
     <div class="footer__bar">
@@ -302,7 +330,6 @@
   <div class="transition" id="transition" aria-hidden="true"></div>
   <div class="cursor" id="cursor" aria-hidden="true"><span id="cursor-label"></span></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <img class="egg" id="egg" alt="Siddhant wearing pixel sunglasses" hidden />
 
   <script type="module" src="/src/main.js"></script>
 </body>
