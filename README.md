@@ -64,6 +64,12 @@ How the WebGL-heavy page stays fast:
 - **Lean bytes.** Fonts are self-hosted and subset; only the display font is preloaded. Phones get a lighter hero
   image, GL textures use 560 px copies (`img/gallery/gl/`), and below-the-fold images load after first paint.
 
+## Type scale
+
+All text uses nine size roles defined as CSS variables in `src/styles.css` (`--fs-display`, `--fs-h2`,
+`--fs-stat`, `--fs-h3`, `--fs-lead`, `--fs-body`, `--fs-label`, `--fs-meta`, plus decorative background type).
+Use a role instead of a new pixel size. Nothing goes below 13 px on desktop or 12 px on phones.
+
 ## Edit content
 
 - **Text, projects, stats, experience, awards, podcast episodes:** `src/data.js`
