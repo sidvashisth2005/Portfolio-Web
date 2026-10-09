@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeRenderer, isMobile } from './utils.js';
+import { makeRenderer, isMobile, adopt, compileAsync } from './utils.js';
 
 // "Two sides" type warp. One word mesh is drawn in clip space and bent through three shapes:
 //   flat  → the word lies flat on the page
@@ -104,7 +104,7 @@ function wordTexture(word) {
   return { tex, bounds, aspect: (m.width + pad * 2) / (asc + desc + pad * 2) };
 }
 
-export function createDuality(canvas, words = ['STRATEGIST', 'BUILDER']) {
+export function createDuality(canvas, words = ['STRATEGIST', 'BUILDER'], shared) {
   const renderer = makeRenderer(canvas, { alpha: true, antialias: true });
   const scene = new THREE.Scene();
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -123,7 +123,7 @@ export function createDuality(canvas, words = ['STRATEGIST', 'BUILDER']) {
   const mat = new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, transparent: true, depthTest: false });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2, 220, 32), mat));
 
-  const state = { warp: 0, curve: 0, targetWarp: 0, targetCurve: 0, mouse: new THREE.Vector2(), targetMouse: new THREE.Vector2() };
+  const state = adopt(shared, { warp: 0, curve: 0, targetWarp: 0, targetCurve: 0, mouse: new THREE.Vector2(), targetMouse: new THREE.Vector2() });
   canvas.parentElement.addEventListener('pointermove', (e) => {
     const r = canvas.getBoundingClientRect();
     state.targetMouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
@@ -142,6 +142,7 @@ export function createDuality(canvas, words = ['STRATEGIST', 'BUILDER']) {
   let last = performance.now();
   return {
     state,
+    compile: () => compileAsync(renderer, scene, cam),
     render() {
       const now = performance.now();
       const dt = Math.min((now - last) / 1000, 0.1);

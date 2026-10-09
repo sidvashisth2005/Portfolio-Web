@@ -17,11 +17,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <style>html,body{background:#060608;margin:0}</style>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;600&display=swap" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap&text=%E4%BD%9C%E3%82%8B%E6%88%A6%E7%95%A5%E5%AE%B6%E5%BF%85%E6%AE%BA%E6%8A%80%E8%BE%B2%E6%8B%A1%E6%97%85%E5%95%86%E4%BF%AE%E8%A1%8C%E7%B7%A8%E6%A0%84%E5%85%89%E5%9B%9E%E6%83%B3%E6%94%BE%E9%80%81%E3%81%A4%E3%81%A5%E3%81%8F%E9%96%8B%E5%B9%95%E5%A4%A7%E4%BC%9A%E6%95%B0%E5%AD%97SV%E7%B8%BE%E5%8B%9D%E5%89%8A%E6%88%90%E5%AE%A2%E7%B2%BE%E9%9A%8A%E4%BA%8C%E9%9D%A2%E4%B8%80%E9%96%83%E4%B8%BB%E5%BD%B1%E5%88%86%E8%BA%AB%E5%B7%BB%E7%89%A9%E9%97%98%E5%8A%9B%E4%B8%AD%E3%82%B9%E3%82%AB%E3%82%A6%E3%82%BF%E3%83%BC%E5%A3%B1%E5%BC%90%E5%8F%82" />
-  <link rel="preload" as="image" href="img/hero-cutout.webp" />
+  <link rel="preload" href="fonts/big-shoulders-display-latin-832b15.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" as="image" href="img/hero-ink-m.webp" media="(max-width: 760px)" fetchpriority="high" />
+  <link rel="preload" as="image" href="img/hero-ink.webp" media="(min-width: 761px)" fetchpriority="high" />
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"Person","name":"Siddhant Vashisth","jobTitle":"Business strategist and builder","alumniOf":"Jaypee University of Engineering and Technology","email":"mailto:siddhantvashisth05@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Guna","addressRegion":"Madhya Pradesh","addressCountry":"IN"},"sameAs":["https://www.linkedin.com/in/siddhant-vashisth-04887b29b/","https://github.com/sidvashisth2005"],"award":"Rank 1, HackNITR 7.0"}
   </script>
@@ -55,12 +53,13 @@
               <path fill="#e0182d" opacity=".55" d="M300,196 C470,200 640,196 820,186 C700,206 480,214 300,206 Z" />
               <path fill="#ff4a5c" opacity=".35" d="M250,128 C420,140 600,130 780,118 C620,126 430,136 250,136 Z" />
             </g>
-            <circle class="pl-drop" cx="968" cy="112" r="9" fill="#e0182d" />
-            <circle class="pl-drop" cx="985" cy="140" r="4" fill="#e0182d" />
-            <circle class="pl-drop" cx="40" cy="210" r="5" fill="#e0182d" />
+            <circle class="pl-drop" style="--i:0" cx="968" cy="112" r="9" fill="#e0182d" />
+            <circle class="pl-drop" style="--i:1" cx="985" cy="140" r="4" fill="#e0182d" />
+            <circle class="pl-drop" style="--i:2" cx="40" cy="210" r="5" fill="#e0182d" />
           </svg>
+          <span class="pl-wipe" aria-hidden="true"></span>
           <p class="pl-kanji" aria-hidden="true">一閃</p>
-          <h2 class="pl-name"><span class="pl-word">Siddhant</span> <span class="pl-word">Vashisth</span></h2>
+          <h2 class="pl-name" aria-label="Siddhant Vashisth"><span class="pl-word" aria-hidden="true"><span class="pl-ch" style="--i:0">S</span><span class="pl-ch" style="--i:1">i</span><span class="pl-ch" style="--i:2">d</span><span class="pl-ch" style="--i:3">d</span><span class="pl-ch" style="--i:4">h</span><span class="pl-ch" style="--i:5">a</span><span class="pl-ch" style="--i:6">n</span><span class="pl-ch" style="--i:7">t</span></span> <span class="pl-word" aria-hidden="true"><span class="pl-ch" style="--i:8">V</span><span class="pl-ch" style="--i:9">a</span><span class="pl-ch" style="--i:10">s</span><span class="pl-ch" style="--i:11">h</span><span class="pl-ch" style="--i:12">i</span><span class="pl-ch" style="--i:13">s</span><span class="pl-ch" style="--i:14">t</span><span class="pl-ch" style="--i:15">h</span></span></h2>
           <p class="pl-sub label">Strategist who builds · Rank 1 of 6,200</p>
         </div>
         <div class="pl-bottom">
@@ -85,7 +84,7 @@
       <span class="brand__name" aria-hidden="true"><b>Siddhant Vashisth</b><small>Strategist · Builder</small></span>
     </a>
     <div class="header__right">
-      <button class="clone-fab" id="clone-fab" type="button" aria-haspopup="dialog" aria-controls="clone" data-cursor="Summon">
+      <button class="clone-fab" id="clone-fab" type="button" aria-haspopup="dialog" aria-controls="clone" aria-label="Ask my AI clone" data-cursor="Summon">
         <span class="clone-fab__kj" aria-hidden="true">影</span><span class="clone-fab__txt">Ask my clone</span>
       </button>
       <a href="resume.pdf" class="pill pill--red header__resume" download>Résumé ↓</a>
@@ -118,6 +117,7 @@
 
   <main id="main">
     <!-- 01 · HERO + ARC: pinned. Card zooms out, world inverts to crimson, photos orbit. -->
+    <div class="pin-spacer" id="sp-top">
     <section class="hero" id="top" aria-label="Introduction">
       <div class="hero__sticky">
         <div class="hero__card" id="hero-card">
@@ -126,7 +126,7 @@
             <div class="marquee__track marquee__track--fill marquee__track--rev"><span>Rank 1 of 6,200 ✦ HackNITR 7.0 ✦ Rank 1 of 6,200 ✦ HackNITR 7.0 ✦&nbsp;</span><span>Rank 1 of 6,200 ✦ HackNITR 7.0 ✦ Rank 1 of 6,200 ✦ HackNITR 7.0 ✦&nbsp;</span></div>
           </div>
           <canvas id="hero-canvas" aria-hidden="true"></canvas>
-          <img class="hero__fallback" src="img/hero-cutout.webp" alt="Siddhant Vashisth" width="822" height="990" />
+          <picture><source media="(max-width: 760px)" srcset="img/hero-ink-m.webp" width="566" height="682" /><img class="hero__fallback" src="img/hero-ink.webp" alt="Siddhant Vashisth" width="822" height="990" fetchpriority="high" decoding="async" /></picture>
           <div class="hero__copy">
             <p class="label label--red">B.Tech CSE · JUET Guna · Class of 2027</p>
             <h1 class="hero__name"><span>Siddhant</span><span>Vashisth</span></h1>
@@ -152,6 +152,7 @@
         <canvas id="orbit-canvas" aria-hidden="true"></canvas>
       </div>
     </section>
+    </div>
 
     <!-- 02 · ABOUT: spotlight headline + swinging lanyard badges -->
     <section class="about" id="about" aria-labelledby="about-h">
@@ -167,15 +168,16 @@
       </div>
       <h2 class="spot-head" id="about-h">
         <span class="line"><span class="w">I</span> <span class="w">turn</span> <span class="w">raw</span></span>
-        <span class="line"><span class="w">market</span> <button class="spot" type="button" aria-label="Show photo: pitching at the podium"><span class="spot__card"><img src="img/gallery/09.webp" alt="" loading="lazy" /></span></button> <span class="w red">signal</span></span>
-        <span class="line"><span class="w">into</span> <span class="w red">products</span> <button class="spot" type="button" aria-label="Show photo: the HackNITR winning team"><span class="spot__card"><img src="img/gallery/04.webp" alt="" loading="lazy" /></span></button></span>
+        <span class="line"><span class="w">market</span> <button class="spot" type="button" aria-label="Show photo: pitching at the podium"><span class="spot__card"><img data-src="img/gallery/09.webp" alt="" /></span></button> <span class="w red">signal</span></span>
+        <span class="line"><span class="w">into</span> <span class="w red">products</span> <button class="spot" type="button" aria-label="Show photo: the HackNITR winning team"><span class="spot__card"><img data-src="img/gallery/04.webp" alt="" /></span></button></span>
         <span class="line"><span class="w">and</span> <span class="w red">pitches</span> <span class="w">that</span></span>
-        <span class="line"><span class="w">win</span> <button class="spot" type="button" aria-label="Show photo: HACKSAGON final round"><span class="spot__card"><img src="img/gallery/13.webp" alt="" loading="lazy" /></span></button> <span class="w">rooms.</span></span>
+        <span class="line"><span class="w">win</span> <button class="spot" type="button" aria-label="Show photo: HACKSAGON final round"><span class="spot__card"><img data-src="img/gallery/13.webp" alt="" /></span></button> <span class="w">rooms.</span></span>
       </h2>
       <p class="about__lede">3rd-year B.Tech CSE at JUET Guna. Sole pitcher on six-plus hackathon stages, Team Lead of three 15–18 person teams at 19, and host of a podcast about all of it. <span class="muted">Tap the red squares.</span></p>
     </section>
 
     <!-- 02b · TWO SIDES: perspective-warped type flips from STRATEGIST to BUILDER -->
+    <div class="pin-spacer" id="sp-duality">
     <section class="duality" id="duality" aria-labelledby="duality-h">
       <div class="duality__sticky" id="duality-sticky">
         <canvas id="duality-canvas" aria-hidden="true"></canvas>
@@ -189,9 +191,11 @@
         <p class="label duality__hint">Scroll to flip · move to look around</p>
       </div>
     </section>
+    </div>
 
     <!-- 03 · BATTLE STATS: pinned horizontal run of collectible cards that flip, count and shine -->
-    <section class="stats" id="numbers" aria-labelledby="numbers-h">
+    <div class="pin-spacer" id="sp-numbers">
+    <section class="stats" id="numbers" aria-labelledby="numbers-h" data-live>
       <div class="stats__sticky">
         <div class="stats__bgtype" aria-hidden="true"><span id="stats-bgtype">Battle stats ✦ 戦績 ✦ Battle stats ✦ 戦績 ✦ Battle stats ✦ 戦績 ✦</span></div>
         <header class="stats__head">
@@ -203,8 +207,10 @@
         <p class="stats__count label" aria-hidden="true">Card <span id="stats-idx">01</span> / 07</p>
       </div>
     </section>
+    </div>
 
     <!-- 04 · SPECIAL MOVES: pinned 3D showcase -->
+    <div class="pin-spacer" id="sp-moves">
     <section class="moves" id="moves" aria-labelledby="moves-h">
       <div class="moves__sticky">
         <canvas id="moves-canvas" aria-hidden="true"></canvas>
@@ -218,11 +224,13 @@
         <p class="moves__count label" id="moves-count" aria-hidden="true">01 / 04</p>
       </div>
     </section>
+    </div>
 
     <!-- 05 · TRAINING + TROPHIES -->
     <section class="training" id="training" aria-labelledby="training-h">
       <!-- Level-up screen: pinned, each internship is a stage -->
-      <div class="lvl" id="lvl">
+      <div class="pin-spacer" id="sp-lvl">
+      <div class="lvl" id="lvl" data-live>
         <div class="lvl__sticky">
           <div class="lvl__rays" aria-hidden="true"></div>
           <span class="lvl__kanji" id="lvl-kanji" aria-hidden="true">壱</span>
@@ -240,6 +248,7 @@
           <ol class="lvl__track" id="lvl-track" aria-label="Stages"></ol>
         </div>
       </div>
+      </div>
       <div class="wrap training__wrap">
         <div class="training__col">
           <p class="label label--red">栄光 · Trophy room</p>
@@ -251,7 +260,7 @@
           <h2 class="h2">Off the clock</h2>
           <ul class="quests" id="leadership"></ul>
           <p class="edu"><strong>B.Tech, Computer Science and Engineering</strong><br />Jaypee University of Engineering and Technology, Guna · 2023–2027 · CGPA 7.5<br /><span class="muted">Certifications: Machine Learning (Skill Dzire), Flutter Development (Trustique), Google Cloud Platform</span></p>
-          <div class="ghfeed" id="ghfeed" hidden>
+          <div class="ghfeed" id="ghfeed" hidden data-live>
             <p class="label label--red"><i class="live-dot" aria-hidden="true"></i>修行中 · Live from GitHub</p>
             <ul class="ghfeed__list" id="ghfeed-list"></ul>
             <a class="roll ghfeed__all" data-roll id="ghfeed-all" href="https://github.com/sidvashisth2005" target="_blank" rel="noopener">All repos ↗</a>
@@ -261,6 +270,7 @@
     </section>
 
     <!-- 06 · FLASHBACKS: 3D spiral vortex + falling cutout -->
+    <div class="pin-spacer" id="sp-flashbacks">
     <section class="vortex" id="flashbacks" aria-labelledby="vortex-h">
       <div class="vortex__sticky">
         <canvas id="vortex-canvas" aria-hidden="true"></canvas>
@@ -273,9 +283,11 @@
         <div class="vortex__fallback" id="vortex-fallback"></div>
       </div>
     </section>
+    </div>
 
     <!-- 07 · ON AIR: corner cutouts slide in, card expands into the player -->
-    <section class="onair" id="onair" aria-labelledby="onair-h">
+    <div class="pin-spacer" id="sp-onair">
+    <section class="onair" id="onair" aria-labelledby="onair-h" data-live>
       <div class="onair__sticky">
         <svg class="onair__lines" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" aria-hidden="true">
           <path d="M-100,200 C300,50 600,450 1540,150" stroke="rgba(244,242,238,.16)" stroke-width="1.6" stroke-dasharray="6 6" />
@@ -283,8 +295,8 @@
           <path d="M-100,520 C350,320 750,770 1540,470" stroke="rgba(244,242,238,.14)" stroke-width="1.4" stroke-dasharray="4 4" />
           <ellipse cx="720" cy="470" rx="560" ry="380" stroke="rgba(244,242,238,.1)" stroke-width="1.4" />
         </svg>
-        <img class="onair__corner onair__corner--l" id="corner-l" src="img/drape-cutout.webp" alt="" aria-hidden="true" />
-        <img class="onair__corner onair__corner--r" id="corner-r" src="img/formal-cutout.webp" alt="" aria-hidden="true" />
+        <img class="onair__corner onair__corner--l" id="corner-l" data-src="img/drape-cutout.webp" alt="" aria-hidden="true" />
+        <img class="onair__corner onair__corner--r" id="corner-r" data-src="img/formal-cutout.webp" alt="" aria-hidden="true" />
         <h2 class="onair__title h2 h2--xl" id="onair-h">Tune in to<br /><span class="red">the podcast</span></h2>
         <div class="player" id="player">
           <div class="player__top">
@@ -304,10 +316,11 @@
         <p class="onair__hint label muted" aria-hidden="true">Scroll below ↓</p>
       </div>
     </section>
+    </div>
   </main>
 
   <!-- 08 · FOOTER: notched card -->
-  <footer class="footer" id="contact">
+  <footer class="footer" id="contact" data-live>
     <div class="footer__card" id="footer-card">
       <svg class="footer__shape" viewBox="0 0 1688 896" preserveAspectRatio="none" fill="none" aria-hidden="true">
         <defs>
@@ -341,7 +354,7 @@
           <p class="muted">+91 88715 92579</p>
         </nav>
       </div>
-      <img class="footer__char" id="footer-char" src="img/polo-cutout.webp" alt="Siddhant Vashisth in a red polo, smiling" />
+      <img class="footer__char" id="footer-char" data-src="img/polo-cutout.webp" alt="Siddhant Vashisth in a red polo, smiling" />
       <a class="pill pill--red pill--lg footer__cta magnetic" href="mailto:siddhantvashisth05@gmail.com" data-scroll-open>Hire me ↗</a>
     </div>
     <div class="footer__bar">
@@ -366,7 +379,7 @@
     <div class="dlg__scrim" data-close></div>
     <div class="dlg__box clone__box">
       <header class="clone__head">
-        <span class="clone__face" aria-hidden="true"><img src="img/hero-cutout.webp" alt="" /></span>
+        <span class="clone__face" aria-hidden="true"><img data-src="img/hero-cutout.webp" alt="" /></span>
         <div class="clone__who">
           <p class="label label--red">影分身 · Shadow clone</p>
           <h2 id="clone-title">Siddhant <small>AI</small></h2>
@@ -440,6 +453,6 @@
   <div class="cursor" id="cursor" aria-hidden="true"><div class="cursor__frame"><i></i><span id="cursor-label"></span></div><div class="cursor__dot"><i></i></div></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/entry.js"></script>
 </body>
 </html>

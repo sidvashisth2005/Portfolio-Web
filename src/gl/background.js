@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeRenderer, isMobile } from './utils.js';
+import { makeRenderer, isMobile, compileAsync } from './utils.js';
 
 // Fixed full-screen layer: drifting topographic contours plus a bundle of glowing silk ribbons.
 // uInvert flips the world from ink-black to crimson during the hero zoom-out.
@@ -73,7 +73,7 @@ void main(){
 }
 `;
 
-export function createBackground(canvas) {
+export function createBackground(canvas, invert) {
   const scale = isMobile() ? 0.5 : 0.65;
   const renderer = makeRenderer(canvas, { alpha: false, antialias: false, pixelRatio: Math.min(window.devicePixelRatio, 2) * scale });
   const scene = new THREE.Scene();
@@ -82,7 +82,7 @@ export function createBackground(canvas) {
     uRes: { value: new THREE.Vector2() },
     uTime: { value: 0 },
     uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-    uInvert: { value: 0 },
+    uInvert: invert || { value: 0 },
     uRibbons: { value: 1 },
   };
   const mat = new THREE.ShaderMaterial({
@@ -106,6 +106,7 @@ export function createBackground(canvas) {
 
   return {
     uniforms,
+    compile: () => compileAsync(renderer, scene, camera),
     render(time) {
       uniforms.uTime.value = time;
       uniforms.uMouse.value.lerp(target, 0.04);

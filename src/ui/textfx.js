@@ -3,8 +3,11 @@ import gsap from 'gsap';
 // Letter roll: every character is stacked twice; hovering slides the stack up one line.
 export function rollify(el, step = 22) {
   const text = el.textContent.trim();
-  el.setAttribute('aria-label', text);
+  // links and buttons can carry a label; on plain text the real words go in a visually hidden span
+  const interactive = el.matches('a, button');
+  if (interactive) el.setAttribute('aria-label', text);
   el.textContent = '';
+  if (!interactive) { const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = text; el.append(sr); }
   [...text].forEach((ch, i) => {
     const box = document.createElement('span');
     box.className = 'ch';

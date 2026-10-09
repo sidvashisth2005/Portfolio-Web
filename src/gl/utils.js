@@ -1,16 +1,18 @@
 import * as THREE from 'three';
 
-export const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
+export { isMobile, hasWebGL } from '../env.js';
+import { isMobile } from '../env.js';
 export const dpr = () => Math.min(window.devicePixelRatio || 1, isMobile() ? 1.25 : 1.6);
 
-export function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
+// Scroll code writes to a scene's state before the scene exists; the scene adopts that same object.
+export function adopt(shared, defaults) {
+  const s = shared || {};
+  for (const k in defaults) if (!(k in s)) s[k] = defaults[k];
+  return s;
 }
+
+// Compile shaders without blocking the main thread where the browser supports it (KHR_parallel_shader_compile).
+export const compileAsync = (renderer, scene, camera) => (renderer.compileAsync && renderer.extensions.has('KHR_parallel_shader_compile') ? renderer.compileAsync(scene, camera) : Promise.resolve(renderer.compile(scene, camera)));
 
 export function makeRenderer(canvas, { alpha = true, antialias = true, pixelRatio = dpr() } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha, antialias, powerPreference: 'high-performance' });
@@ -33,13 +35,19 @@ export function bentPlane(width, height, radius, segments = 32) {
   return g;
 }
 
-const loader = new THREE.TextureLoader();
+// ImageBitmapLoader decodes images off the main thread; flipped at decode so no flip is needed on upload.
+const loader = typeof createImageBitmap === 'function'
+  ? new THREE.ImageBitmapLoader().setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none' })
+  : new THREE.ImageLoader();
 export function loadTexture(url, manager) {
   return new Promise((resolve) => {
     manager?.start(url);
     loader.load(
       url,
-      (t) => {
+      (img) => {
+        const t = new THREE.Texture(img);
+        if (loader.isImageBitmapLoader) t.flipY = false;
+        t.needsUpdate = true;
         t.colorSpace = THREE.SRGBColorSpace;
         t.minFilter = THREE.LinearFilter;
         t.generateMipmaps = false;

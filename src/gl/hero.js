@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeRenderer, isMobile } from './utils.js';
+import { makeRenderer, isMobile, compileAsync } from './utils.js';
 
 // The portrait is drawn twice in one shader: a crimson ink/halftone version and the real colour photo.
 // A decaying fluid trail painted by the cursor decides where colour shows through.
@@ -149,6 +149,7 @@ export function createHero(canvas, texture, image, { auto = true } = {}) {
   return {
     uniforms: compU,
     resize,
+    compile: () => Promise.all([compileAsync(renderer, trailScene, cam), compileAsync(renderer, compScene, cam)]),
     render(time) {
       // When idle for 2.5s, an "auto cursor" wanders over the face so the effect is always alive.
       const idle = auto && time - lastMove > 2.5;

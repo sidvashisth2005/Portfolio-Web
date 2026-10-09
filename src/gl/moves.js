@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeRenderer, fitRenderer, isMobile, lerp, smooth } from './utils.js';
+import { makeRenderer, fitRenderer, isMobile, lerp, smooth, adopt, compileAsync } from './utils.js';
 
 // Project "technique cards": curved posters that fly in and out of the centre as you scroll.
 // Speed drives an RGB split (the glitch cut), distance from centre drives curvature.
@@ -111,7 +111,7 @@ function roundRect(g, x, y, w, h, r) {
   g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
 }
 
-export function createMoves(canvas, moves, images) {
+export function createMoves(canvas, moves, images, shared) {
   const renderer = makeRenderer(canvas, { alpha: true, antialias: !isMobile() });
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
@@ -127,7 +127,7 @@ export function createMoves(canvas, moves, images) {
     return m;
   });
 
-  const state = { target: 0, current: 0, mx: 0, my: 0 };
+  const state = adopt(shared, { target: 0, current: 0, mx: 0, my: 0 });
   window.addEventListener('pointermove', (e) => {
     state.mx = e.clientX / window.innerWidth - 0.5;
     state.my = e.clientY / window.innerHeight - 0.5;
@@ -145,6 +145,7 @@ export function createMoves(canvas, moves, images) {
 
   return {
     state,
+    compile: () => compileAsync(renderer, scene, camera),
     render(time) {
       const prev = state.current;
       state.current = lerp(state.current, state.target, 0.075);

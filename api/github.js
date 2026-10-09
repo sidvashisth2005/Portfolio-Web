@@ -1,6 +1,6 @@
 // 修行中 · Now training: the latest public repos Siddhant pushed to, cached at the edge for 30 minutes.
 import { env } from './_lib/env.js';
-import { fail, json } from './_lib/http.js';
+import { json } from './_lib/http.js';
 
 export async function GET() {
   const h = { Accept: 'application/vnd.github+json', 'User-Agent': 'sv-portfolio', 'X-GitHub-Api-Version': '2022-11-28' };
@@ -11,7 +11,8 @@ export async function GET() {
       fetch(`${env.githubApi}/users/${u}`, { headers: h, signal: AbortSignal.timeout(6000) }),
       fetch(`${env.githubApi}/users/${u}/repos?sort=pushed&per_page=12&type=owner`, { headers: h, signal: AbortSignal.timeout(6000) }),
     ]);
-    if (!ur.ok || !rr.ok) return fail(502, `github ${ur.status}/${rr.status}`);
+    // a failed upstream is not an error for the page: it just hides the feed (and keeps the console clean)
+    if (!ur.ok || !rr.ok) return json({ ok: false, error: `github ${ur.status}/${rr.status}` }, 200, { 'Cache-Control': 'public, s-maxage=300' });
     const user = await ur.json();
     const repos = (await rr.json())
       .filter((r) => !r.fork && !r.archived && !r.private)
@@ -22,6 +23,6 @@ export async function GET() {
     });
   } catch (e) {
     console.error(e);
-    return fail(502, 'github unreachable');
+    return json({ ok: false, error: 'github unreachable' }, 200, { 'Cache-Control': 'public, s-maxage=120' });
   }
 }

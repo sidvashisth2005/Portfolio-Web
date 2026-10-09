@@ -1,15 +1,9 @@
-import './styles.css';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { gallery, moves, stats, dojos, awards, leadership, episodes, statNames } from './data.js';
-import { hasWebGL, loadTexture, isMobile } from './gl/utils.js';
-import { createBackground } from './gl/background.js';
-import { createHero } from './gl/hero.js';
-import { createOrbit } from './gl/orbit.js';
-import { createMoves } from './gl/moves.js';
-import { createVortex } from './gl/vortex.js';
-import { createDuality } from './gl/duality.js';
+import { gallery, moves, dojos, statNames } from './data.js';
+import { contentHTML, moveInfoHTML, NUMERALS } from './content.js';
+import { hasWebGL, isMobile } from './env.js';
 import { rollify, stripReveal, magnetic } from './ui/textfx.js';
 import { initPodcast } from './ui/podcast.js';
 import { createLoader } from './ui/loader.js';
@@ -24,87 +18,29 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 if (!webgl) document.documentElement.classList.add('no-webgl');
 
+// Shared scene state. Scroll code drives these from the start; each WebGL scene adopts its object when it is built.
+const S = {
+  bgInvert: { value: 0 },
+  orbit: { progress: 0 },
+  duality: { targetWarp: 0, targetCurve: 0 },
+  moves: { target: 0 },
+  vortex: { progress: 0 },
+};
+const gl = {};
+// Give the browser a turn between setup steps, so no single task blocks input for long
+const yieldNow = () => (globalThis.scheduler?.yield ? scheduler.yield() : new Promise((r) => setTimeout(r, 0)));
+const GL_IMG = (src) => src.replace('img/gallery/', 'img/gallery/gl/');
+
 /* ---------------- Content ---------------- */
+// Prerendered into index.html at build time; filled here only if a container is still empty (dev).
 function renderContent() {
-  const fmt = (n) => n.toLocaleString('en-IN');
-  $('#stats-track').innerHTML = stats.map((s, i) => `
-    <article class="tcard" data-rarity="${s.rarity}" data-count="${s.value}" data-suffix="${s.suffix}" data-bar="${s.bar}">
-      <div class="tcard__tilt">
-        <div class="tcard__inner">
-          <div class="tcard__face tcard__front">
-            <div class="tcard__top"><span class="tcard__rarity">${s.rarity}</span><span>No. ${String(i + 1).padStart(3, '0')} / ${String(stats.length).padStart(3, '0')}</span></div>
-            <div class="tcard__art">
-              <span class="tcard__kanji" aria-hidden="true">${s.kanji}</span>
-              <span class="tcard__num">${fmt(s.value)}<small>${s.suffix}</small></span>
-              <span class="tcard__meaning">${s.kanji} · ${s.meaning}</span>
-            </div>
-            <div class="tcard__type"><span>Type · ${s.type}</span><span>Power ${Math.round(s.bar * 100)}</span></div>
-            <p class="tcard__label">${s.label}</p>
-            <div class="tcard__meter" aria-hidden="true"><i></i></div>
-            <div class="tcard__foot"><span>Siddhant V.</span><span class="stars" aria-label="${s.stars} of 5 stars">${'★'.repeat(s.stars)}${'☆'.repeat(5 - s.stars)}</span></div>
-            <span class="tcard__glint" aria-hidden="true"></span>
-          </div>
-          <div class="tcard__face tcard__back" aria-hidden="true"><span class="seal seal--md"><span>SV</span></span><span class="label">Tournament arc · 2026</span></div>
-        </div>
-      </div>
-    </article>`).join('') + `
-    <article class="tcard tcard--sp" data-rarity="SP" data-special="1">
-      <div class="tcard__tilt">
-        <div class="tcard__inner">
-          <div class="tcard__face tcard__front">
-            <div class="tcard__top"><span class="tcard__rarity">SP</span><span>No. 000 · Secret</span></div>
-            <div class="tcard__art tcard__art--photo">
-              <span class="tcard__kanji" aria-hidden="true">主</span>
-              <img src="img/maincharacter.webp" alt="Siddhant in sunglasses that read I don't care" loading="eager" />
-              <span class="tcard__meaning">主 · main character</span>
-            </div>
-            <div class="tcard__type"><span>Type · Protagonist</span><span>Power ∞</span></div>
-            <p class="tcard__label">Didn’t care that it was 6,200 to 1.</p>
-            <div class="tcard__meter" aria-hidden="true"><i></i></div>
-            <div class="tcard__foot"><span>Siddhant V.</span><span class="stars">Secret card</span></div>
-            <span class="tcard__glint" aria-hidden="true"></span>
-          </div>
-          <div class="tcard__face tcard__back" aria-hidden="true"><span class="seal seal--md"><span>SV</span></span><span class="label">Tournament arc · 2026</span></div>
-        </div>
-      </div>
-    </article>`;
-  // level-up screen: stages in date order
-  const stages = [...dojos].reverse();
-  const NUMERALS = ['壱', '弐', '参'];
-  $('#lvl-stage').innerHTML = stages.map((d, i) => `
-    <article class="lvl__card${i === 0 ? ' is-on' : ''}" data-i="${i}" aria-hidden="${i !== 0}">
-      <p class="lvl__ep"><span>Stage ${String(i + 1).padStart(2, '0')}</span><span>${d.period}</span><span>${d.where}</span></p>
-      <h3 class="lvl__co">${d.company.replace(/ Pvt\. Ltd\./, '')}</h3>
-      <p class="lvl__role">${d.role}</p>
-      ${d.classChange ? `<p class="lvl__class"><span>Class change</span>${d.classChange}</p>` : ''}
-      <p class="lvl__metric"><b>${d.metric}</b><span>${d.metricLabel}</span></p>
-      <ul class="lvl__notes">${d.notes.map((n) => `<li>${n}</li>`).join('')}</ul>
-    </article>`).join('');
-  $('#lvl-stats').innerHTML = statNames.map((st) => `
-    <li data-k="${st.key}"><span class="lvl__sn">${st.short}<small>${st.label}</small></span><span class="lvl__bar"><i></i></span><b class="lvl__sv">0</b><em class="lvl__gain"></em></li>`).join('');
-  $('#lvl-track').innerHTML = stages.map((d, i) => `
-    <li><button type="button" data-i="${i}"${i === 0 ? ' aria-current="step"' : ''}><span class="lvl__dot">${NUMERALS[i]}</span><span class="lvl__tn">${d.company.replace(/ Pvt\. Ltd\.| Assists/g, '')}</span><span class="lvl__ty">${d.period.replace(/.*(\d{4})$/, '$1')}</span></button></li>`).join('');
+  Object.entries(contentHTML()).forEach(([id, html]) => { const el = $(`#${id}`); if (el && !el.childElementCount) el.innerHTML = html; });
   $('#lvl-stage').dataset.numerals = NUMERALS.join('');
-  $('#awards').innerHTML = awards.map((a) => `
-    <li class="award"><div class="award__top"><span class="award__title">${a.title}</span><span class="award__scope">${a.scope}</span></div><p>${a.desc}</p></li>`).join('');
-
-  $('#moves-nav').innerHTML = moves.map((m, i) => `
-    <button class="move-pill${i === 0 ? ' is-active' : ''}" type="button" role="tab" aria-selected="${i === 0}" data-index="${i}">
-      <span class="kj" aria-hidden="true">${m.kanji}</span><span class="roll" data-roll>${m.label}</span>
-    </button>`).join('');
-
-  $('#player-eps').innerHTML = episodes.map((e) => `<li><span>${e.ep}</span><span>${e.title}</span></li>`).join('');
-  $('#vortex-fallback').innerHTML = gallery.map((g) => `<img src="${g.src}" alt="${g.caption}" loading="lazy" />`).join('');
 }
 
 function setMoveInfo(i) {
   const m = moves[i];
-  $('#moves-info').innerHTML = `
-    <h3>${m.title}</h3>
-    <p class="label label--red">${m.kanji} · ${m.kanjiMeaning} · ${m.technique}</p>
-    <ul>${m.bullets.map((b) => `<li>${b}</li>`).join('')}</ul>
-    <div class="tags">${m.tags.map((t) => `<span>${t}</span>`).join('')}</div>
-    ${m.github ? `<a class="pill pill--red" href="${m.github}" target="_blank" rel="noopener">Open case file ↗</a>` : ''}`;
+  $('#moves-info').innerHTML = moveInfoHTML(i);
   $('#moves-kanji').textContent = m.kanji;
   $('#moves-count').textContent = `${String(i + 1).padStart(2, '0')} / ${String(moves.length).padStart(2, '0')}`;
   $$('.move-pill').forEach((p, j) => {
@@ -126,10 +62,10 @@ function createManager(onProgress) {
 
 function loadImage(src, manager) {
   return new Promise((res) => {
-    manager.start(src);
+    manager?.start(src);
     const im = new Image();
-    im.onload = () => { manager.done(); res(im); };
-    im.onerror = () => { manager.done(); res(null); };
+    im.onload = () => { manager?.done(); res(im); };
+    im.onerror = () => { manager?.done(); res(null); };
     im.src = src;
   });
 }
@@ -141,57 +77,101 @@ window.scrollTo(0, 0);
 window.addEventListener('beforeunload', () => window.scrollTo(0, 0));
 
 async function boot() {
+  await yieldNow();
   renderContent();
-  setMoveInfo(0);
-  $$('[data-roll]').forEach((el) => rollify(el));
   $$('.menu__label').forEach((el) => {
     const t = el.textContent;
     el.innerHTML = `<span class="first">${t.charAt(0)}</span>${t.slice(1)}`;
   });
+  await yieldNow();
 
+  // The loader's intro is pure CSS, so it is already on screen. Only the essentials gate the reveal:
+  // fonts and the hero portrait. Three.js and the 3D scenes load behind it and start on first interaction.
   const loader = createLoader($('#preloader'));
-  // assets fill the bar to 90%; the last 10% is the scene setup, so 100% means ready to cut
-  const manager = createManager((p) => loader.setProgress(p * 0.9));
-  let entry = 0;
-  const tick = () => { entry = loader.tick(); };
+  const manager = createManager((p) => loader.setProgress(p));
+  const tick = () => loader.tick();
   gsap.ticker.add(tick);
 
   manager.start('fonts');
   const fontsReady = Promise.all([
     document.fonts.ready,
     document.fonts.load('900 100px "Big Shoulders Display"'),
-    document.fonts.load('100px "Dela Gothic One"', '農拡旅商作'),
     document.fonts.load('500 20px "Azeret Mono"'),
   ]).catch(() => {}).then(() => manager.done());
-
-  let tex = {};
-  if (webgl) {
-    const orbitSrc = gallery.slice(0, mobile ? 10 : 16).map((g) => g.src);
-    const [heroTex, faller, orbitTex, moveImgs] = await Promise.all([
-      loadTexture('img/hero-cutout.webp', manager),
-      loadTexture('img/dealwithit.webp', manager),
-      Promise.all(orbitSrc.map((s) => loadTexture(s, manager))),
-      Promise.all(moves.map((m) => loadImage(m.image, manager))),
-      fontsReady,
-    ]);
-    tex = { heroTex, faller, orbitTex: orbitTex.filter(Boolean), moveImgs };
-  } else {
-    await fontsReady;
-  }
-  loader.setProgress(0.9);
-  const until = (v) => new Promise((r) => { const wait = () => (entry >= v ? r() : requestAnimationFrame(wait)); wait(); });
-  await until(0.895);
-  // paint 90% before the heavier scene setup blocks the main thread
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  const reveal = start(tex, loader);
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await Promise.all([fontsReady, loadImage(mobile ? 'img/hero-ink-m.webp' : 'img/hero-ink.webp', manager)]);
+  loader.setProgress(1);
+  await loader.ready();
   gsap.ticker.remove(tick);
-  // the bar runs its last 10% while the cut winds up, so there's no pause at 100%
-  reveal();
+  await start(loader);
+}
+
+/* ---------------- WebGL: loads in the background, starts on intent ---------------- */
+let scenesPromise = null;
+const scenes = () => (scenesPromise ||= import('./gl/scenes.js'));
+const idle = (fn, timeout = 600) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout }) : setTimeout(fn, 1));
+const nextTask = () => new Promise((r) => setTimeout(r, 0));
+
+// Builds one scene off the critical path: create it in its own task, compile its shaders in parallel,
+// draw one frame, then fade its canvas in.
+async function build(key, make) {
+  if (gl[key] !== undefined) return;
+  gl[key] = null;
+  try {
+    const m = await make();
+    if (!m) return;
+    await nextTask();
+    await m.compile?.().catch(() => {});
+    await nextTask();
+    m.render(performance.now() / 1000);
+    gl[key] = m;
+    document.documentElement.classList.add(`gl-${key}`);
+  } catch (e) {
+    console.warn('scene', key, e);
+  }
+}
+
+function enhance() {
+  if (!webgl || enhance.done) return;
+  enhance.done = true;
+  try {
+    const c = document.createElement('canvas');
+    if (!(c.getContext('webgl2') || c.getContext('webgl'))) throw new Error('no context');
+  } catch {
+    document.documentElement.classList.add('no-webgl');
+    return;
+  }
+  const orbitSrc = gallery.slice(0, mobile ? 10 : 16).map((g) => GL_IMG(g.src));
+  let orbitTex = null;
+  const orbitTextures = async () => (orbitTex ||= scenes().then((G) => Promise.all(orbitSrc.map((src) => G.loadTexture(src)))).then((t) => t.filter(Boolean)));
+  (async () => {
+    const G = await scenes();
+    await build('bg', () => G.createBackground($('#bg-canvas'), S.bgInvert));
+    await build('hero', async () => {
+      const t = await G.loadTexture('img/hero-cutout.webp');
+      if (!t) return null;
+      const h = G.createHero($('#hero-canvas'), t, t.image, { auto: !reduce });
+      h.uniforms.uReveal.value = 1;
+      return h;
+    });
+    await build('orbit', async () => G.createOrbit($('#orbit-canvas'), await orbitTextures(), S.orbit));
+    // The scenes further down build when you get within a couple of screens of them.
+    const later = {
+      '.duality': () => build('duality', () => G.createDuality($('#duality-canvas'), ['STRATEGIST', 'BUILDER'], S.duality)),
+      '.moves': () => build('moves', async () => G.createMoves($('#moves-canvas'), moves, await Promise.all(moves.map((m) => loadImage(m.image))), S.moves)),
+      '.vortex': () => build('vortex', async () => G.createVortex($('#vortex-canvas'), await orbitTextures(), await G.loadTexture('img/dealwithit.webp'), S.vortex)),
+    };
+    const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      io.unobserve(en.target);
+      const key = Object.keys(later).find((sel) => en.target.matches(sel));
+      idle(() => later[key]());
+    }), { rootMargin: '220% 0px 220% 0px' });
+    Object.keys(later).forEach((sel) => io.observe($(sel)));
+  })();
 }
 
 /* ---------------- Start ---------------- */
-function start(tex, loader) {
+async function start(loader) {
   // Smooth scroll
   let lenis = null;
   if (!reduce) {
@@ -206,74 +186,86 @@ function start(tex, loader) {
     if (lenis) lenis.scrollTo(target, { immediate, duration: 1.4, force: true });
     else (typeof target === 'number' ? window.scrollTo(0, target) : target.scrollIntoView());
   };
-
-  // WebGL modules
-  const gl = {};
-  if (webgl) {
-    gl.bg = createBackground($('#bg-canvas'));
-    if (tex.heroTex) gl.hero = createHero($('#hero-canvas'), tex.heroTex, tex.heroTex.image, { auto: !reduce });
-    if (tex.orbitTex?.length) gl.orbit = createOrbit($('#orbit-canvas'), tex.orbitTex);
-    gl.moves = createMoves($('#moves-canvas'), moves, tex.moveImgs);
-    gl.duality = createDuality($('#duality-canvas'), ['STRATEGIST', 'BUILDER']);
-    if (tex.orbitTex?.length) gl.vortex = createVortex($('#vortex-canvas'), tex.orbitTex, tex.faller);
-  }
   const podcast = initPodcast();
 
-  // Reveal: the loader plays its elimination; as its curtain lifts, the hero animates in underneath.
+  // Reveal: the loader plays its cut; as its curtain lifts, the hero animates in underneath.
   const pre = $('#preloader');
   const heroIn = gsap.timeline({ paused: true })
     .from('.hero__name span', { yPercent: 110, duration: 1.1, stagger: 0.08, ease: 'expo.out' }, 0.25)
     .from('.hero__copy .label, .hero__lede, .hero__ctas, .hero__rank', { y: 30, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, 0.35)
-    .from('.marquee', { autoAlpha: 0, duration: 1.2 }, 0.2)
-    .add(() => gl.hero && gsap.to(gl.hero.uniforms.uReveal, { value: 1, duration: 1.6, ease: 'expo.out' }), 0);
-  // Compile every scene's shaders now, while the loader still covers the page, so nothing hitches later.
-  Object.values(gl).forEach((m) => { try { m.render?.(0); } catch { /* ignore */ } });
-  const reveal = () => loader.finish(() => { if (!reduce) heroIn.play(); }).then(() => {
-    pre.remove();
-    document.body.classList.remove('is-loading');
-    gsap.ticker.lagSmoothing(0);
-    ScrollTrigger.refresh();
-  });
+    .from('.marquee', { yPercent: 6, duration: 1.2, ease: 'expo.out' }, 0.2)
+    .from('.hero__fallback', { yPercent: 25, duration: 1.6, ease: 'expo.out' }, 0);
   lenis?.scrollTo(0, { immediate: true, force: true });
   if (reduce) heroIn.progress(1);
-  if (reduce && gl.hero) gl.hero.uniforms.uReveal.value = 1;
 
-  setupScroll({ gl, scrollTo, lenis });
+  await yieldNow();
+  await setupScroll({ scrollTo, lenis });
+  await yieldNow();
   setupMenu(scrollTo);
+  await yieldNow();
   setupMisc();
+  await yieldNow();
 
-  // Render loop: background always; other scenes only while their section is on screen.
-  const views = [
-    ['hero', '#top .hero__sticky'], ['orbit', '#top .hero__sticky'], ['duality', '.duality__sticky'], ['moves', '.moves__sticky'], ['vortex', '.vortex__sticky'],
-  ].map(([k, s]) => [k, $(s)]);
-  const onScreen = (el) => { const r = el.getBoundingClientRect(); return r.bottom > -50 && r.top < window.innerHeight + 50; };
+  loader.finish(() => { if (!reduce) heroIn.play(); }).then(() => {
+    pre.remove();
+    // the scrollbar gutter is reserved while loading, so nothing moved and no full refresh is needed
+    document.body.classList.remove('is-loading');
+    gsap.ticker.lagSmoothing(0);
+    // below-the-fold images load once the hero has painted: near ones as you approach, the rest in idle time
+    const lazy = $$('img[data-src]');
+    const load = (img) => { if (img.dataset.src) { img.src = img.dataset.src; img.removeAttribute('data-src'); } };
+    const iio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { iio.unobserve(e.target); load(e.target); } }), { rootMargin: '150% 0px' });
+    lazy.forEach((img) => iio.observe(img));
+    idle(() => lazy.forEach(load), 4000);
+    // fetch the 3D chunk into cache at low priority, now that the page itself is done
+    const chunk = document.querySelector('meta[name="scenes-chunk"]')?.content;
+    if (webgl && chunk) { const l = document.createElement('link'); l.rel = 'prefetch'; l.href = chunk; document.head.append(l); }
+    // letter-roll hover effects are pure polish, so they're built in idle time
+    idle(() => $$('[data-roll]').forEach((el) => rollify(el)), 2000);
+    // WebGL starts the moment someone moves, touches, scrolls or types (or after a few quiet seconds).
+    const go = () => { ['pointermove', 'pointerdown', 'touchstart', 'wheel', 'keydown', 'scroll'].forEach((t) => window.removeEventListener(t, go)); clearTimeout(timer); enhance(); };
+    ['pointermove', 'pointerdown', 'touchstart', 'wheel', 'keydown', 'scroll'].forEach((t) => window.addEventListener(t, go, { passive: true }));
+    const timer = setTimeout(go, 6000);
+  });
+
+  // Looping CSS animations pause off screen
+  const lio = new IntersectionObserver((entries) => entries.forEach((en) => en.target.classList.toggle('is-live', en.isIntersecting)));
+  $$('[data-live]').forEach((el) => lio.observe(el));
+
+  // Render loop: each scene draws only while its section is on screen (tracked by IntersectionObserver,
+  // so nothing measures layout per frame).
+  const visible = new Set();
+  const watch = { hero: '#top .hero__sticky', orbit: '#top .hero__sticky', duality: '.duality__sticky', moves: '.moves__sticky', vortex: '.vortex__sticky', onair: '.onair__sticky' };
+  const vio = new IntersectionObserver((entries) => entries.forEach((en) => {
+    Object.entries(watch).forEach(([k, sel]) => { if (en.target === $(sel)) { if (en.isIntersecting) visible.add(k); else visible.delete(k); } });
+  }), { rootMargin: '50px 0px' });
+  new Set(Object.values(watch)).forEach((sel) => vio.observe($(sel)));
   let frames = 0, last = performance.now(), fps = 0;
   gsap.ticker.add((time) => {
     gl.bg?.render(time);
-    views.forEach(([k, el]) => { if (gl[k] && el && onScreen(el)) gl[k].render(time); });
-    if (onScreen($('.onair__sticky'))) podcast.render(time);
-    if (gl.duality && onScreen($('.duality__sticky'))) updateLadders(gl.duality.state);
+    for (const k of visible) gl[k]?.render(time);
+    if (visible.has('onair')) podcast.render(time);
+    if (visible.has('duality') && gl.duality) updateLadders(S.duality);
     frames++;
     const now = performance.now();
     if (now - last > 500) { fps = Math.round((frames * 1000) / (now - last)); frames = 0; last = now; const j = $('#judge'); if (j) j.textContent = `${fps} FPS · ${webgl ? 'WebGL' : 'no WebGL'} · ${mobile ? 'mobile' : 'desktop'} tier`; }
-  });  return reveal;
+  });
 }
 
 /* ---------------- Scroll choreography ---------------- */
-function setupScroll({ gl, scrollTo }) {
+async function setupScroll({ scrollTo }) {
   const H = () => window.innerHeight;
-  const bgU = gl.bg?.uniforms;
 
   // HERO: pin, card zooms out, world inverts to crimson, strip reveal, photo orbit
   if (!reduce) {
     const welcome = $('#welcome');
     const strip = $('#welcome-strip');
     const tl = gsap.timeline({
-      scrollTrigger: { trigger: '#top', start: 'top top', end: () => `+=${mobile ? 2200 : 3600}`, pin: true, scrub: mobile ? 0.3 : 0.6, anticipatePin: 1, invalidateOnRefresh: true },
+      scrollTrigger: { trigger: '#top', pinSpacer: '#sp-top', start: 'top top', end: () => `+=${mobile ? 2200 : 3600}`, pin: true, scrub: mobile ? 0.3 : 0.6, anticipatePin: 1, invalidateOnRefresh: true },
     });
     tl.to('#hero-card', { scale: 0.44, borderRadius: 18, boxShadow: '0 30px 100px rgba(0,0,0,.95), 0 0 0 1px rgba(224,24,45,.5)', ease: 'power1.inOut', duration: 0.2 }, 0)
       .to('.hero__copy, .hero__rank, .hero__hint', { autoAlpha: 0, duration: 0.08 }, 0.02);
-    if (bgU) tl.to(bgU.uInvert, { value: 1, duration: 0.14, ease: 'power1.inOut' }, 0.1);
+    if (webgl) tl.to(S.bgInvert, { value: 1, duration: 0.14, ease: 'power1.inOut' }, 0.1);
     tl.to('#hero-card', { autoAlpha: 0, scale: 0.36, duration: 0.07 }, 0.2)
       .to(welcome, { opacity: 1, duration: 0.04 }, 0.22)
       .fromTo(strip.querySelector('.strip-reveal__bar'), { left: '0%', width: '0%' }, { width: '100%', duration: 0.05, ease: 'power2.inOut' }, 0.24)
@@ -281,11 +273,12 @@ function setupScroll({ gl, scrollTo }) {
       .to(strip.querySelector('.strip-reveal__bar'), { left: '100%', width: '0%', duration: 0.05, ease: 'power2.inOut' }, 0.29)
       .fromTo('.welcome__name', { scale: 0.6, autoAlpha: 0, filter: 'blur(14px)' }, { scale: 1, autoAlpha: 1, filter: 'blur(0px)', duration: 0.08, ease: 'power3.out' }, 0.27)
       .fromTo('.welcome__jp', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.05 }, 0.32);
-    if (gl.orbit) tl.fromTo(gl.orbit.state, { progress: 0 }, { progress: 1, duration: 0.6, ease: 'none' }, 0.3);
+    if (webgl) tl.fromTo(S.orbit, { progress: 0 }, { progress: 1, duration: 0.6, ease: 'none' }, 0.3);
     tl.to(welcome, { opacity: 0, duration: 0.06 }, 0.9);
-    if (bgU) tl.to(bgU.uInvert, { value: 0, duration: 0.1 }, 0.88);
+    if (webgl) tl.to(S.bgInvert, { value: 0, duration: 0.1 }, 0.88);
   }
 
+  await yieldNow();
   // ABOUT: lanyards swing with scroll, headline words rise, spots open on hover / tap / focus
   if (!reduce) {
     gsap.timeline({ scrollTrigger: { trigger: '#about', start: 'top 85%', end: 'bottom 15%', scrub: 1 } })
@@ -332,6 +325,7 @@ function setupScroll({ gl, scrollTo }) {
     s.addEventListener('click', () => (s.classList.contains('is-active') ? closeSpot(s) : openSpot(s)));
   });
 
+  await yieldNow();
   // TWO SIDES: pinned. The word bends as you arrive, then one deliberate flip from STRATEGIST to BUILDER.
   const dual = $('#duality-sticky');
   let dualST = null;
@@ -340,22 +334,22 @@ function setupScroll({ gl, scrollTo }) {
     dual.classList.toggle('show-a', !b && warped);
     dual.classList.toggle('show-b', b);
   };
-  if (gl.duality && !reduce) {
+  if (webgl && !reduce) {
     dualST = ScrollTrigger.create({
-      trigger: '#duality', start: 'top top', end: () => `+=${mobile ? 1300 : 1700}`, pin: true, invalidateOnRefresh: true,
+      trigger: '#duality', pinSpacer: '#sp-duality', start: 'top top', end: () => `+=${mobile ? 1300 : 1700}`, pin: true, invalidateOnRefresh: true,
       onUpdate: (self) => {
         const p = self.progress;
-        const st = gl.duality.state;
+        const st = S.duality;
         st.targetWarp = Math.min(1, p / 0.15);
         // flips soon after STRATEGIST is fully bent
         const b = p > 0.32;
         st.targetCurve = b ? 1 : 0;
         setSide(b, st.targetWarp > 0.6);
       },
-      onLeaveBack: () => { gl.duality.state.targetWarp = 0; gl.duality.state.targetCurve = 0; setSide(false, false); },
+      onLeaveBack: () => { S.duality.targetWarp = 0; S.duality.targetCurve = 0; setSide(false, false); },
     });
-  } else if (gl.duality) {
-    gl.duality.state.targetWarp = 0.75;
+  } else if (webgl) {
+    S.duality.targetWarp = 0.75;
     setSide(false, true);
     dual.classList.add('show-b');
   }
@@ -366,6 +360,7 @@ function setupScroll({ gl, scrollTo }) {
     scrollTo(dualST.start + (dualST.end - dualST.start) * (toB ? 0.62 : 0.22));
   }));
 
+  await yieldNow();
   // BATTLE STATS: pinned horizontal run; each card flips from its back, counts up and fills its meter
   const cardsEls = $$('.tcard');
   const setCard = (card, p) => {
@@ -407,7 +402,7 @@ function setupScroll({ gl, scrollTo }) {
     };
     gsap.to(track, {
       x: () => -dist(), ease: 'none', onUpdate: update,
-      scrollTrigger: { trigger: '#numbers', start: 'top top', end: () => `+=${dist() * 1.15}`, pin: true, scrub: 0.6, invalidateOnRefresh: true },
+      scrollTrigger: { trigger: '#numbers', pinSpacer: '#sp-numbers', start: 'top top', end: () => `+=${dist() * 1.15}`, pin: true, scrub: 0.6, invalidateOnRefresh: true },
     });
     gsap.to('#stats-bgtype', { xPercent: -30, ease: 'none', scrollTrigger: { trigger: '#numbers', start: 'top top', end: () => `+=${dist() * 1.15}`, scrub: 1, invalidateOnRefresh: true } });
     cardsEls.forEach((c) => setCard(c, 0));
@@ -427,16 +422,17 @@ function setupScroll({ gl, scrollTo }) {
     });
   }
 
+  await yieldNow();
   // MOVES: pinned, scroll walks through the four techniques
   let active = 0;
   const n = moves.length;
   let movesST = null;
   if (!reduce) {
     movesST = ScrollTrigger.create({
-      trigger: '#moves', start: 'top top', end: () => `+=${(mobile ? 700 : 950) * (n - 1)}`, pin: true, scrub: true, invalidateOnRefresh: true,
+      trigger: '#moves', pinSpacer: '#sp-moves', start: 'top top', end: () => `+=${(mobile ? 700 : 950) * (n - 1)}`, pin: true, scrub: true, invalidateOnRefresh: true,
       onUpdate: (self) => {
         const t = self.progress * (n - 1);
-        if (gl.moves) gl.moves.state.target = t;
+        S.moves.target = t;
         const idx = Math.round(t);
         if (idx !== active) { active = idx; setMoveInfo(idx); }
       },
@@ -446,31 +442,34 @@ function setupScroll({ gl, scrollTo }) {
   $$('.move-pill').forEach((p) => p.addEventListener('click', () => {
     const i = +p.dataset.index;
     if (movesST) scrollTo(movesST.start + (movesST.end - movesST.start) * (i / (n - 1)));
-    else { if (gl.moves) gl.moves.state.target = i; active = i; setMoveInfo(i); }
+    else { S.moves.target = i; active = i; setMoveInfo(i); }
   }));
 
+  await yieldNow();
   // TRAINING: the level-up screen pins here (created in page order so later pins measure correctly)
   setupLevel(scrollTo);
   $$('.award, .quests li').forEach((el) => gsap.from(el, { y: 40, autoAlpha: 0, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } }));
 
+  await yieldNow();
   // VORTEX: pinned spiral, header lifts away, counter climbs
   const counter = $('#vortex-count');
   if (!reduce) {
     ScrollTrigger.create({
-      trigger: '#flashbacks', start: 'top top', end: () => `+=${mobile ? 1800 : 3200}`, pin: true, scrub: 0.5, invalidateOnRefresh: true,
+      trigger: '#flashbacks', pinSpacer: '#sp-flashbacks', start: 'top top', end: () => `+=${mobile ? 1800 : 3200}`, pin: true, scrub: 0.5, invalidateOnRefresh: true,
       onUpdate: (self) => {
-        if (gl.vortex) gl.vortex.state.progress = self.progress;
+        S.vortex.progress = self.progress;
         counter.textContent = Math.round(self.progress * 6199).toLocaleString('en-IN');
         const head = $('#vortex-head');
         head.style.opacity = Math.max(1 - self.progress * 2.8, 0);
         head.style.transform = `translateX(-50%) translateY(${-self.progress * 130}px)`;
       },
     });
-  } else if (gl.vortex) gl.vortex.state.progress = 0.3;
+  } else if (webgl) S.vortex.progress = 0.3;
 
+  await yieldNow();
   // ON AIR: corner cut-outs slide in, card expands
   if (!reduce) {
-    gsap.timeline({ scrollTrigger: { trigger: '#onair', start: 'top top', end: () => `+=${mobile ? 1000 : 1800}`, pin: true, scrub: 0.6, invalidateOnRefresh: true } })
+    gsap.timeline({ scrollTrigger: { trigger: '#onair', pinSpacer: '#sp-onair', start: 'top top', end: () => `+=${mobile ? 1000 : 1800}`, pin: true, scrub: 0.6, invalidateOnRefresh: true } })
       .fromTo('#corner-l', { xPercent: -60, autoAlpha: 0 }, { xPercent: 0, autoAlpha: 1, duration: 0.4, ease: 'power3.out' }, 0)
       .fromTo('#corner-r', { xPercent: 60, autoAlpha: 0 }, { xPercent: 0, autoAlpha: 1, duration: 0.4, ease: 'power3.out' }, 0)
       .fromTo('.onair__title', { y: 60, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.3 }, 0.05)
@@ -478,6 +477,7 @@ function setupScroll({ gl, scrollTo }) {
       .to({}, { duration: 0.3 });
   }
 
+  await yieldNow();
   // FOOTER: strip reveals, character rises, header logo steps aside
   ScrollTrigger.create({
     trigger: '#contact', start: 'top 70%', once: true,
@@ -556,7 +556,7 @@ function setupLevel(scrollTo) {
 
   if (reduce) { $('#lvl').classList.add('is-static'); return; }
   const st = ScrollTrigger.create({
-    trigger: '#lvl', start: 'top top', end: () => `+=${(mobile ? 650 : 800) * n}`, pin: true, invalidateOnRefresh: true,
+    trigger: '#lvl', pinSpacer: '#sp-lvl', start: 'top top', end: () => `+=${(mobile ? 650 : 800) * n}`, pin: true, invalidateOnRefresh: true,
     onUpdate: (self) => {
       $('#lvl').style.setProperty('--p', self.progress);
       go(Math.min(n - 1, Math.floor(self.progress * n * 0.999 + 0.0001)));
@@ -571,7 +571,7 @@ function setupMenu(scrollTo) {
   let open = false;
   const items = $$('.menu__item');
   const tl = gsap.timeline({ paused: true })
-    .set(menu, { visibility: 'visible' })
+    .set(menu, { visibility: 'visible', contentVisibility: 'visible' })
     .to('.menu__bg', { clipPath: 'circle(150% at calc(100% - 56px) 42px)', duration: 0.8, ease: 'expo.inOut' })
     .to(items, { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' }, 0.35)
     .to('.menu__side', { opacity: 1, duration: 0.5 }, 0.5);

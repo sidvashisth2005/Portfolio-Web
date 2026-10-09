@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { makeRenderer, bentPlane, fitRenderer, smooth, isMobile } from './utils.js';
+import { makeRenderer, bentPlane, fitRenderer, smooth, isMobile, adopt, compileAsync } from './utils.js';
 
 // Curved photo cards travel up a 3D spiral around the "Welcome to the arc" title.
-export function createOrbit(canvas, textures) {
+export function createOrbit(canvas, textures, shared) {
   const renderer = makeRenderer(canvas, { alpha: true, antialias: !isMobile() });
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
@@ -18,7 +18,7 @@ export function createOrbit(canvas, textures) {
     return m;
   });
 
-  const state = { progress: 0, mouseX: 0, mouseY: 0 };
+  const state = adopt(shared, { progress: 0, mouseX: 0, mouseY: 0 });
   window.addEventListener('pointermove', (e) => {
     state.mouseX = (e.clientX / window.innerWidth - 0.5);
     state.mouseY = (e.clientY / window.innerHeight - 0.5);

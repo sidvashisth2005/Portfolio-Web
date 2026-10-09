@@ -54,6 +54,61 @@ function vercelApi() {
   };
 }
 
+// The Three.js chunk is only named here; main.js prefetches it after load.
+function prefetchScenes() {
+  return {
+    name: 'prefetch-scenes',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      const chunk = Object.values(bundle).find((c) => c.type === 'chunk' && c.name === 'scenes');
+      const html = bundle['index.html'];
+      if (!chunk || !html) return;
+      // the app chunk is requested by entry.js after the first frame, so it never competes with the hero image
+      // main.js adds the prefetch after the page has loaded, so it never competes with the hero
+      html.source = String(html.source).replace('</head>', `  <meta name="scenes-chunk" content="./${chunk.fileName}" />\n</head>`);
+    },
+  };
+}
+
+// Prerender the data-driven sections into index.html: content is in the HTML for first paint and for crawlers,
+// and the browser skips building it with JavaScript at startup.
+function prerender() {
+  return {
+    name: 'prerender-content',
+    async transformIndexHtml(html) {
+      const { contentHTML, NUMERALS } = await import(`${pathToFileURL(resolve('src/content.js')).href}?t=${Date.now()}`);
+      for (const [id, inner] of Object.entries(contentHTML())) {
+        const re = new RegExp(`(<([a-z]+)\\b[^>]*\\bid="${id}"[^>]*>)(</\\2>)`);
+        if (!re.test(html)) throw new Error(`prerender: no empty #${id}`);
+        html = html.replace(re, (_, open, tag, close) => open + inner + close);
+      }
+      return html.replace('id="lvl-stage"', `id="lvl-stage" data-numerals="${NUMERALS.join('')}"`);
+    },
+  };
+}
+
+// Inline the stylesheet (14 KB gzipped) into index.html: one less round trip before first paint on slow networks.
+function inlineCss() {
+  return {
+    name: 'inline-css',
+    enforce: 'post',
+    apply: 'build',
+    generateBundle(_, bundle) {
+      const html = bundle['index.html'];
+      if (!html) return;
+      for (const [name, asset] of Object.entries(bundle)) {
+        if (asset.type !== 'asset' || !name.endsWith('.css')) continue;
+        const tag = new RegExp(`<link rel="stylesheet"[^>]*href="\\./${name.replace(/[.]/g, '\\.')}"[^>]*>`);
+        if (!tag.test(String(html.source))) continue;
+        // url()s were relative to assets/; the page sits one level up
+        const css = String(asset.source).replace(/url\(\.\.\//g, 'url(./');
+        html.source = String(html.source).replace(tag, () => `<style>${css}</style>`);
+        delete bundle[name];
+      }
+    },
+  };
+}
+
 // robots.txt and sitemap.xml with the real site URL, written at build time
 function seoFiles() {
   return {
@@ -73,6 +128,6 @@ export default defineConfig(({ mode }) => {
   return {
     base: './',
     build: { chunkSizeWarningLimit: 800 },
-    plugins: [vercelApi(), seoFiles()],
+    plugins: [prerender(), vercelApi(), seoFiles(), prefetchScenes(), inlineCss()],
   };
 });

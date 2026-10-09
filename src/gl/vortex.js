@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { makeRenderer, bentPlane, fitRenderer, isMobile, lerp } from './utils.js';
+import { makeRenderer, bentPlane, fitRenderer, isMobile, lerp, adopt, compileAsync } from './utils.js';
 import { fitCover } from './orbit.js';
 
 // A descending spiral tower of curved photo strips. Scroll spins it and lifts it past the camera
 // while a cut-out of Siddhant free-falls through the middle.
-export function createVortex(canvas, textures, fallerTex) {
+export function createVortex(canvas, textures, fallerTex, shared) {
   const renderer = makeRenderer(canvas, { alpha: true, antialias: !isMobile() });
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
@@ -17,11 +17,9 @@ export function createVortex(canvas, textures, fallerTex) {
   const pw = 2.9, ph = 1.9;
   const geo = bentPlane(pw, ph, radius, isMobile() ? 12 : 24);
   const count = textures.length * 2;
+  const fitted = textures.map((src) => { const t = src.clone(); t.needsUpdate = true; fitCover(t, pw / ph); return t; });
   for (let i = 0; i < count; i++) {
-    const src = textures[i % textures.length];
-    const tex = src.clone();
-    tex.needsUpdate = true;
-    fitCover(tex, pw / ph);
+    const tex = fitted[i % textures.length];
     const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0.96 });
     const m = new THREE.Mesh(geo, mat);
     // each strip covers pw / radius radians of the circle; step just past that so neighbours never overlap
@@ -49,7 +47,7 @@ export function createVortex(canvas, textures, fallerTex) {
   }
   scene.add(fallerGroup);
 
-  const state = { progress: 0, current: 0 };
+  const state = adopt(shared, { progress: 0, current: 0 });
   function resize() {
     fitRenderer(renderer, camera, canvas);
     const s = window.innerWidth < 900 ? 0.72 : 1;
@@ -61,6 +59,7 @@ export function createVortex(canvas, textures, fallerTex) {
 
   return {
     state,
+    compile: () => compileAsync(renderer, scene, camera),
     render(time) {
       state.current = lerp(state.current, state.progress, 0.08);
       const p = state.current;

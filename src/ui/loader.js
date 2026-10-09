@@ -7,12 +7,7 @@ export function createLoader(root) {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const halfA = root.querySelector('.pl-half--a');
 
-  // split the name into letters, then clone the whole layer for the second half of the cut
-  halfA.querySelectorAll('.pl-name .pl-word').forEach((w) => {
-    const t = w.textContent;
-    w.textContent = '';
-    [...t].forEach((c) => { const s = document.createElement('span'); s.className = 'pl-ch'; s.textContent = c; w.append(s); });
-  });
+  // the letters are already split in the HTML so the CSS intro runs before any script
   const halfB = halfA.cloneNode(true);
   halfB.classList.replace('pl-half--a', 'pl-half--b');
   halfB.setAttribute('aria-hidden', 'true');
@@ -38,22 +33,11 @@ export function createLoader(root) {
   layout();
   window.addEventListener('resize', layout);
 
-  // intro: letters rise out of blur, the brush paints 一, small type settles
-  const intro = gsap.timeline({ paused: true, defaults: { ease: 'expo.out' } })
-    .fromTo('.pl-content', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, ease: 'power1.out' }, 0)
-    .fromTo('.pl-ichi', { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'power3.inOut' }, 0.15)
-    .fromTo('.pl-ichi', { scale: 1.08, filter: 'blur(6px)' }, { scale: 1, filter: 'blur(0px)', duration: 1.4 }, 0.15)
-    .fromTo('.pl-drop', { scale: 0, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.5, stagger: 0.06, ease: 'back.out(3)' }, 1.0)
-    .fromTo('.pl-ch', { yPercent: 115, rotate: 8, filter: 'blur(10px)' }, { yPercent: 0, rotate: 0, filter: 'blur(0px)', duration: 1.1, stagger: 0.035 }, 0.35)
-    .fromTo(['.pl-top', '.pl-sub', '.pl-bottom'], { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8, stagger: 0.08 }, 0.7);
+  // The intro (letters rising, the brush painting 一) is CSS keyframes in styles.css, so it plays on first paint.
 
-  const begin = () => (reduce ? intro.progress(1) : intro.play());
-  if (document.fonts) document.fonts.load('900 100px "Big Shoulders Display"').catch(() => {}).then(begin);
-  else begin();
-
-  // hairline follows the real progress, never faster than ~1.8s end to end
+  // hairline follows the real progress, never faster than ~1.5s from navigation start (the intro's length)
   let real = 0, shown = 0;
-  const t0 = performance.now();
+  let readyFn = null, last = 0;
   const setBar = (p) => {
     bars.forEach((b) => (b.style.transform = `scaleX(${p})`));
     pcts.forEach((e) => (e.textContent = String(Math.round(p * 100)).padStart(3, '0')));
@@ -91,13 +75,20 @@ export function createLoader(root) {
   return {
     setProgress(p) { real = Math.max(real, Math.min(1, p)); },
     tick() {
-      const cap = reduce ? 1 : Math.min(1, (performance.now() - t0) / 1800);
+      const now = performance.now();
+      const dt = Math.min(0.1, (now - (last || now)) / 1000);
+      last = now;
+      const cap = reduce ? 1 : Math.min(1, now / 1500);
       const target = Math.min(real, cap);
-      shown += (target - shown) * 0.1;
+      // time-based easing, so a slow device doesn't stretch the loader
+      shown += (target - shown) * (1 - Math.exp(-dt * 9));
       if (target >= 1 && shown > 0.996) shown = 1;
       setBar(shown);
+      if (readyFn && shown >= 0.97) { readyFn(); readyFn = null; }
       return shown;
     },
+    // resolves when the bar is nearly full; finish() runs the last stretch while the cut winds up
+    ready() { return new Promise((r) => { readyFn = r; }); },
     finish(onLift) {
       return new Promise((resolve) => {
         const done = () => { gsap.ticker.remove(drawSparks); window.removeEventListener('resize', layout); resolve(); };
@@ -107,15 +98,16 @@ export function createLoader(root) {
           return;
         }
         gsap.ticker.add(drawSparks);
+        // hand the intro's end state from CSS to the timeline
+        root.classList.add('is-cutting');
         const cutA = 'polygon(0% 0%, 100% 0%, 100% 38%, 0% 62%)';
         const cutB = 'polygon(0% 62%, 100% 38%, 100% 100%, 0% 100%)';
         const tl = gsap.timeline({ onComplete: done });
         const bar = { v: shown };
         tl.to(bar, { v: 1, duration: 0.32, ease: 'power2.out', onUpdate: () => setBar(bar.v) }, 0);
-        if (intro.progress() < 1) tl.to(intro, { progress: 1, duration: 0.2, ease: 'none' }, 0);
         // the breath before the cut: camera pushes in, the stroke glows (starts moving at once, no dead air)
-        tl.to('.pl-content', { scale: 1.04, duration: 0.5, ease: 'sine.in' }, 0.12)
-          .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255,74,92,.9))', duration: 0.5, ease: 'sine.in' }, '<')
+        tl.to('.pl-content', { scale: 1.04, duration: 0.42, ease: 'sine.in' }, 0.1)
+          .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255,74,92,.9))', duration: 0.42, ease: 'sine.in' }, '<')
           .to(['.pl-top', '.pl-bottom', '.pl-sub'], { autoAlpha: 0, duration: 0.3 }, '<0.24')
           // the cut
           .set('.pl-half--a', { clipPath: cutA })

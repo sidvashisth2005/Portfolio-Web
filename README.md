@@ -44,6 +44,26 @@ on AI calls (`AI_DAILY_LIMIT`), input caps, and a strict Content-Security-Policy
 
 `npm run dev` and `npm run preview` run these functions locally too (put keys in `.env.local`).
 
+## Performance
+
+Lighthouse (local production build): **mobile 95–96, desktop 99**, with Accessibility, Best Practices and SEO at 100.
+Run it against the Vercel URL, not an embedded preview, since the host page affects the score.
+
+How the WebGL-heavy page stays fast:
+
+- **Paint first.** The 一閃 loader is pure HTML and CSS, and its intro plays before any script runs. The CSS is
+  inlined, and the section content is prerendered into `index.html` at build time (`src/content.js`, which also
+  helps SEO).
+- **Static first, WebGL on intent.** The hero shows a pre-baked image of the shader's ink look (`hero-ink.webp`,
+  made with the same formula). Three.js lives in its own chunk and starts on the first pointer, touch, scroll or
+  key (or after a few idle seconds), then crossfades in. The Two Sides, Special Moves and spiral scenes build
+  only when you're within a couple of screens of them, with shaders compiled in parallel where supported.
+- **No long tasks.** Setup yields between sections, pinned sections use pin spacers that already exist in the
+  HTML (no DOM moves), full-screen scenes use `content-visibility: auto`, and looping CSS animations pause off
+  screen. The render loop tracks visibility with IntersectionObserver instead of measuring every frame.
+- **Lean bytes.** Fonts are self-hosted and subset; only the display font is preloaded. Phones get a lighter hero
+  image, GL textures use 560 px copies (`img/gallery/gl/`), and below-the-fold images load after first paint.
+
 ## Edit content
 
 - **Text, projects, stats, experience, awards, podcast episodes:** `src/data.js`
