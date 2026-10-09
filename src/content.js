@@ -2,7 +2,7 @@
 // for first paint and for search engines; main.js only fills containers that are still empty (dev server).
 import { gallery, moves, stats, dojos, awards, leadership, episodes, statNames } from './data.js';
 
-export const NUMERALS = ['壱', '弐', '参'];
+export const NUMERALS = ['壱', '弐', '参', '肆'];
 
 export function moveInfoHTML(i) {
   const m = moves[i];
@@ -20,14 +20,14 @@ export function contentHTML() {
   const stages = [...dojos].reverse();
   return {
     'stats-track': stats.map((s, i) => `
-    <article class="tcard" data-rarity="${s.rarity}" data-count="${s.value}" data-suffix="${s.suffix}" data-bar="${s.bar}">
+    <article class="tcard" data-rarity="${s.rarity}" data-count="${s.value}"${s.from !== undefined ? ` data-from="${s.from}"` : ''} data-suffix="${s.suffix}" data-bar="${s.bar}">
       <div class="tcard__tilt">
         <div class="tcard__inner">
           <div class="tcard__face tcard__front">
             <div class="tcard__top"><span class="tcard__rarity">${s.rarity}</span><span>No. ${String(i + 1).padStart(3, '0')} / ${String(stats.length).padStart(3, '0')}</span></div>
             <div class="tcard__art">
               <span class="tcard__kanji" aria-hidden="true">${s.kanji}</span>
-              <span class="tcard__num">${fmt(s.value)}<small>${s.suffix}</small></span>
+              <span class="tcard__num">${fmt(s.from ?? s.value)}<small>${s.suffix}</small></span>
               <span class="tcard__meaning">${s.kanji} · ${s.meaning}</span>
             </div>
             <div class="tcard__type"><span>Type · ${s.type}</span><span>Power ${Math.round(s.bar * 100)}</span></div>
@@ -63,19 +63,19 @@ export function contentHTML() {
     'lvl-stage': stages.map((d, i) => `
     <article class="lvl__card${i === 0 ? ' is-on' : ''}" data-i="${i}" aria-hidden="${i !== 0}">
       <p class="lvl__ep"><span>Stage ${String(i + 1).padStart(2, '0')}</span><span>${d.period}</span><span>${d.where}</span></p>
-      <h3 class="lvl__co">${d.company.replace(/ Pvt\. Ltd\./, '')}</h3>
+      <h3 class="lvl__co">${d.name || d.company.replace(/ Pvt\. Ltd\./, '')}</h3>
       <p class="lvl__role">${d.role}</p>
       ${d.classChange ? `<p class="lvl__class"><span>Class change</span>${d.classChange}</p>` : ''}
       <p class="lvl__metric"><b>${d.metric}</b><span>${d.metricLabel}</span></p>
-      <ul class="lvl__notes">${d.notes.map((n) => `<li>${n}</li>`).join('')}</ul>
+      <ul class="lvl__notes">${(d.brief || d.notes).map((n) => `<li>${n}</li>`).join('')}</ul>
     </article>`).join(''),
     'lvl-stats': statNames.map((st) => `
     <li data-k="${st.key}"><span class="lvl__sn">${st.short}<small>${st.label}</small></span><span class="lvl__bar"><i></i></span><b class="lvl__sv">0</b><em class="lvl__gain"></em></li>`).join(''),
     'lvl-track': stages.map((d, i) => `
-    <li><button type="button" data-i="${i}"${i === 0 ? ' aria-current="step"' : ''}><span class="lvl__dot">${NUMERALS[i]}</span><span class="lvl__tn">${d.company.replace(/ Pvt\. Ltd\.| Assists/g, '')}</span><span class="lvl__ty">${d.period.replace(/.*(\d{4})$/, '$1')}</span></button></li>`).join(''),
+    <li><button type="button" data-i="${i}"${i === 0 ? ' aria-current="step"' : ''}><span class="lvl__dot">${NUMERALS[i]}</span><span class="lvl__tn">${d.short || d.company}</span><span class="lvl__ty">${d.period.replace(/.*(\d{4})$/, '$1')}</span></button></li>`).join(''),
     'awards': awards.map((a) => `
     <li class="award"><div class="award__top"><span class="award__title">${a.title}</span><span class="award__scope">${a.scope}</span></div><p>${a.desc}</p></li>`).join(''),
-    'leadership': leadership.map((l, i) => { const [t, ...r] = l.split(':'); return `<li><span class="quests__n">${String(i + 1).padStart(2, '0')}</span><div><b>${t}</b>${r.length ? `<span>${r.join(':').trim()}</span>` : ''}</div></li>`; }).join(''),
+    'leadership': leadership.map((l, i) => { const [t, ...r] = l.split(':'); return `<li><span class="quests__n">${String(i + 1).padStart(2, '0')}</span><div><b>${t}</b>${r.length ? `<span>${r.join(':').trim().replace(/^./, (c) => c.toUpperCase())}</span>` : ''}</div></li>`; }).join(''),
     'moves-nav': moves.map((m, i) => `
     <button class="move-pill${i === 0 ? ' is-active' : ''}" type="button" role="tab" aria-selected="${i === 0}" data-index="${i}">
       <span class="kj" aria-hidden="true">${m.kanji}</span><span class="roll" data-roll>${m.label}</span>

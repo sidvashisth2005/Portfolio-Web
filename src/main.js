@@ -370,9 +370,11 @@ async function setupScroll({ scrollTo }) {
       return;
     }
     const target = +card.dataset.count;
+    const from = +(card.dataset.from || 0);
     const suffix = card.dataset.suffix;
     card.querySelector('.tcard__inner').style.transform = `rotateY(${180 - 180 * p}deg)`;
-    const v = Math.round(target * Math.min(1, Math.max(0, (p - 0.45) / 0.55)));
+    // counts up from 0, or down from `data-from` (the research card drops 100% → 0%)
+    const v = Math.round(from + (target - from) * Math.min(1, Math.max(0, (p - 0.45) / 0.55)));
     card.querySelector('.tcard__num').innerHTML = `${v.toLocaleString('en-IN')}<small>${suffix}</small>`;
     card.querySelector('.tcard__meter i').style.width = `${+card.dataset.bar * 100 * Math.min(1, Math.max(0, (p - 0.5) / 0.5))}%`;
   };
@@ -545,7 +547,7 @@ function setupLevel(scrollTo) {
     if (dir > 0 && i > 0) {
       const cc = stages[i].classChange;
       burstTxt.textContent = cc ? 'Class change!' : 'Level up!';
-      burstSub.textContent = cc || `LV. ${String(i + 1).padStart(2, '0')} · ${stages[i].company.replace(/ Pvt\. Ltd\./, '')}`;
+      burstSub.textContent = cc || `LV. ${String(i + 1).padStart(2, '0')} · ${stages[i].short || stages[i].company}`;
       gsap.timeline({ overwrite: 'auto' })
         .fromTo(burst, { autoAlpha: 0, scale: 1.6, skewX: -14 }, { autoAlpha: 1, scale: 1, skewX: -8, duration: 0.45, ease: 'back.out(2)' })
         .fromTo('.lvl__rays', { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1, duration: 0.5, ease: 'expo.out' }, 0)
