@@ -192,9 +192,7 @@ async function start(loader) {
   const pre = $('#preloader');
   const heroIn = gsap.timeline({ paused: true })
     .from('.hero__name span', { yPercent: 110, duration: 1.1, stagger: 0.08, ease: 'expo.out' }, 0.25)
-    .from('.hero__copy .label, .hero__lede, .hero__rank', { y: 30, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, 0.35)
-    // the buttons slide in at full opacity, so they're readable (and AA-contrast) from the first frame
-    .from('.hero__ctas', { y: 40, duration: 0.9, ease: 'power3.out' }, 0.45)
+    .from('.hero__copy .label, .hero__lede, .hero__ctas, .hero__rank', { y: 30, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, 0.35)
     .from('.marquee', { yPercent: 6, duration: 1.2, ease: 'expo.out' }, 0.2)
     .from('.hero__fallback', { yPercent: 25, duration: 1.6, ease: 'expo.out' }, 0);
   lenis?.scrollTo(0, { immediate: true, force: true });

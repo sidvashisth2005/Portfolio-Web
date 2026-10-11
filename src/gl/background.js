@@ -39,15 +39,15 @@ void main(){
   contour *= smoothstep(0.0, 0.35, n) * 0.9;
 
   vec3 voidC = vec3(0.024, 0.024, 0.031);
-  vec3 deep = vec3(0.42, 0.03, 0.066); // a deep, calm crimson for the welcome wall
+  vec3 deep = vec3(0.50, 0.035, 0.08);
   vec3 crimson = vec3(0.878, 0.094, 0.176);
   vec3 base = mix(voidC, deep, uInvert);
   // vignette glow
   float vg = smoothstep(1.2, 0.1, length((uv - vec2(0.5, 0.45)) * vec2(uRes.x / uRes.y, 1.0)));
-  base += mix(vec3(0.05, 0.0, 0.01), vec3(0.14, 0.008, 0.024), uInvert) * vg;
+  base += mix(vec3(0.05, 0.0, 0.01), vec3(0.18, 0.01, 0.03), uInvert) * vg;
 
   vec3 lineC = mix(crimson * 0.42, vec3(0.0), uInvert);
-  vec3 col = mix(base, lineC, contour * mix(0.55, 0.42, uInvert));
+  vec3 col = mix(base, lineC, contour * mix(0.55, 0.5, uInvert));
 
   // Silk ribbons: many thin strands that braid along a diagonal sweep
   vec3 glow = vec3(0.0);
@@ -65,7 +65,7 @@ void main(){
     vec3 strand = mix(crimson, vec3(1.0, 0.42, 0.36), fract(fi * 0.37));
     glow += strand * g * fade * 0.32;
   }
-  col += glow * uRibbons * (1.0 - uInvert * 0.82);
+  col += glow * uRibbons * (1.0 - uInvert * 0.75);
 
   // grain
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) * 0.025;
