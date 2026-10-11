@@ -75,8 +75,8 @@ export async function POST(req) {
   const subject = `${tag}[Portfolio · ${m.intent}] ${m.name}${m.company ? ` · ${m.company}` : ''}`;
   if (has.mail) {
     const html = `<div style="font-family:system-ui,sans-serif;max-width:560px">
-      <p style="font:600 12px monospace;letter-spacing:.1em;color:#e0182d;text-transform:uppercase">New scroll · ${esc(m.intent)}</p>
-      ${t?.summary ? `<p style="background:#fff3f4;border-left:3px solid #e0182d;padding:8px 12px"><b>Triage:</b> ${esc(t.summary)} <i>(${esc(t.priority)})</i></p>` : ''}
+      <p style="font:600 12px monospace;letter-spacing:.1em;color:#e8452c;text-transform:uppercase">New scroll · ${esc(m.intent)}</p>
+      ${t?.summary ? `<p style="background:#fdf3ee;border-left:3px solid #e8452c;padding:8px 12px"><b>Triage:</b> ${esc(t.summary)} <i>(${esc(t.priority)})</i></p>` : ''}
       <p><b>${esc(m.name)}</b> &lt;${esc(m.email)}&gt;${m.company ? ` · ${esc(m.company)}` : ''}</p>
       <p style="white-space:pre-wrap;line-height:1.5">${esc(m.message)}</p>
       <p style="color:#888;font-size:12px">Reply to this email to answer ${esc(m.name)} directly.</p></div>`;

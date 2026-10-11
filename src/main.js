@@ -192,7 +192,9 @@ async function start(loader) {
   const pre = $('#preloader');
   const heroIn = gsap.timeline({ paused: true })
     .from('.hero__name span', { yPercent: 110, duration: 1.1, stagger: 0.08, ease: 'expo.out' }, 0.25)
-    .from('.hero__copy .label, .hero__lede, .hero__ctas, .hero__rank', { y: 30, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, 0.35)
+    .from('.hero__copy .label, .hero__lede, .hero__rank', { y: 30, autoAlpha: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, 0.35)
+    // the buttons slide in at full opacity, so they're readable (and AA-contrast) from the first frame
+    .from('.hero__ctas', { y: 40, duration: 0.9, ease: 'power3.out' }, 0.45)
     .from('.marquee', { yPercent: 6, duration: 1.2, ease: 'expo.out' }, 0.2)
     .from('.hero__fallback', { yPercent: 25, duration: 1.6, ease: 'expo.out' }, 0);
   lenis?.scrollTo(0, { immediate: true, force: true });
@@ -241,7 +243,11 @@ async function start(loader) {
   }), { rootMargin: '50px 0px' });
   new Set(Object.values(watch)).forEach((sel) => vio.observe($(sel)));
   let frames = 0, last = performance.now(), fps = 0;
+  let paper = false;
   gsap.ticker.add((time) => {
+    // the hero's washi moment: cursor and fallbacks switch to their on-paper look
+    const p = S.bgInvert.value > 0.5;
+    if (p !== paper) { paper = p; document.documentElement.classList.toggle('is-paper', p); }
     gl.bg?.render(time);
     for (const k of visible) gl[k]?.render(time);
     if (visible.has('onair')) podcast.render(time);
@@ -263,7 +269,7 @@ async function setupScroll({ scrollTo }) {
     const tl = gsap.timeline({
       scrollTrigger: { trigger: '#top', pinSpacer: '#sp-top', start: 'top top', end: () => `+=${mobile ? 2200 : 3600}`, pin: true, scrub: mobile ? 0.3 : 0.6, anticipatePin: 1, invalidateOnRefresh: true },
     });
-    tl.to('#hero-card', { scale: 0.44, borderRadius: 18, boxShadow: '0 30px 100px rgba(0,0,0,.95), 0 0 0 1px rgba(224,24,45,.5)', ease: 'power1.inOut', duration: 0.2 }, 0)
+    tl.to('#hero-card', { scale: 0.44, borderRadius: 18, boxShadow: '0 30px 100px rgba(0,0,0,.95), 0 0 0 1px rgba(232, 69, 44,.5)', ease: 'power1.inOut', duration: 0.2 }, 0)
       .to('.hero__copy, .hero__rank, .hero__hint', { autoAlpha: 0, duration: 0.08 }, 0.02);
     if (webgl) tl.to(S.bgInvert, { value: 1, duration: 0.14, ease: 'power1.inOut' }, 0.1);
     tl.to('#hero-card', { autoAlpha: 0, scale: 0.36, duration: 0.07 }, 0.2)
@@ -637,7 +643,7 @@ function setupMisc() {
     const dot = cursor.querySelector('.cursor__dot'), frame = cursor.querySelector('.cursor__frame');
     const pos = { x: -100, y: -100 }, cur = { x: -100, y: -100 };
     const labels = [['.spot', 'View'], ['.move-pill', 'Pick'], ['.ladder', 'Switch'], ['.footer__cta, .hero__ctas .pill--red, a[href^="mailto"]', 'Say hi'], ['a[download]', 'Save'], ['a[target="_blank"]', 'Open'], ['[data-cursor]', '']];
-    const lightSel = '.duality__sticky:not(.is-b), .footer__card';
+    const lightSel = '.duality__sticky:not(.is-b)';
     window.addEventListener('pointermove', (e) => {
       pos.x = e.clientX; pos.y = e.clientY; cursor.style.opacity = 1;
       dot.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
@@ -679,7 +685,7 @@ function setupMisc() {
     const el = document.createElement('div');
     el.className = 'shades';
     el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = `<svg viewBox="0 0 22 6" width="${22 * cell}" height="${6 * cell}" shape-rendering="crispEdges"><g fill="#060608">${rects}</g><g fill="#fff" opacity=".8"><rect x="3" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/></g></svg><span>Deal with it.</span>`;
+    el.innerHTML = `<svg viewBox="0 0 22 6" width="${22 * cell}" height="${6 * cell}" shape-rendering="crispEdges"><g fill="#0b0a09">${rects}</g><g fill="#fff" opacity=".8"><rect x="3" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/></g></svg><span>Deal with it.</span>`;
     document.body.appendChild(el);
     gsap.timeline({ onComplete: () => el.remove() })
       .fromTo(el, { y: -window.innerHeight * 0.6, rotation: -8 }, { y: 0, rotation: 0, duration: 1.1, ease: 'steps(12)' })
@@ -704,7 +710,7 @@ function setupMisc() {
         const c = document.createElement('span');
         c.className = 'confetti';
         c.style.left = `${Math.random() * 100}vw`;
-        c.style.background = i % 6 === 0 ? '#FFD60A' : '#E0182D';
+        c.style.background = i % 6 === 0 ? '#c9a45c' : '#e8452c';
         document.body.appendChild(c);
         gsap.to(c, { y: window.innerHeight + 40, x: (Math.random() - 0.5) * 200, rotation: Math.random() * 720, duration: 1.6 + Math.random() * 1.4, ease: 'power1.in', onComplete: () => c.remove() });
       }
@@ -716,13 +722,13 @@ function setupMisc() {
       j = document.createElement('div');
       j.id = 'judge';
       j.setAttribute('role', 'status');
-      j.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:150;font:500 11px/1.4 "Azeret Mono",monospace;letter-spacing:.08em;background:rgba(6,6,8,.85);border:1px solid #E0182D;color:#F4F2EE;padding:8px 12px;border-radius:8px;text-transform:uppercase';
+      j.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:150;font:500 11px/1.4 "Azeret Mono",monospace;letter-spacing:.08em;background:rgba(11, 10, 9,.85);border:1px solid #e8452c;color:#efe9df;padding:8px 12px;border-radius:8px;text-transform:uppercase';
       j.textContent = 'Judge mode';
       document.body.appendChild(j);
     }
   });
 
-  console.log('%c SV %c Built with Three.js, GSAP, Lenis and custom GLSL. Press J for judge mode. Try the Konami code. ', 'background:#E0182D;color:#fff;font-weight:700;padding:4px 6px', 'color:#E0182D');
+  console.log('%c SV %c Built with Three.js, GSAP, Lenis and custom GLSL. Press J for judge mode. Try the Konami code. ', 'background:#e8452c;color:#fff;font-weight:700;padding:4px 6px', 'color:#e8452c');
 }
 
 /* ---------------- Tick ladders for the Two sides section ---------------- */

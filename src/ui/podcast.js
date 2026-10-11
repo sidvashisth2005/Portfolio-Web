@@ -60,7 +60,7 @@ export function initPodcast() {
         if (playing) v = data[Math.floor((i / bars) * data.length * 0.8)] / 255;
         else v = 0.18 + 0.22 * (0.5 + 0.5 * Math.sin(time * 2.2 + i * 0.45)) * (0.6 + 0.4 * Math.sin(i * 1.7));
         const h = Math.max(3, v * H);
-        g.fillStyle = i % 9 === 4 ? '#FFD60A' : '#E0182D';
+        g.fillStyle = i % 9 === 4 ? '#c9a45c' : '#e8452c';
         g.globalAlpha = playing ? 1 : 0.75;
         g.fillRect(i * gap + gap * 0.2, H - h, gap * 0.6, h);
       }
