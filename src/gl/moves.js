@@ -38,7 +38,7 @@ function poster(move, img) {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  g.fillStyle = '#13110f';
+  g.fillStyle = '#111116';
   g.fillRect(0, 0, W, H);
   if (img) {
     const ia = img.width / img.height, ca = W / H;
@@ -49,23 +49,23 @@ function poster(move, img) {
     g.filter = 'none';
   }
   const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(11, 10, 9,0)');
-  grad.addColorStop(0.58, 'rgba(11, 10, 9,0)');
-  grad.addColorStop(0.8, 'rgba(11, 10, 9,0.5)');
-  grad.addColorStop(1, 'rgba(11, 10, 9,0.85)');
+  grad.addColorStop(0, 'rgba(6,6,8,0)');
+  grad.addColorStop(0.58, 'rgba(6,6,8,0)');
+  grad.addColorStop(0.8, 'rgba(6,6,8,0.5)');
+  grad.addColorStop(1, 'rgba(6,6,8,0.85)');
   g.fillStyle = grad;
   g.fillRect(0, 0, W, H);
   // crimson speed lines from the right edge
   g.save();
   g.globalAlpha = 0.06;
-  g.strokeStyle = '#e8452c';
+  g.strokeStyle = '#E0182D';
   g.lineWidth = 3;
   for (let i = 0; i < 26; i++) {
     const y = (i / 26) * H;
     g.beginPath(); g.moveTo(W, H * 0.4); g.lineTo(W * 0.55, y); g.stroke();
   }
   g.restore();
-  g.fillStyle = 'rgba(232, 69, 44,0.92)';
+  g.fillStyle = 'rgba(224,24,45,0.92)';
   g.shadowColor = 'rgba(0,0,0,0.6)';
   g.shadowBlur = 40;
   g.font = '440px "Dela Gothic One", sans-serif';
@@ -78,10 +78,10 @@ function poster(move, img) {
   // bottom type sits on the photo, so it gets a soft shadow to stay legible
   g.shadowColor = 'rgba(0,0,0,0.85)';
   g.shadowBlur = 22;
-  g.fillStyle = '#ff6b4a';
+  g.fillStyle = '#FF4A5C';
   g.font = '600 34px "Azeret Mono", monospace';
   g.fillText(`${move.category}  ·  ${move.technique}`.toUpperCase(), 64, H - 336);
-  g.fillStyle = '#efe9df';
+  g.fillStyle = '#F4F2EE';
   g.font = '900 230px "Big Shoulders Display", sans-serif';
   g.fillText(move.big, 56, H - 126);
   g.font = '800 50px "Schibsted Grotesk", sans-serif';
@@ -91,12 +91,12 @@ function poster(move, img) {
     g.font = '500 28px "Azeret Mono", monospace';
     const t = move.award.toUpperCase();
     const w = g.measureText(t).width + 44;
-    g.fillStyle = '#c9a45c';
+    g.fillStyle = '#FFD60A';
     roundRect(g, 56, 56, w, 60, 30); g.fill();
-    g.fillStyle = '#0b0a09';
+    g.fillStyle = '#060608';
     g.fillText(t, 78, 97);
   }
-  g.strokeStyle = 'rgba(232, 69, 44,0.6)';
+  g.strokeStyle = 'rgba(224,24,45,0.6)';
   g.lineWidth = 4;
   roundRect(g, 2, 2, W - 4, H - 4, 36); g.stroke();
   const tex = new THREE.CanvasTexture(c);

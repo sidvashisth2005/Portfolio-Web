@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { makeRenderer, isMobile, compileAsync } from './utils.js';
 
 // Fixed full-screen layer: drifting topographic contours plus a bundle of glowing silk ribbons.
-// uInvert turns the world from sumi ink to washi paper during the hero zoom-out (contours become ink lines on paper).
+// uInvert flips the world from ink-black to crimson during the hero zoom-out.
 const frag = /* glsl */ `
 precision highp float;
 uniform vec2 uRes;
@@ -38,17 +38,16 @@ void main(){
   float contour = 1.0 - smoothstep(0.0, w, f - 0.0);
   contour *= smoothstep(0.0, 0.35, n) * 0.9;
 
-  // sumi ink, washi paper, shu vermilion (display values)
-  vec3 sumi = vec3(0.043, 0.039, 0.035);
-  vec3 washi = vec3(0.937, 0.914, 0.875);
-  vec3 shu = vec3(0.910, 0.271, 0.173);
-  vec3 base = mix(sumi, washi, uInvert);
-  // vignette: a warm ember glow on ink, a soft fibre tint on paper
+  vec3 voidC = vec3(0.024, 0.024, 0.031);
+  vec3 deep = vec3(0.42, 0.03, 0.066); // a deep, calm crimson for the welcome wall
+  vec3 crimson = vec3(0.878, 0.094, 0.176);
+  vec3 base = mix(voidC, deep, uInvert);
+  // vignette glow
   float vg = smoothstep(1.2, 0.1, length((uv - vec2(0.5, 0.45)) * vec2(uRes.x / uRes.y, 1.0)));
-  base += mix(vec3(0.05, 0.016, 0.006), vec3(0.025, 0.014, 0.0), uInvert) * vg;
+  base += mix(vec3(0.05, 0.0, 0.01), vec3(0.14, 0.008, 0.024), uInvert) * vg;
 
-  vec3 lineC = mix(shu * 0.38, vec3(0.16, 0.13, 0.11), uInvert);
-  vec3 col = mix(base, lineC, contour * mix(0.55, 0.32, uInvert));
+  vec3 lineC = mix(crimson * 0.42, vec3(0.0), uInvert);
+  vec3 col = mix(base, lineC, contour * mix(0.55, 0.42, uInvert));
 
   // Silk ribbons: many thin strands that braid along a diagonal sweep
   vec3 glow = vec3(0.0);
@@ -63,12 +62,10 @@ void main(){
     float d = abs(uv.y - y);
     float g = 0.0009 / (d + 0.0018);
     float fade = smoothstep(0.0, 0.25, uv.x) * smoothstep(1.05, 0.55, uv.x);
-    vec3 strand = mix(shu, vec3(1.0, 0.62, 0.45), fract(fi * 0.37));
+    vec3 strand = mix(crimson, vec3(1.0, 0.42, 0.36), fract(fi * 0.37));
     glow += strand * g * fade * 0.32;
   }
-  // light threads on ink; on paper the same threads are drawn as vermilion ink instead of light
-  float gi = clamp(dot(glow, vec3(0.333)) * 1.4, 0.0, 1.0);
-  col = mix(col + glow * uRibbons, mix(col, shu, gi * 0.55 * uRibbons), uInvert);
+  col += glow * uRibbons * (1.0 - uInvert * 0.82);
 
   // grain
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) * 0.025;

@@ -56,7 +56,7 @@ export function createLoader(root) {
         x: cx + dx * t, y: cy + dy * t,
         vx: dx * (Math.random() - 0.3) * 10 - dy * side * sp, vy: dy * (Math.random() - 0.3) * 10 + dx * side * sp,
         life: 1, decay: 0.012 + Math.random() * 0.025,
-        c: i % 5 === 0 ? '201,164,92' : i % 3 === 0 ? '255,255,255' : '255,107,74',
+        c: i % 5 === 0 ? '255,214,10' : i % 3 === 0 ? '255,255,255' : '255,74,92',
       });
     }
   }
@@ -107,7 +107,7 @@ export function createLoader(root) {
         tl.to(bar, { v: 1, duration: 0.32, ease: 'power2.out', onUpdate: () => setBar(bar.v) }, 0);
         // the breath before the cut: camera pushes in, the stroke glows (starts moving at once, no dead air)
         tl.to('.pl-content', { scale: 1.04, duration: 0.42, ease: 'sine.in' }, 0.1)
-          .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255, 107, 74,.9))', duration: 0.42, ease: 'sine.in' }, '<')
+          .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255,74,92,.9))', duration: 0.42, ease: 'sine.in' }, '<')
           .to(['.pl-top', '.pl-bottom', '.pl-sub'], { autoAlpha: 0, duration: 0.3 }, '<0.24')
           // the cut
           .set('.pl-half--a', { clipPath: cutA })

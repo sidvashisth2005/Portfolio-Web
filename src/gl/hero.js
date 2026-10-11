@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { makeRenderer, isMobile, compileAsync } from './utils.js';
 
-// The portrait is drawn twice in one shader: a vermilion ink/halftone version and the real colour photo.
+// The portrait is drawn twice in one shader: a crimson ink/halftone version and the real colour photo.
 // A decaying fluid trail painted by the cursor decides where colour shows through.
 const vert = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
 
@@ -66,9 +66,9 @@ void main(){
   vec2 g = fract(frag / 5.0) - 0.5;
   float dotR = (1.0 - lum) * 0.62;
   float ht = 1.0 - smoothstep(dotR - 0.08, dotR + 0.08, length(g));
-  vec3 inkDark = vec3(0.045, 0.032, 0.026);
-  vec3 crimson = vec3(0.910, 0.271, 0.173); // shu vermilion
-  vec3 hot = vec3(1.0, 0.70, 0.55);
+  vec3 inkDark = vec3(0.05, 0.015, 0.025);
+  vec3 crimson = vec3(0.878, 0.094, 0.176);
+  vec3 hot = vec3(1.0, 0.55, 0.5);
   float tone = smoothstep(0.04, 0.62, lum);
   vec3 ink = mix(inkDark, crimson, tone);
   ink = mix(ink, hot, smoothstep(0.62, 0.95, lum) * 0.7);
