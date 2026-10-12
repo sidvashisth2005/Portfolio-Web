@@ -8,6 +8,7 @@
     "api/scout.js": { "maxDuration": 30 },
     "api/contact.js": { "maxDuration": 20 }
   },
+  "rewrites": [{ "source": "/world", "destination": "/world.html" }],
   "headers": [
     {
       "source": "/(.*)",

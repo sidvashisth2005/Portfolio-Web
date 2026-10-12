@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Siddhant Vashisth · The Arc in 3D</title>
+  <meta name="description" content="Siddhant Vashisth's portfolio as a 3D world: a crimson city at night and the HackNITR 7.0 arena. Scroll to travel, or explore freely." />
+  <meta name="theme-color" content="#060608" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="preload" href="fonts/big-shoulders-display-latin-832b15.woff2" as="font" type="font/woff2" crossorigin />
+</head>
+<body class="is-loading">
+  <a class="skip" href="#w-content">Skip to content</a>
+
+  <!-- 一閃: the world opens with a cut -->
+  <div class="wl" id="wl" role="status" aria-label="Loading the world">
+    <div class="wl__half wl__half--a"><div class="wl__in">
+      <p class="label">Siddhant Vashisth · The Arc</p>
+      <p class="wl__name">Entering the world</p>
+      <span class="wl__bar"><i id="wl-bar"></i></span>
+    </div></div>
+    <div class="wl__half wl__half--b" aria-hidden="true"><div class="wl__in">
+      <p class="label">Siddhant Vashisth · The Arc</p>
+      <p class="wl__name">Entering the world</p>
+      <span class="wl__bar"><i></i></span>
+    </div></div>
+    <span class="wl__slash" aria-hidden="true"></span>
+  </div>
+
+  <canvas class="w-canvas" id="w-canvas" aria-hidden="true"></canvas>
+
+  <header class="w-head">
+    <a class="w-seal" href="./" aria-label="Siddhant Vashisth, the full site"><span>SV</span></a>
+    <nav class="w-nav" aria-label="Site">
+      <button class="w-pill" type="button" id="w-roam" aria-pressed="false"><span class="w-pill__kj" aria-hidden="true">遊</span><span id="w-roam-t">Free roam</span></button>
+      <a class="w-pill w-pill--red" href="resume.pdf" download>Résumé ↓</a>
+    </nav>
+  </header>
+
+  <!-- The text lives in HTML over the world: readable, selectable and indexable. Each panel shows over a stretch of the journey. -->
+  <main id="w-content" class="w-panels">
+    <section class="w-panel w-panel--hero" data-range="0,0.07" aria-labelledby="w-name">
+      <p class="label label--red">B.Tech CSE · JUET Guna · Class of 2027</p>
+      <h1 class="w-name" id="w-name"><span>Siddhant</span><span>Vashisth</span></h1>
+      <p class="w-lede">Business strategist and builder. I turn raw market signal into products and pitches across AgriTech, AR and AI.</p>
+      <div class="w-ctas">
+        <a class="w-pill w-pill--red w-pill--lg" href="mailto:siddhantvashisth05@gmail.com">Hire me ↗</a>
+        <a class="w-pill w-pill--lg" href="#w-arena">Enter the arc ↓</a>
+      </div>
+      <p class="label muted w-hint">Scroll to travel · or press <kbd>Free roam</kbd> to explore</p>
+    </section>
+
+    <section class="w-panel w-panel--center" data-range="0.15,0.3" aria-label="Welcome">
+      <p class="label">Welcome to the arc of</p>
+      <p class="w-big">Siddhant</p>
+      <p class="w-jp" lang="ja">作る戦略家</p>
+      <p class="label muted">The strategist who builds</p>
+    </section>
+
+    <section class="w-panel w-panel--right" data-range="0.36,0.52" aria-label="The city">
+      <p class="label label--red">大会編 · The tournament arc</p>
+      <h2 class="w-h2">Every light is a team that entered.</h2>
+      <p class="w-lede">HackNITR 7.0 drew 6,200+ participants from 20+ countries. Somewhere past these rooftops, one team was about to take the whole thing.</p>
+    </section>
+
+    <section class="w-panel w-panel--arena" id="w-arena" data-range="0.74,0.92" aria-labelledby="w-rank">
+      <p class="label label--red">勝 · Rank 1 · International</p>
+      <h2 class="w-rank" id="w-rank"><b>#1</b><span>of 6,200+</span></h2>
+      <p class="w-lede">Topped 6,200+ participants from 20+ countries with the most advanced livestock-monitoring build, adding BLE and data hashing for tamper-proof telemetry. Sole presenter to a global jury.</p>
+      <p class="label muted">HackNITR 7.0 · 20+ countries · sole presenter</p>
+    </section>
+
+    <section class="w-panel w-panel--end" data-range="0.95,1.01" aria-label="More of the arc">
+      <p class="label">The world is still being built</p>
+      <h2 class="w-h2">The rest of the arc is one jump away.</h2>
+      <div class="w-ctas">
+        <a class="w-pill w-pill--red w-pill--lg" href="./">Open the full site ↗</a>
+        <a class="w-pill w-pill--lg" href="mailto:siddhantvashisth05@gmail.com">Email me</a>
+      </div>
+    </section>
+  </main>
+
+  <div class="w-roamhint" id="w-roamhint" hidden>
+    <p class="label"><kbd>W A S D</kbd> move · drag to look · <kbd>Space</kbd> / <kbd>Shift</kbd> up / down · <kbd>Esc</kbd> back to the path</p>
+  </div>
+  <div class="w-progress" aria-hidden="true"><i id="w-prog"></i></div>
+
+  <noscript><p class="w-noscript">This 3D world needs JavaScript. <a href="./">Open the full site</a>.</p></noscript>
+  <script type="module" src="/src/world/main.js"></script>
+</body>
+</html>

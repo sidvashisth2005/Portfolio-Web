@@ -75,7 +75,8 @@ function prefetchScenes() {
 function prerender() {
   return {
     name: 'prerender-content',
-    async transformIndexHtml(html) {
+    async transformIndexHtml(html, ctx) {
+      if (!ctx.filename.endsWith('index.html')) return html; // world.html has its own markup
       const { contentHTML, NUMERALS } = await import(`${pathToFileURL(resolve('src/content.js')).href}?t=${Date.now()}`);
       for (const [id, inner] of Object.entries(contentHTML())) {
         const re = new RegExp(`(<([a-z]+)\\b[^>]*\\bid="${id}"[^>]*>)(</\\2>)`);
