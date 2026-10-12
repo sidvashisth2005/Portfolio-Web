@@ -10,7 +10,8 @@
   <link rel="icon" href="favicon.ico" sizes="32x32" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="preload" href="fonts/big-shoulders-display-latin-832b15.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/anton-latin-b9beea.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/archivo-var-latin-258a93.woff2" as="font" type="font/woff2" crossorigin />
 </head>
 <body class="is-loading">
   <a class="skip" href="#w-content">Skip to content</a>
@@ -60,7 +61,7 @@
       <p class="label muted">The strategist who builds</p>
     </section>
 
-    <section class="w-panel w-panel--right" data-key="about" aria-label="About">
+    <section class="w-panel w-panel--left" data-key="about" aria-label="About">
       <p class="label label--red">中 · At the heart of the village</p>
       <h2 class="w-h2">Strategist. Builder. Final year.</h2>
       <p class="w-lede">Final-year B.Tech CSE at JUET Guna. Research intern in adversarial ML at IIITDM Jabalpur, sole pitcher on six-plus hackathon stages, Team Lead of three 15–18 person teams at 19, and host of a podcast about all of it.</p>
@@ -94,6 +95,21 @@
       </div>
     </section>
   </main>
+
+  <!-- the film: letterbox bars, a caption for every shot, a title card for every chapter -->
+  <div class="w-film" aria-hidden="true">
+    <div class="w-bar w-bar--t"></div>
+    <div class="w-bar w-bar--b">
+      <div class="w-cap" id="w-cap"><span class="w-cap__k" id="w-cap-k" lang="ja"></span><span class="w-cap__tx"><b id="w-cap-t"></b><span id="w-cap-l"></span></span></div>
+      <p class="w-slate" id="w-slate"></p>
+    </div>
+  </div>
+  <div class="w-chapter" id="w-chapter" aria-hidden="true">
+    <p class="w-chapter__no"><span class="w-chapter__kj" lang="ja"></span><span class="w-chapter__n"></span></p>
+    <p class="w-chapter__t"></p>
+    <i class="w-chapter__cut"></i>
+    <p class="w-chapter__s"></p>
+  </div>
 
   <nav class="w-travel" id="w-travel" aria-label="Travel to a place" hidden></nav>
   <div class="w-roamhint" id="w-roamhint" hidden>

@@ -3,6 +3,7 @@
 // hands it to the visitor (WASD + drag). The text is HTML over the world (see world.html).
 import './world.css';
 import '../fonts.css';
+import './fonts.css';
 import * as THREE from 'three';
 import Lenis from 'lenis';
 import { buildLand, heightAt, LAYOUT, FACE_X } from './land.js';
@@ -51,8 +52,8 @@ let land, village, arena, leaves, places;
 async function build() {
   // painted signs use the site's fonts, so wait for them first
   await Promise.all([
-    document.fonts.load('900 100px "Big Shoulders Display"'), document.fonts.load('100px "Dela Gothic One"', '作る戦略家一閃大会勝修行光伝巻力技戦影'),
-    document.fonts.load('500 20px "Azeret Mono"'),
+    document.fonts.load('900 100px "Big Shoulders Display"'), document.fonts.load('100px "Dela Gothic One"', '作る戦略家一閃大会勝修行光伝巻力技戦影第章門'),
+    document.fonts.load('500 20px "Azeret Mono"'), document.fonts.load('100px "Anton"'), document.fonts.load('700 20px "Archivo"'),
   ]).catch(() => {});
   setLoad(0.2);
   land = buildLand(scene, { mobile, sunDir });
@@ -87,12 +88,12 @@ const PL = (f, r, y) => [LX + (LF[0] * f + LR[0] * r) * LK, y * LK, LZ + (LF[1] 
 const CZ = LAYOUT.cliffZ;
 const START = [
   // the great gate from the road, the portrait scroll on the left
-  [mobile ? [-6, 7, 384] : [16, 9, 390], mobile ? [-10, 1, 300] : [22, 19, 300], 'gate'],
-  [[2, 11, G + 16], [0, 13, G - 60]], // through the gate
+  [mobile ? [-2, 3, 440] : [30, 3.5, 410], mobile ? [0, 22, 300] : [16, 18, 300], 'gate'], // low and wide: the gate towers over the road
+  [[2, 11, G + 16], [0, 13, G - 60], 'through'], // through the gate
   [[0, 13, G - 50], [0, 20, 120], 'street'], // the main street: lanterns, signboards, shops
-  [[0, 16, 190], [0, 22, 60]], // over the bridge
-  [[0, 24, 150], [0, 40, 0]], // the headquarters ahead, the biggest thing in the valley
-  [mobile ? [110, 104, 176] : [104, 82, 132], mobile ? [0, 26, 0] : [0, 42, 0], 'tower'], // round the headquarters and its crest
+  [[0, 16, 190], [0, 22, 60], 'bridge'], // over the bridge
+  [[6, 3, 92], [0, 54, 0], 'ahead'], // from the plaza's edge, looking up: the headquarters, the biggest thing in the valley
+  [mobile ? [90, 70, 230] : [110, 64, 196], mobile ? [-40, 74, -120] : [-48, 76, -120], 'tower'], // the headquarters with the carved face behind it
   // up to the monument: the face carved into the cliff above the village
   [[FACE_X + 44, mobile ? 100 : 116, LAYOUT.cliffZ + (mobile ? 300 : 280)], [FACE_X + (mobile ? 0 : 40), mobile ? 128 : 118, LAYOUT.cliffZ + 30], 'monument'],
 ];
@@ -111,33 +112,80 @@ const STOPS = mobile ? [
   ...START,
   [[-120, 150, 160], [-300, 20, -40], 'overview'], // over the village, turning west to the hills
   [P('shrine', 70, 7, 7), P('shrine', 8, 9, -3), 'torii'], // the path of torii up to the shrine
-  [P('shrine', 50, 22, 0), P('shrine', -4, 8, 0), 'sides'], // over the last torii: the two great boards either side of the path, the hall between
-  [P('shrine', -6, 2.6, -3), P('shrine', -6, 4.6, -24), 'stats'], // the ema rack, up in the top half of the view
-  [PL(60, 0, 26), PL(0, 0, 6), 'toLibrary'], // back over the wall to the library
-  [PL(30, -4, 9.5), PL(-8, 12, 9.6), 'moves'], // the four scrolls on the left, the panel on the right
+  [P('shrine', 50, 22, 0), P('shrine', -4, 12, 0), 'sides'], // over the last torii: the two great boards either side of the path, the hall between
+  [P('shrine', -6, 2.6, -3), P('shrine', -6, 1.6, -24), 'stats'], // the ema rack, up in the top half of the view
+  [PL(70, 8, 34), PL(0, 0, 8), 'toLibrary'], // back over the wall to the library
+  [PL(8, 17, 10), PL(-10.6, -6, 9), 'moves'], // the four scrolls on the left, the panel on the right
   [P('training', 45, 50, 48), P('training', -5, 2, -2), 'toTraining'], // the training ground from above
   [P('training', 27, 8, 5), P('training', -10, 4, -22), 'training'], // the posts and the four stage stones, left of the panel
   [P('training', 26, 16, 36), P('training', -18, 4, -10), 'quests'],
   ...STADIUM,
-  [[A.x + 10, 30, A.z + 20], [A.x, 54, A.z - 88], 'awards'], // up to the great banner
+  [[A.x + 10, 30, A.z + 20], [A.x + 40, 54, A.z - 88], 'awards'], // up to the great banner
   [[280, 90, 120], P('memorial', 0, 5, 0), 'overVillage'], // back over the village
-  [P('memorial', -4, 7.6, -3), P('memorial', 8, 5.2, 16), 'memorial'], // inside the ring of photographs, the stone behind
+  [P('memorial', -4, 7.6, -3), P('memorial', 15.6, 5.2, 11.2), 'memorial'], // inside the ring of photographs, the stone behind
   [[80, 140, 120], [40, 214, CZ], 'rise'], // rising toward the cliff
-  [P('mast', -36, 12, 52), P('mast', -10, 16, 0), 'onair'], // the radio mast and the ON AIR hut
+  [P('mast', -40, 16, 50), P('mast', 8, 14, 9), 'onair'], // the radio mast and the ON AIR hut
   [P('summit', 0, 14, 32), [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
 ];
+// Every stop is a shot, planned like a film: a lens (fov, degrees on desktop), a tilt of the horizon (roll, degrees),
+// a slow push-in while the camera rests there (push, metres along the view) and a caption saying what is in frame.
+const SHOT = {
+  gate: { fov: 36, push: 7, cap: ['門', 'The great gate', 'The only way into the village. Scroll, and its doors swing open.'] },
+  through: { fov: 58, roll: -2, cap: ['入', 'Through the gate', 'Under the 一閃 plaque and into the village.'] },
+  street: { fov: 44, push: 6, cap: ['道', 'Main street', 'Lanterns, signboards and shops: everyday life on the way to the centre.'] },
+  bridge: { fov: 50, roll: 2, cap: ['橋', 'The red bridge', 'Over the river that cuts the village in two.'] },
+  ahead: { fov: 50, push: 8, cap: ['本部', 'Headquarters', 'The biggest building in the valley, where the strategist works.'] },
+  tower: { fov: 40, push: 8, cap: ['本部', 'Headquarters', 'Tiered roofs, thatch skirts, the 閃 crest on top.'] },
+  monument: { fov: 30, push: 14, cap: ['顔', 'The monument', 'His face, carved into the cliff that guards the village.'] },
+  overview: { fov: 46, roll: -3, cap: ['里', 'The hidden village', mobile ? 'From above: the whole valley at sunset, the carved cliff behind it.' : 'From above: the whole valley at sunset, the shrine hills to the west.'] },
+  torii: { fov: 40, push: 6, cap: ['鳥居', 'The path of torii', 'Red gates climbing the hill to the shrine.'] },
+  sides: { fov: 44, push: 5, cap: ['二面', 'Two sides', 'Two great boards either side of the path: the strategist and the builder.'] },
+  stats: { fov: 36, push: 1.2, cap: ['絵馬', 'The plaque rack', 'Six wooden plaques, each one a real number from the arc.'] },
+  toLibrary: { fov: 48, roll: 2, cap: ['書庫', 'The library', 'Where the village keeps its scrolls.'] },
+  moves: { fov: 38, push: 3, cap: ['巻', 'Four scrolls', 'One scroll for each flagship project. The case files are linked.'] },
+  toTraining: { fov: 46, roll: -2, cap: ['演習場', 'The training ground', 'A ring of posts and four stage stones.'] },
+  training: { fov: 38, push: 4, cap: ['修行', 'Four stages', 'Each stone is one stage of experience, numbered in order.'] },
+  quests: { fov: 42, push: 4, cap: ['外伝', 'Side quests', 'The clubs, fests and teams run off the main path.'] },
+  toStadium: { fov: 44, roll: -3, cap: ['闘技場', 'The exam stadium', 'Beyond the forest: HackNITR 7.0, 6,200+ participants from 20+ countries.'] },
+  rim: { fov: 52, roll: 3, cap: ['闘技場', 'Over the rim', 'Every figure in the stands is one of the participants.'] },
+  bowl: { fov: 56, push: 3, cap: ['会場', 'Into the arena', 'Down to the floor, where the final was decided.'] },
+  trophy: { fov: 34, push: 2, cap: ['優勝', 'Rank 1', 'The trophy. One team took the whole thing.'] },
+  awards: { fov: 40, push: 4, cap: ['栄光', 'The honours', 'The great banner: the rest of the wins.'] },
+  overVillage: { fov: 46, roll: 2, cap: ['回想', 'Back over the village', 'To the grove where the photographs hang.'] },
+  memorial: { fov: 40, push: 3, cap: ['写真', 'Flashbacks', 'Real photographs from the arc, hung in a ring around the stone.'] },
+  rise: { fov: 48, roll: -2, cap: ['崖', 'Up the cliff', 'To the top of the rock, above the carved face.'] },
+  onair: { fov: 38, push: 4, cap: ['放送', 'On air', 'The radio mast and the hut where the podcast is recorded.'] },
+  summit: { fov: 44, push: 6, cap: ['頂上', 'The summit', 'The whole village at sunset. The next chapter starts with you.'] },
+  sunset: { fov: 48, cap: ['夕日', 'Into the sunset', 'The rest of the story is in the full site.'] },
+};
+// the journey in chapters: a title card opens each one
+const CHAPTERS = (mobile ? [
+  ['gate', '一', 'The village', 'A hidden village at sunset'], ['monument', '二', 'The monument', 'The face on the cliff'],
+  ['toStadium', '三', 'The exam', 'HackNITR 7.0'], ['sunset', '終', 'To be continued', 'The rest of the arc'],
+] : [
+  ['gate', '一', 'The village', 'A hidden village at sunset'], ['monument', '二', 'The monument', 'The face on the cliff'],
+  ['overview', '三', 'The shrine', 'Two sides and six plaques'], ['toLibrary', '四', 'The library', 'Four projects, four scrolls'],
+  ['toTraining', '五', 'The training ground', 'Where I levelled up'], ['toStadium', '六', 'The exam', 'HackNITR 7.0'],
+  ['overVillage', '七', 'Flashbacks', 'Frames from the arc'], ['rise', '八', 'On air', 'The podcast'],
+  ['summit', '終', 'To be continued', 'The next arc starts with you'],
+]).filter((c) => STOPS.some((s) => s[2] === c[0]));
+
 const V = (a) => new THREE.Vector3(...a);
 const railPos = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[0])), false, 'centripetal');
 const railLook = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[1])), false, 'centripetal');
 const N = STOPS.length - 1;
 const stop = (name) => STOPS.findIndex((s) => s[2] === name);
 const at = (name) => stop(name) / N; // scroll progress at a named stop
-// each panel shows from a little before its stop until a little after: [stop, before, after] in stops
+const shotOf = (i) => SHOT[STOPS[i][2]] || {};
+// phones are narrow: the same shot needs a wider lens there
+const lens = (i) => { const f = shotOf(i).fov || 46; return mobile ? THREE.MathUtils.clamp(f + 16, 52, 72) : f; };
+const chapterAt = (i) => { let c = 0; CHAPTERS.forEach((ch, k) => { if (stop(ch[0]) <= i) c = k; }); return c; };
+// each panel shows while the camera rests at its stop: [stop, before, after] in stops
 const SHOW = {
-  monument: ['monument', 0.35, 0.5], hero: ['gate', 0, 0.5], welcome: ['street', 0.4, 0.9], about: ['tower', 0.4, 0.6], tournament: ['toStadium', 0.3, 0.8],
-  rank: ['trophy', 0.6, 0.55], end: ['sunset', 0.3, 0.1],
-  sides: ['sides', 0.3, 0.6], stats: ['stats', 0.3, 0.6], moves: ['moves', 0.3, 0.6], training: ['training', 0.3, 0.6], quests: ['quests', 0.3, 0.5],
-  awards: ['awards', 0.3, 0.6], flashbacks: ['memorial', 0.3, 0.6], onair: ['onair', 0.3, 0.6], contact: ['summit', 0.2, 0.1],
+  hero: ['gate', 0, 0.42], welcome: ['street', 0.3, 0.32], about: ['tower', 0.3, 0.36], monument: ['monument', 0.3, 0.36],
+  tournament: ['toStadium', 0.3, 0.5], rank: ['trophy', 0.3, 0.36], end: ['sunset', 0.3, 0.1],
+  sides: ['sides', 0.3, 0.34], stats: ['stats', 0.3, 0.34], moves: ['moves', 0.3, 0.36], training: ['training', 0.3, 0.34], quests: ['quests', 0.3, 0.36],
+  awards: ['awards', 0.3, 0.36], flashbacks: ['memorial', 0.3, 0.36], onair: ['onair', 0.3, 0.36], contact: ['summit', 0.3, 0.1],
 };
 
 // ---------- scroll ----------
@@ -164,8 +212,8 @@ document.querySelectorAll('a[href^="#w-"]').forEach((a) => a.addEventListener('c
 // the later stops' panels come from the portfolio's data; each panel shows over its stretch of the journey
 $('#w-content').insertAdjacentHTML('beforeend', panelsHTML());
 wirePanels();
-// scroll length: about a screen and a quarter per stop
-$('#w-content').style.height = `${(N + 1) * (mobile ? 85 : 110)}vh`;
+// scroll length: about a screen and a quarter per stop (the camera rests for part of it at every shot)
+$('#w-content').style.height = `${(N + 1) * (mobile ? 95 : 125)}vh`;
 const panels = [...document.querySelectorAll('.w-panel')].map((el) => {
   const sh = SHOW[el.dataset.key], i = sh ? stop(sh[0]) : -1;
   if (i < 0) { el.remove(); return null; } // not on this journey
@@ -177,6 +225,40 @@ function updatePanels(p) {
     const on = p >= x.r[0] && p < x.r[1];
     if (on !== x.on) { x.on = on; x.el.classList.toggle('is-on', on); }
   });
+}
+
+// ---------- the film: letterbox, a caption for every shot, a title card for every chapter ----------
+const cap = $('#w-cap'), capK = $('#w-cap-k'), capT = $('#w-cap-t'), capL = $('#w-cap-l'), slate = $('#w-slate'), card = $('#w-chapter');
+const pad = (n) => String(n).padStart(2, '0');
+let capAt = -1, capOn = false, capOff = -1e9, chapter = -1, cardT = 0, cardOff = 0, rolling = false;
+function showCard(c) {
+  const [, no, title, sub] = CHAPTERS[c], fin = no === '終';
+  card.querySelector('.w-chapter__kj').textContent = fin ? '終章' : `第${no}章`;
+  card.querySelector('.w-chapter__n').textContent = fin ? 'Finale' : `Chapter ${pad(c + 1)}`;
+  card.querySelector('.w-chapter__t').textContent = title;
+  card.querySelector('.w-chapter__s').textContent = sub;
+  card.classList.remove('is-on'); void card.offsetWidth; card.classList.add('is-on');
+  // like a film, the title card plays first and the chapter's text comes in after it
+  document.body.classList.add('is-titling');
+  clearTimeout(cardT);
+  cardT = setTimeout(() => document.body.classList.remove('is-titling'), 2300);
+  clearTimeout(cardOff); cardOff = setTimeout(() => card.classList.remove('is-on'), 3400);
+}
+function updateFilm(i, d) {
+  // swap the caption only once the old one has faded out
+  if (i !== capAt && performance.now() - capOff > 450) {
+    const c = shotOf(i).cap;
+    if (c) { capK.textContent = c[0]; capT.textContent = c[1]; capL.textContent = c[2]; }
+    capAt = i;
+  }
+  const on = capAt === i && Math.abs(d) < 0.36 && !!shotOf(i).cap;
+  if (on !== capOn) { capOn = on; cap.classList.toggle('is-on', on); if (!on) capOff = performance.now(); }
+  const ch = chapterAt(i);
+  if (ch !== chapter) {
+    chapter = ch;
+    slate.innerHTML = `<b>${CHAPTERS[ch][1] === '終' ? 'Finale' : `Ch. ${pad(ch + 1)}`}</b> ${CHAPTERS[ch][2]}<span>Shot ${pad(i + 1)} / ${pad(N + 1)}</span>`;
+    if (rolling) showCard(ch);
+  } else slate.lastChild && (slate.lastChild.textContent = `Shot ${pad(i + 1)} / ${pad(N + 1)}`);
 }
 
 // ---------- free roam ----------
@@ -271,12 +353,34 @@ const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
 window.addEventListener('pointermove', (e) => { mouse.x = e.clientX / window.innerWidth - 0.5; mouse.y = e.clientY / window.innerHeight - 0.5; }, { passive: true });
 const prog = $('#w-prog');
 let smooth = 0, last = performance.now(), roamFade = 0;
-function railPose(p, outPos, outQ) {
-  railPos.getPoint(p, outPos);
-  railLook.getPoint(p, look);
+// The camera rests at every stop for HOLD of a stop's scroll either side, then cranes to the next one, easing out of
+// the old shot and into the new. While it rests it keeps a slow push-in and a faint handheld breath, so a held
+// shot is never a still frame.
+const HOLD = 0.2;
+const rollQ = new THREE.Quaternion(), zAxis = new THREE.Vector3(0, 0, 1), dolly = new THREE.Vector3();
+const lerp = THREE.MathUtils.lerp, sm = THREE.MathUtils.smootherstep, D2R = Math.PI / 180;
+const rail = { fov: lens(0), i: 0, d: 0 };
+function railPose(p, outPos, outQ, t = 0) {
+  const u = p * N, i = Math.min(N - 1, Math.floor(u)), g = sm(u - i, HOLD, 1 - HOLD);
+  railPos.getPoint((i + g) / N, outPos);
+  railLook.getPoint((i + g) / N, look);
+  const k = Math.round(u), d = u - k, near = 1 - sm(Math.abs(d), HOLD, 0.5);
+  const sh = shotOf(k);
+  // the push-in: from half a push short of the mark to half a push past it, over the rest
+  dolly.subVectors(look, outPos).normalize();
+  outPos.addScaledVector(dolly, (sh.push || 2) * THREE.MathUtils.clamp(d / HOLD, -1, 1) * 0.5 * near);
+  if (!reduce) {
+    const breath = 0.18 * near;
+    outPos.x += Math.sin(t * 0.61) * breath; outPos.y += Math.sin(t * 0.83 + 1.3) * breath * 0.6;
+    look.x += Math.sin(t * 0.47 + 2.1) * breath * 1.5; look.y += Math.sin(t * 0.71) * breath;
+  }
   look.x += mouse.sx * 14; look.y -= mouse.sy * 8; // a touch of parallax from the pointer
   lookM.lookAt(outPos, look, up);
   outQ.setFromRotationMatrix(lookM);
+  const roll = lerp(shotOf(i).roll || 0, shotOf(i + 1).roll || 0, g);
+  if (roll) outQ.multiply(rollQ.setFromAxisAngle(zAxis, roll * D2R));
+  rail.fov = lerp(lens(i), lens(i + 1), g);
+  rail.i = k; rail.d = d;
 }
 const ss = THREE.MathUtils.smoothstep;
 function frame(now) {
@@ -289,7 +393,7 @@ function frame(now) {
   if (roaming) roamStep(dt);
   else {
     smooth += (progress - smooth) * (1 - Math.exp(-dt * (reduce ? 30 : 6)));
-    railPose(smooth, target, railQ);
+    railPose(smooth, target, railQ, t);
     if (back > 0) {
       back = Math.max(0, back - dt / 1.1);
       const k = THREE.MathUtils.smootherstep(1 - back, 0, 1);
@@ -300,8 +404,12 @@ function frame(now) {
       camera.quaternion.copy(railQ);
     }
     updatePanels(smooth);
+    updateFilm(rail.i, rail.d);
     prog.style.transform = `scaleX(${smooth})`;
   }
+  // each shot has its own lens; free roam goes back to the standard one
+  const fov = roaming ? (mobile ? 60 : 48) : rail.fov;
+  if (Math.abs(camera.fov - fov) > 0.01) { camera.fov += (fov - camera.fov) * (roaming || back > 0 ? 1 - Math.exp(-dt * 4) : 1); camera.updateProjectionMatrix(); }
   // the gate opens as the journey starts; the crowd rises as the camera drops into the bowl
   const p = roaming ? 1 : smooth;
   land?.update(t);
@@ -327,6 +435,11 @@ window.addEventListener('resize', resize);
 
 // ---------- go ----------
 window.history.scrollRestoration = 'manual';
+// for the screenshot checks: the stops by name, and a jump straight to a point of the journey
+window.__rail = {
+  N, names: STOPS.map((x) => x[2]),
+  jump(p) { lenis?.scrollTo(p * (document.documentElement.scrollHeight - window.innerHeight), { immediate: true }); progress = smooth = p; },
+};
 window.scrollTo(0, 0);
 build().then(() => {
   requestAnimationFrame(frame);
@@ -335,6 +448,8 @@ build().then(() => {
     const wl = $('#wl');
     wl.classList.add('is-cut');
     document.body.classList.remove('is-loading');
+    // the opening title card comes in as the halves part
+    setTimeout(() => { rolling = true; showCard(chapter < 0 ? 0 : chapter); }, 1000);
     setTimeout(() => wl.remove(), 1600);
   }, 250);
 });

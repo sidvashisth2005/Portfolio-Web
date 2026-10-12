@@ -12,6 +12,7 @@ export function panelsHTML() {
     <section class="w-panel w-panel--top w-card" data-key="sides" aria-label="Two sides">
       <p class="label label--red">二面 · Two sides, one person</p>
       <h2 class="w-h2">Strategist on one side. Builder on the other.</h2>
+      <p class="w-intro">The two boards on the path are the two halves of how I work: what the market needs, and the thing that answers it.</p>
       <div class="w-two">
         <div><p class="label label--red">Side A · Strategist</p><ul class="w-list"><li>Market research</li><li>ROI</li><li>Go-to-market</li><li>The pitch</li></ul></div>
         <div><p class="label label--red">Side B · Builder</p><ul class="w-list"><li>Python · Adversarial ML</li><li>Flutter</li><li>ARCore</li><li>IoT</li></ul></div>
@@ -21,31 +22,36 @@ export function panelsHTML() {
     <section class="w-panel w-panel--low w-card" data-key="stats" aria-label="Battle stats">
       <p class="label label--red">戦績 · Battle stats</p>
       <h2 class="w-h2">Six plaques. All real.</h2>
+      <p class="w-intro">Each plaque on the shrine's rack is one number from the arc, with what it measures beneath it.</p>
       <ul class="w-stats">${stats.map((s) => `<li><b>${s.from !== undefined ? `${s.from}→` : ''}${fmt(s.value)}${s.suffix}</b><span>${esc(s.label)}</span><em>${s.kanji} · ${s.rarity}</em></li>`).join('')}</ul>
     </section>
 
     <section class="w-panel w-panel--right w-card" data-key="moves" aria-label="Special moves">
       <p class="label label--red">必殺技 · Special moves</p>
       <h2 class="w-h2">Four moves, four scrolls.</h2>
-      <ul class="w-moves">${moves.map((m) => `<li><span class="w-kj" aria-hidden="true">${m.kanji}</span><div><b>${esc(m.title)}</b><span class="label muted">${esc(m.category)}${m.award ? ` · ${esc(m.award)}` : ''}</span><p><strong>${esc(m.big)}</strong> ${esc(m.bigLabel)}</p>${m.github ? `<a href="${m.github}" target="_blank" rel="noopener">Case file ↗</a>` : ''}</div></li>`).join('')}</ul>
+      <p class="w-intro">My four flagship projects. Each scroll on the shelf is one of them; the case files are on GitHub.</p>
+      <ul class="w-moves">${moves.map((m) => `<li><span class="w-kj" aria-hidden="true">${m.kanji}</span><div><b>${esc(m.title)}</b><span class="w-meta">${esc(m.category)}${m.award ? ` · ${esc(m.award)}` : ''}</span><p><strong>${esc(m.big)}</strong> ${esc(m.bigLabel)}</p>${m.github ? `<a href="${m.github}" target="_blank" rel="noopener">Case file ↗</a>` : ''}</div></li>`).join('')}</ul>
     </section>
 
     <section class="w-panel w-panel--right w-card" data-key="training" aria-label="The training arc">
       <p class="label label--red">修行編 · The training arc</p>
       <h2 class="w-h2">Where I levelled up.</h2>
-      <ol class="w-stages">${stages.map((d, i) => `<li><span class="w-kj" aria-hidden="true">${NUM[i]}</span><div><b>${esc(d.name || d.company.replace(/ Pvt\. Ltd\./, ''))}</b><span class="label muted">${esc(d.role)} · ${esc(d.period)}</span><p><strong>${esc(d.metric)}</strong> ${esc(d.metricLabel)}${d.classChange ? ` · class change: ${esc(d.classChange)}` : ''}</p></div></li>`).join('')}</ol>
+      <p class="w-intro">Four stones, four stages of work experience, first to latest: who, what I did, and what it moved.</p>
+      <ol class="w-stages">${stages.map((d, i) => `<li><span class="w-kj" aria-hidden="true">${NUM[i]}</span><div><b>${esc(d.name || d.company.replace(/ Pvt\. Ltd\./, ''))}</b><span class="w-meta">${esc(d.role)} · ${esc(d.period)}</span><p><strong>${esc(d.metric)}</strong> ${esc(d.metricLabel)}${d.classChange ? ` · class change: ${esc(d.classChange)}` : ''}</p></div></li>`).join('')}</ol>
     </section>
 
     <section class="w-panel w-panel--right w-card" data-key="quests" aria-label="Side quests">
       <p class="label label--red">外伝 · Side quests</p>
       <h2 class="w-h2">Off the main path.</h2>
+      <p class="w-intro">Leadership outside the projects: the clubs, fests and contests I ran.</p>
       <ul class="w-quests">${leadership.map((l) => { const [t, ...rest] = l.split(':'); return `<li><b>${esc(t)}</b>${rest.length ? `<span>${esc(rest.join(':').trim().replace(/^./, (c) => c.toUpperCase()))}</span>` : ''}</li>`; }).join('')}</ul>
     </section>
 
     <section class="w-panel w-panel--right w-card" data-key="awards" aria-label="Trophy room">
       <p class="label label--red">栄光 · Trophy room</p>
       <h2 class="w-h2">The rest of the honours.</h2>
-      <ul class="w-quests">${awards.map((a) => `<li><b>${esc(a.title)}</b><span class="label muted">${esc(a.scope)}</span></li>`).join('')}</ul>
+      <p class="w-intro">Beyond the stadium, every win and where it was won.</p>
+      <ul class="w-quests">${awards.map((a) => `<li><b>${esc(a.title)}</b><span class="w-meta">${esc(a.scope)}</span></li>`).join('')}</ul>
     </section>
 
     <section class="w-panel w-panel--left w-card" data-key="flashbacks" aria-label="Flashbacks">
@@ -58,6 +64,7 @@ export function panelsHTML() {
     <section class="w-panel w-panel--right w-card" data-key="onair" aria-label="On air">
       <p class="label label--red">放送 · On air</p>
       <h2 class="w-h2">The podcast, from the top of the cliff.</h2>
+      <p class="w-intro">A show about business development, pitching and building teams. Press play for a clip.</p>
       <ol class="w-eps">${episodes.map((e) => `<li><span class="label muted">${esc(e.ep)}</span>${esc(e.title)}</li>`).join('')}</ol>
       <button class="w-pill w-pill--red w-pill--lg" type="button" id="w-play" aria-pressed="false">▶ Play a clip</button>
       <audio id="w-audio" src="media/podcast-ep01.mp3" preload="none"></audio>
