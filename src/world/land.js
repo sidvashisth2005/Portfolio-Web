@@ -16,6 +16,8 @@ export const LAYOUT = {
   training: { at: [65, 0, -178], clear: 46 },
   memorial: { at: [90, 0, 246], clear: 34 },
 };
+// the carved portrait sits left of the headquarters as seen from the main street, so the crest disc never hides it
+export const FACE_X = -64;
 export const reserved = (x, z) => ['shrine', 'library', 'training', 'memorial'].some((k) => Math.hypot(x - LAYOUT[k].at[0], z - LAYOUT[k].at[2]) < LAYOUT[k].clear);
 
 export function heightAt(x, z) {
@@ -132,7 +134,11 @@ export function buildLand(scene, { mobile, sunDir }) {
     const front = z > 0 ? 1 : 0, foot = smooth(40, -90, y); // the face leans back and spreads at its foot
     const n = fbm(x * 0.03 + 9, y * 0.04) - 0.5;
     const crack = Math.pow(Math.abs(Math.sin(x * 0.11 + fbm(y * 0.02, x * 0.01) * 6)), 12); // vertical fissures
-    cp.setZ(i, z + front * (n * 26 + foot * 34 - crack * 6 - smooth(-20, 90, y) * 14) + (fbm(x * 0.008, 3) - 0.5) * 34);
+    let zz = z + front * (n * 26 + foot * 34 - crack * 6 - smooth(-20, 90, y) * 14) + (fbm(x * 0.008, 3) - 0.5) * 34;
+    // a smoothed face in the middle of the cliff, where the portrait is carved
+    const face = front * smooth(92, 72, Math.abs(x - FACE_X)) * smooth(-50, -30, y) * (1 - smooth(66, 82, y));
+    zz += (36 - zz) * face;
+    cp.setZ(i, zz);
     cp.setX(i, x * (1 + foot * 0.12) + (fbm(y * 0.05, x * 0.01) - 0.5) * 12);
     if (y > 70) cp.setY(i, y + (fbm(x * 0.018, 7) - 0.45) * 60);
   }
@@ -161,9 +167,57 @@ export function buildLand(scene, { mobile, sunDir }) {
     x.font = `${w * 0.13}px "Dela Gothic One", sans-serif`;
     x.fillText('一', w * 0.88, h * 0.36); x.fillText('閃', w * 0.88, h * 0.6);
   }, 1024, 1024);
-  const crestM = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshBasicMaterial({ map: crest, transparent: true, depthWrite: false, fog: true }));
-  crestM.position.set(0, 104, cz + 50);
+  const crestM = new THREE.Mesh(new THREE.PlaneGeometry(76, 76), new THREE.MeshBasicMaterial({ map: crest, transparent: true, depthWrite: false, fog: true }));
+  crestM.position.set(120, 110, cz + 52);
   g.add(crestM);
+
+  // the cliff's monument, made for this village: the portfolio's own face carved into the rock, as the anime's
+  // villages carve their leaders. The relief is baked from a portrait (img/carve.webp: height in red, the carved
+  // area in alpha) and raised out of the smoothed face; 作る戦略家 is cut down its left side.
+  const carve = new THREE.Group();
+  carve.position.set(FACE_X, 108, cz + 36.4);
+  g.add(carve);
+  const CW = 104, CS = mobile ? 110 : 170;
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement('canvas');
+    cv.width = img.width; cv.height = img.height;
+    const cx = cv.getContext('2d');
+    cx.drawImage(img, 0, 0);
+    const px = cx.getImageData(0, 0, img.width, img.height).data;
+    const sample = (u, v) => {
+      const X = Math.min(img.width - 1, Math.max(0, Math.round(u * (img.width - 1))));
+      const Y = Math.min(img.height - 1, Math.max(0, Math.round((1 - v) * (img.height - 1))));
+      const k = (Y * img.width + X) * 4;
+      return [px[k] / 255, px[k + 3] / 255];
+    };
+    const geo = new THREE.PlaneGeometry(CW, CW, CS, CS);
+    const p = geo.attributes.position, uv = geo.attributes.uv;
+    const col = new Float32Array(p.count * 3), stoneC = new THREE.Color(0xc79d80), deepC = new THREE.Color(0x4f3830), c2 = new THREE.Color();
+    for (let i = 0; i < p.count; i++) {
+      const [h, a] = sample(uv.getX(i), uv.getY(i));
+      // carved where alpha says so: the head stands out of the wall; elsewhere the plane sinks back into the rock
+      p.setZ(i, a * (h * 21 + 0.6) - (1 - a) * 4);
+      c2.copy(deepC).lerp(stoneC, Math.min(1, 0.15 + h * 1.1));
+      col.set([c2.r, c2.g, c2.b], i * 3);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.computeVertexNormals();
+    carve.add(new THREE.Mesh(geo, toon(0xffffff, { vertexColors: true })));
+  };
+  img.src = 'img/carve.webp';
+  const cut = textTexture((x, w, h) => {
+    x.clearRect(0, 0, w, h);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `${w * 0.78}px "Dela Gothic One", sans-serif`;
+    [...'作る戦略家'].forEach((ch, i) => {
+      const y = h * (0.1 + i * 0.2);
+      x.fillStyle = 'rgba(255,214,180,.3)'; x.fillText(ch, w / 2, y + w * 0.03);
+      x.fillStyle = 'rgba(52,22,20,.85)'; x.fillText(ch, w / 2, y);
+    });
+  }, 160, 800);
+  const cutM = new THREE.Mesh(new THREE.PlaneGeometry(14, 70), new THREE.MeshBasicMaterial({ map: cut, transparent: true, depthWrite: false, fog: true }));
+  cutM.position.set(FACE_X - 64, 106, cz + 37.2);
+  g.add(cutM);
 
   // river and banks
   const rz = LAYOUT.riverZ;

@@ -34,6 +34,43 @@ function house(r, kind) {
     if (r() < 0.3) P.push(['tank', cyl(1.5, 1.5, 2.6, 14, 0x8a9aa6, { at: [w / 2 - 2, h + rise * 0.4 + 1.3, -d / 4] })]);
     return { P, w, d, h: h + rise };
   }
+  if (kind === 'apt') {
+    // the mid-rise: 3-5 floors, balconies on the street side, a zigzag stair climbing the outside wall
+    const w = 12 + r() * 6, d = 10 + r() * 4, fl = 3 + Math.floor(r() * 3), fh = 3.6, h = fl * fh;
+    P.push(['plaster', box(w, h, d, wall, { at: [0, h / 2, 0] })]);
+    P.push(['plaster', box(w + 0.6, 1, d + 0.6, 0xd8cfc2, { at: [0, h + 0.5, 0] })]);
+    P.push(['wood', box(w + 0.2, 1, d + 0.2, 0x7d6a5c, { at: [0, 0.5, 0] })]);
+    for (let f = 0; f < fl; f++) {
+      const n = Math.max(2, Math.floor(w / 3.4));
+      for (let i = 0; i < n; i++) {
+        const x = -w / 2 + (i + 0.5) * (w / n);
+        P.push([r() < 0.38 ? 'lit' : 'glass', box(1.6, 1.6, 0.2, 0x000000, { at: [x, 1.9 + f * fh, d / 2 + 0.08] })]);
+        if (i < 3) P.push([r() < 0.3 ? 'lit' : 'glass', box(0.2, 1.6, 1.6, 0x000000, { at: [-w / 2 - 0.08, 1.9 + f * fh, -d / 2 + (i + 0.7) * (d / 3.2)] })]);
+      }
+      if (f > 0) {
+        P.push(['plaster', box(w * 0.56, 0.35, 1.7, 0xd8cfc2, { at: [-w * 0.12, f * fh, d / 2 + 0.85] })]);
+        P.push(['wood', box(w * 0.56, 1, 0.14, DARK, { at: [-w * 0.12, f * fh + 0.65, d / 2 + 1.65] })]);
+      }
+    }
+    // the outside stair: a flight per floor, alternating direction, with a landing at each floor
+    const run = d * 0.7, ang = Math.atan2(fh, run);
+    for (let f = 0; f < fl - 1; f++) {
+      const dir = f % 2 ? 1 : -1;
+      P.push(['wood', box(1.5, 0.3, Math.hypot(run, fh), 0x6b5a50, { at: [w / 2 + 1, f * fh + fh / 2 + 0.2, 0], rot: [dir * ang, 0, 0] })]);
+      P.push(['wood', box(1.6, 0.3, 1.8, 0x6b5a50, { at: [w / 2 + 1, (f + 1) * fh + 0.2, -dir * (run / 2 + 0.6)] })]);
+      P.push(['wood', box(0.12, 1, Math.hypot(run, fh), DARK, { at: [w / 2 + 1.75, f * fh + fh / 2 + 0.9, 0], rot: [dir * ang, 0, 0] })]);
+    }
+    const tx = (r() - 0.5) * (w - 6), tz = (r() - 0.5) * (d - 6);
+    [0, 1].forEach((k) => {
+      if (k && r() < 0.5) return;
+      const ox = tx + k * 4.2;
+      P.push(['tank', cyl(1.7, 1.7, 3, 16, k ? 0xa58a6e : 0x8a9aa6, { at: [ox, h + 3.1, tz] })]);
+      P.push(['tank', cyl(1.8, 1.8, 0.35, 16, 0x5d6870, { at: [ox, h + 4.7, tz] })]);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => P.push(['wood', box(0.22, 1.6, 0.22, DARK, { at: [ox + a * 1.1, h + 0.8, tz + b * 1.1] })]));
+    });
+    if (r() < 0.6) P.push(['plaster', box(3.2, 2.6, 3.2, wall, { at: [-w / 2 + 2.4, h + 1.3, -d / 2 + 2.4] })]);
+    return { P, w: w + 2.6, d, h: h + 5 };
+  }
   // the stucco block: 2-4 floors, flat roof with a parapet, a round water tank on legs, a little roof hut
   const w = 10 + r() * 7, d = 9 + r() * 6, fl = 2 + Math.floor(r() * 3), h = fl * 3.8;
   P.push(['plaster', box(w, h, d, wall, { at: [0, h / 2, 0] })]);
@@ -89,7 +126,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   g.add(plaza);
 
   // houses on lots in rings, each turned to face the heart of the village (shops face the main street)
-  const target = mobile ? 230 : 560;
+  const target = mobile ? 300 : 880;
   let placed = 0, tries = 0;
   const lots = [];
   while (placed < target && tries++ < target * 30) {
@@ -99,8 +136,9 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     if (shop) x = Math.sign(x || 1) * (MAIN + 10 + r() * 4);
     if (onStreet(x, z) && !shop) continue;
     if (shop && Math.abs(z - LAYOUT.riverZ) < 22) continue;
-    if (lots.some(([lx, lz, lr]) => Math.hypot(lx - x, lz - z) < lr + 8)) continue;
-    const kind = shop ? (r() < 0.6 ? 'trad' : 'block') : r() < 0.5 ? 'trad' : 'block';
+    if (lots.some(([lx, lz, lr]) => Math.hypot(lx - x, lz - z) < lr + 4.5)) continue;
+    const k0 = r(), core = rr < 135; // the heart of the village builds up; the edges stay low and traditional
+    const kind = shop ? (k0 < 0.55 ? 'trad' : 'block') : core ? (k0 < 0.42 ? 'apt' : k0 < 0.78 ? 'block' : 'trad') : (k0 < 0.48 ? 'trad' : k0 < 0.8 ? 'block' : 'apt');
     const H = house(r, kind);
     const face = shop ? (x > 0 ? -Math.PI / 2 : Math.PI / 2) : Math.atan2(-x, -z);
     m4.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, face), new THREE.Vector3(1, 1, 1));
@@ -117,34 +155,63 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     }
   }
 
-  // the heart: a round crimson tower with a flared tiled roof, a balcony, and the 閃 crest on its face
-  const T = { r: 24, h: 30 };
-  bins.add('red', cyl(T.r, T.r + 1, T.h, 48, 0xb8232c, { at: [0, T.h / 2, 0] }));
-  bins.add('wood', cyl(T.r + 1.6, T.r + 1.6, 1.2, 48, 0x4a2e22, { at: [0, 0.6, 0] }));
-  bins.add('plaster', cyl(T.r + 3.2, T.r + 3.2, 0.8, 48, 0xd8cfc2, { at: [0, 14, 0] })); // balcony
-  for (let i = 0; i < 36; i++) { const a = (i / 36) * Math.PI * 2; bins.add('wood', box(0.3, 1.6, 0.3, DARK, { at: [Math.cos(a) * (T.r + 3), 15, Math.sin(a) * (T.r + 3)] })); }
-  for (let i = 0; i < 24; i++) {
-    const a = (i / 24) * Math.PI * 2;
-    if (Math.abs(a - Math.PI / 2) < 0.4) continue;
-    bins.add(i % 3 ? 'glass' : 'lit', box(2.6, 3, 0.4, 0x000000, { at: [Math.cos(a) * (T.r + 0.6), 21, Math.sin(a) * (T.r + 0.6)], rot: [0, -a + Math.PI / 2, 0] }));
-  }
-  // flared roof turned on a lathe: upswept eaves, a steep cap
-  const roofProf = [[0.01, 13], [6, 12.4], [14, 9.4], [22, 5.6], [28, 2.2], [31.5, 0.6], [32.5, 1.4], [32.8, 0]].map(([x, y]) => new THREE.Vector2(x, y));
-  const rl = new THREE.LatheGeometry(roofProf, 48);
-  const ruv = rl.attributes.uv; for (let i = 0; i < ruv.count; i++) ruv.setXY(i, ruv.getX(i) * 60, ruv.getY(i) * 22);
-  bins.add('roof', place(paint(rl, 0x7a1d24), { at: [0, T.h, 0] }));
-  bins.add('plaster', cyl(3.5, 4.5, 4, 16, 0xd8cfc2, { at: [0, T.h + 14, 0] }));
-  bins.add('roof', place(paint(new THREE.ConeGeometry(5.5, 3.5, 16), 0x7a1d24), { at: [0, T.h + 17.6, 0] }));
-  colliders.push([0, 0, T.r + 4, T.h + 20]);
+  // the heart: the village's headquarters, in the anime's manner. A broad round orange-red hall of three floors
+  // under an overhanging rim and a flat roof; a smaller drum rising from the roof; the village crest on a great
+  // white disc standing on the roof's front edge; an entrance porch at its foot and two wings behind it.
+  const T = { r: 24, h: 24, base: 2 };
+  const HQ = 0xc4432a, RIM = 0x7a2418, HQ2 = 0xe2c9a2;
+  const top = T.base + T.h;
+  bins.add('stone', cyl(30, 31, 2, 64, 0x9a8e84, { at: [0, 1, 0] }));
+  [0, 1, 2].forEach((k) => bins.add('stone', box(16 - k * 2, 0.7, 4, 0xb3a492, { at: [0, 0.35 + k * 0.7, 32 - k * 2] })));
+  bins.add('red', cyl(T.r, T.r, T.h, 64, HQ, { at: [0, T.base + T.h / 2, 0] }));
+  [10, 18].forEach((y) => bins.add('red', cyl(T.r + 0.3, T.r + 0.3, 0.7, 64, RIM, { at: [0, y, 0] })));
+  // three rows of windows round the drum (the porch takes the front of the ground floor)
+  [6, 14, 22].forEach((y, row) => {
+    for (let i = 0; i < 30; i++) {
+      const a = (i / 30) * Math.PI * 2 + (row % 2) * 0.1;
+      if (row === 0 && Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < 0.42) continue;
+      bins.add((i + row) % 4 ? 'glass' : 'lit', box(2.4, 2.8, 0.4, 0x000000, { at: [Math.cos(a) * (T.r + 0.1), y, Math.sin(a) * (T.r + 0.1)], rot: [0, Math.PI / 2 - a, 0] }));
+    }
+  });
+  // the overhanging rim, the parapet and the roof deck
+  bins.add('red', cyl(T.r + 1.8, T.r + 1.2, 1.6, 64, RIM, { at: [0, top + 0.8, 0] }));
+  bins.add('red', cyl(T.r + 1.2, T.r + 1.2, 1.8, 64, HQ, { at: [0, top + 2.5, 0] }));
+  bins.add('stone', cyl(T.r + 0.6, T.r + 0.6, 0.3, 64, 0x6a5e58, { at: [0, top + 3.3, 0] }));
+  // the upper drum and its own rim and roof, with a little hut, a water tank and a mast
+  bins.add('red', cyl(11, 11, 7, 48, HQ, { at: [0, top + 3.4 + 3.5, -2] }));
+  bins.add('red', cyl(12.2, 11.4, 1.2, 48, RIM, { at: [0, top + 11, -2] }));
+  bins.add('stone', cyl(11.6, 11.6, 0.4, 48, 0x6a5e58, { at: [0, top + 11.7, -2] }));
+  for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; bins.add(i % 3 ? 'glass' : 'lit', box(1.8, 2, 0.4, 0x000000, { at: [Math.cos(a) * 11.1, top + 7.6, -2 + Math.sin(a) * 11.1], rot: [0, Math.PI / 2 - a, 0] })); }
+  bins.add('plaster', box(5, 3, 4, HQ2, { at: [-4, top + 13.4, -4] }));
+  bins.add('tank', cyl(1.8, 1.8, 3, 16, 0x8a9aa6, { at: [4, top + 14.6, -5] }));
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a2, b2]) => bins.add('wood', box(0.25, 1.4, 0.25, DARK, { at: [4 + a2 * 1.1, top + 12.6, -5 + b2 * 1.1] })));
+  bins.add('wood', cyl(0.15, 0.2, 9, 6, DARK, { at: [0, top + 16.4, -9] }));
+  // the entrance porch with its signboard
+  bins.add('plaster', box(13, 7, 7, HQ2, { at: [0, T.base + 3.5, T.r + 1.6] }));
+  bins.add('red', box(15, 0.9, 9, RIM, { at: [0, T.base + 7.4, T.r + 2] }));
+  bins.add('wood', box(4.4, 5, 0.3, 0x3a2418, { at: [0, T.base + 2.5, T.r + 5.2] }));
+  // two wings behind, three floors each, flat roofs with tanks
+  [-1, 1].forEach((k) => {
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(k * 27, 0, -15), new THREE.Quaternion().setFromAxisAngle(up, k * 0.55), new THREE.Vector3(1, 1, 1));
+    const P = [['plaster', box(18, 15, 16, HQ2, { at: [0, 7.5, 0] })], ['plaster', box(18.8, 0.9, 16.8, 0xd8cfc2, { at: [0, 15.45, 0] })], ['wood', box(18.2, 1, 16.2, 0x7d6a5c, { at: [0, 0.5, 0] })],
+      ['tank', cyl(1.8, 1.8, 3, 16, 0xa58a6e, { at: [k * 4, 17.6, 2] })]];
+    for (let f = 0; f < 3; f++) for (let i = 0; i < 4; i++) P.push([(f + i) % 3 ? 'glass' : 'lit', box(2.2, 1.8, 0.2, 0x000000, { at: [-6.6 + i * 4.4, 3 + f * 4.4, 8.1] })]);
+    bins.addAll(P, m);
+    colliders.push([k * 27, -15, 12, 19]);
+  });
+  colliders.push([0, 0, T.r + 3, top + 20]);
+  // the crest: a great white disc on the roof's front edge, framed and propped from behind
   const crestTex = textTexture((x, w, h) => {
     x.fillStyle = '#f4ead8'; x.beginPath(); x.arc(w / 2, h / 2, w * 0.48, 0, Math.PI * 2); x.fill();
     x.strokeStyle = '#b8232c'; x.lineWidth = w * 0.035; x.beginPath(); x.arc(w / 2, h / 2, w * 0.43, 0, Math.PI * 2); x.stroke();
     x.fillStyle = '#b8232c'; x.font = `${w * 0.56}px "Dela Gothic One", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
     x.fillText('閃', w / 2, h * 0.54);
   }, 512, 512);
-  const crest = new THREE.Mesh(new THREE.CircleGeometry(7.5, 48), new THREE.MeshBasicMaterial({ map: crestTex, fog: true }));
-  crest.position.set(0, 21, T.r + 1.2);
+  const crest = new THREE.Mesh(new THREE.CircleGeometry(7.6, 64), new THREE.MeshBasicMaterial({ map: crestTex, fog: true }));
+  crest.position.set(0, top + 11.6, T.r - 2.4);
   g.add(crest);
+  bins.add('red', cyl(8.2, 8.2, 0.8, 64, RIM, { at: [0, top + 11.6, T.r - 2.95], rot: [Math.PI / 2, 0, 0] }));
+  [-4.5, 4.5].forEach((x) => bins.add('wood', box(0.6, 6, 0.6, DARK, { at: [x, top + 4.6, T.r - 3.6] })));
   // a long banner down the tower
   const banner = textTexture((x, w, h) => {
     x.fillStyle = '#1a0a0e'; x.fillRect(0, 0, w, h);
@@ -155,7 +222,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   [-1, 1].forEach((s) => {
     const b = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 17), new THREE.MeshBasicMaterial({ map: banner, fog: true, side: THREE.DoubleSide }));
     const a = Math.PI / 2 + s * 0.55;
-    b.position.set(Math.cos(a) * (T.r + 1.4), 21, Math.sin(a) * (T.r + 1.4));
+    b.position.set(Math.cos(a) * (T.r + 0.5), 14.5, Math.sin(a) * (T.r + 0.5));
     b.rotation.y = -a + Math.PI / 2;
     g.add(b);
   });
@@ -235,6 +302,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   const poles = [];
   for (let z = GZ - 20; z > 70; z -= 26) [-1, 1].forEach((s) => poles.push([s * (MAIN + 2.5), z]));
   for (let i = 0; i < (mobile ? 24 : 40); i++) { const a = (i / (mobile ? 24 : 40)) * Math.PI * 2; poles.push([Math.cos(a) * 158, Math.sin(a) * 158]); }
+  for (let i = 0; i < (mobile ? 32 : 56); i++) { const a = (i / (mobile ? 32 : 56)) * Math.PI * 2; poles.push([Math.cos(a) * 237, Math.sin(a) * 237]); }
   poles.forEach(([x, z]) => {
     bins.add('wood', cyl(0.3, 0.4, 13, 6, 0x4a3a30, { at: [x, 6.5, z] }));
     bins.add('wood', box(3.4, 0.3, 0.3, 0x4a3a30, { at: [x, 12, z], rot: [0, Math.atan2(x, z), 0] }));
@@ -270,6 +338,23 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     m4.compose(new THREE.Vector3(x, y - 0.95 * k, z), q.identity(), sc.setScalar(k)); lc.setMatrixAt(i * 2 + 1, m4);
   });
   g.add(lc);
+
+  // strings of festival flags across the main street
+  const flags = [];
+  for (let z = GZ - 30; z > 80; z -= 23) for (let i = 0; i < 11; i++) { const t = i / 10; flags.push([-MAIN - 2 + t * (MAIN * 2 + 4), 9.6 - Math.sin(t * Math.PI) * 1.4, z + ((i * 7) % 3) * 0.01]); }
+  const tri = new THREE.BufferGeometry();
+  tri.setAttribute('position', new THREE.Float32BufferAttribute([-0.7, 0, 0, 0.7, 0, 0, 0, -1.4, 0], 3));
+  tri.computeVertexNormals();
+  const fl = new THREE.InstancedMesh(tri, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, fog: true }), flags.length);
+  const FLAG = [0xe0182d, 0xf4ead8, 0xffd60a, 0x3f7f7a];
+  flags.forEach(([x, y, z], i) => { m4.makeTranslation(x, y, z); fl.setMatrixAt(i, m4); fl.setColorAt(i, new THREE.Color(FLAG[i % 4])); });
+  fl.instanceColor.needsUpdate = true;
+  g.add(fl);
+  const fw = [];
+  for (let z = GZ - 30; z > 80; z -= 23) for (let i = 0; i < 10; i++) { const t0 = i / 10, t1 = (i + 1) / 10; fw.push(-MAIN - 2 + t0 * (MAIN * 2 + 4), 9.6 - Math.sin(t0 * Math.PI) * 1.4, z, -MAIN - 2 + t1 * (MAIN * 2 + 4), 9.6 - Math.sin(t1 * Math.PI) * 1.4, z); }
+  const fwg = new THREE.BufferGeometry();
+  fwg.setAttribute('position', new THREE.Float32BufferAttribute(fw, 3));
+  g.add(new THREE.LineSegments(fwg, new THREE.LineBasicMaterial({ color: 0x1a1214 })));
 
   // signboards: one shared texture of the kanji, each board showing its own cell
   const atlas = textTexture((x, w, h) => {

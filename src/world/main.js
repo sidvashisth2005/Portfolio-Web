@@ -5,7 +5,7 @@ import './world.css';
 import '../fonts.css';
 import * as THREE from 'three';
 import Lenis from 'lenis';
-import { buildLand, heightAt, LAYOUT } from './land.js';
+import { buildLand, heightAt, LAYOUT, FACE_X } from './land.js';
 import { buildVillage } from './village.js';
 import { buildForest, buildLeaves } from './nature.js';
 import { buildArena, ARENA } from './arena.js';
@@ -90,6 +90,8 @@ const START = [
   [[0, 16, 190], [0, 22, 60]], // over the bridge
   [[0, 21, 110], [0, 26, 0]], // the tower ahead
   [mobile ? [74, 84, 112] : [46, 58, 62], mobile ? [0, 12, 0] : [0, 24, 0], 'tower'], // around the tower and its crest
+  // up to the monument: the face carved into the cliff above the village
+  [[FACE_X + 34, mobile ? 96 : 110, LAYOUT.cliffZ + (mobile ? 230 : 215)], [FACE_X + (mobile ? 0 : 30), mobile ? 122 : 112, LAYOUT.cliffZ + 30], 'monument'],
 ];
 const STADIUM = [
   [[330, 110, 60], [A.x, 20, A.z], 'toStadium'], // over the forest to the stadium
@@ -119,7 +121,7 @@ const STOPS = mobile ? [
   [[MX - 4, 7.6, MZ - 3], [MX + 8, 5.2, MZ + 16], 'memorial'], // inside the ring of photographs, the stone behind
   [[80, 120, 120], [40, 190, CZ], 'rise'], // rising toward the cliff
   [[34, 212, CZ + 52], [60, 216, CZ], 'onair'], // the radio mast and the ON AIR hut
-  [[-40, 216, CZ + 32], [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
+  [[12, 216, CZ + 32], [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
 ];
 const V = (a) => new THREE.Vector3(...a);
 const railPos = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[0])), false, 'centripetal');
@@ -129,7 +131,7 @@ const stop = (name) => STOPS.findIndex((s) => s[2] === name);
 const at = (name) => stop(name) / N; // scroll progress at a named stop
 // each panel shows from a little before its stop until a little after: [stop, before, after] in stops
 const SHOW = {
-  hero: ['gate', 0, 0.5], welcome: ['street', 0.4, 0.9], about: ['tower', 0.4, 0.6], tournament: ['toStadium', 0.3, 0.8],
+  monument: ['monument', 0.35, 0.5], hero: ['gate', 0, 0.5], welcome: ['street', 0.4, 0.9], about: ['tower', 0.4, 0.6], tournament: ['toStadium', 0.3, 0.8],
   rank: ['trophy', 0.6, 0.55], end: ['sunset', 0.3, 0.1],
   sides: ['sides', 0.3, 0.6], stats: ['stats', 0.3, 0.6], moves: ['moves', 0.3, 0.6], training: ['training', 0.3, 0.6], quests: ['quests', 0.3, 0.5],
   awards: ['awards', 0.3, 0.6], flashbacks: ['memorial', 0.3, 0.6], onair: ['onair', 0.3, 0.6], contact: ['summit', 0.2, 0.1],

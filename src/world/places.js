@@ -247,7 +247,7 @@ export function buildPlaces(scene, { mobile }) {
   g.add(onair);
   updates.push((t) => { onair.material.color.setScalar(Math.sin(t * 1.6) > -0.6 ? 1 : 0.35); });
   // the summit lookout: a deck with a rail and a crimson banner
-  const SX = -40;
+  const SX = 12; // east of the carved face, so its footing never stands on the portrait's head
   bins.add('stone', box(22, 50, 16, 0x8a6f62, { at: [SX, top - 24, cz + 10] }));
   bins.add('wood', box(20, 0.8, 14, 0x6b4630, { at: [SX, top + 1.4, cz + 10] }));
   for (let i = 0; i < 9; i++) bins.add('wood', box(0.4, 2.2, 0.4, 0x4a2e22, { at: [SX - 9.6 + i * 2.4, top + 2.9, cz + 16.8] }));
