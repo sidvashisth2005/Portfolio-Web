@@ -1,12 +1,15 @@
-// The Arc in 3D. One canvas, one camera: scroll moves it along a rail through the city and into the arena,
-// and Free roam hands it to the visitor (WASD + drag). The text is HTML over the world (see world.html).
+// The Arc in 3D: a hidden shinobi village at sunset. One canvas, one camera: scroll carries it along a rail from
+// the great gate, down the main street, past the tower, over the village and into the exam stadium; Free roam
+// hands it to the visitor (WASD + drag). The text is HTML over the world (see world.html).
 import './world.css';
 import '../fonts.css';
 import * as THREE from 'three';
 import Lenis from 'lenis';
-import { PAL } from './toon.js';
-import { buildCity } from './city.js';
+import { buildLand, heightAt, LAYOUT } from './land.js';
+import { buildVillage } from './village.js';
+import { buildForest, buildLeaves } from './nature.js';
 import { buildArena, ARENA } from './arena.js';
+import { createPost } from './post.js';
 
 const $ = (s) => document.querySelector(s);
 const mobile = window.matchMedia('(max-width: 760px)').matches || window.matchMedia('(pointer: coarse)').matches;
@@ -16,84 +19,78 @@ const canvas = $('#w-canvas');
 function hasGL() {
   try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; }
 }
-if (!hasGL()) {
-  // no 3D here: the full site is the world
-  window.location.replace('./');
-}
+if (!hasGL()) window.location.replace('./'); // no 3D here: the full site is the world
 
 // ---------- loader ----------
 const bars = document.querySelectorAll('.wl__bar i');
 let loaded = 0;
 const setLoad = (p) => { loaded = Math.max(loaded, p); bars.forEach((b) => (b.style.transform = `scaleX(${loaded})`)); };
 setLoad(0.08);
+const tick = () => new Promise((r) => setTimeout(r, 0));
 
-// ---------- renderer, scene, camera ----------
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance' });
+// ---------- renderer, scene, camera, light ----------
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.setClearColor(PAL.void, 1);
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(PAL.fog, 140, mobile ? 700 : 950);
-const camera = new THREE.PerspectiveCamera(mobile ? 62 : 50, 1, 0.5, 4000);
+scene.fog = new THREE.Fog(0xd8704e, mobile ? 320 : 420, mobile ? 1500 : 1900);
+const camera = new THREE.PerspectiveCamera(mobile ? 60 : 48, 1, 0.5, 4000);
+const post = createPost(renderer);
 
-const moonDir = new THREE.Vector3(-0.45, 0.62, -0.5).normalize();
-const moon = new THREE.DirectionalLight(0xdcd6ff, 1.9);
-moon.position.copy(moonDir).multiplyScalar(100);
-scene.add(moon, new THREE.AmbientLight(0x5a1a26, 1.1));
-const stageLight = new THREE.PointLight(0xff3347, 900, 160, 1.6);
-stageLight.position.set(ARENA.x, 20, ARENA.z);
-scene.add(stageLight);
+// a low sun in the west-north-west: long warm light, cool violet shade
+const sunDir = new THREE.Vector3(-0.62, 0.2, -0.5).normalize();
+const sun = new THREE.DirectionalLight(0xffc49a, 2.6);
+sun.position.copy(sunDir).multiplyScalar(500);
+scene.add(sun, new THREE.HemisphereLight(0xffa98a, 0x3a3a5a, 1.1), new THREE.AmbientLight(0x6a4a6a, 0.35));
 
 const portrait = new Promise((res, rej) => new THREE.TextureLoader().load(mobile ? 'img/hero-ink-m.webp' : 'img/hero-ink.webp', (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, rej));
-portrait.then(() => setLoad(0.7), () => {});
 
-let city, arena;
+let land, village, arena, leaves;
 async function build() {
-  // canvas signs use the site fonts, so wait for them first
+  // painted signs use the site's fonts, so wait for them first
   await Promise.all([
-    document.fonts.load('900 100px "Big Shoulders Display"'), document.fonts.load('100px "Dela Gothic One"', '作る戦略家一閃大会'),
+    document.fonts.load('900 100px "Big Shoulders Display"'), document.fonts.load('100px "Dela Gothic One"', '作る戦略家一閃大会勝修行光伝巻力技戦影'),
     document.fonts.load('500 20px "Azeret Mono"'),
   ]).catch(() => {});
-  setLoad(0.35);
-  city = buildCity(scene, { mobile, light: moonDir, portrait });
+  setLoad(0.2);
+  land = buildLand(scene, { mobile, sunDir });
+  setLoad(0.35); await tick();
+  village = buildVillage(scene, { mobile, portrait, heightAt });
+  setLoad(0.55); await tick();
+  buildForest(scene, { mobile, heightAt });
+  setLoad(0.7); await tick();
   arena = buildArena(scene, { mobile });
-  setLoad(0.6);
+  leaves = buildLeaves(scene, { mobile });
+  setLoad(0.82);
   resize();
+  railPose(0, camera.position, camera.quaternion);
   await (renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve(renderer.compile(scene, camera)));
   await portrait.catch(() => {});
   setLoad(1);
 }
 
 // ---------- the rail ----------
-// camera positions and what it looks at, from the rooftop, over the avenue, into the arena
-const A = ARENA;
-// (phones are tall: the portrait and the trophy sit in the upper half, above the text)
-const railPos = new THREE.CatmullRomCurve3([
-  mobile ? new THREE.Vector3(9, 53, 19) : new THREE.Vector3(12, 50, 18), // the rooftop, portrait billboard on the left
-  new THREE.Vector3(8, 60, 4),
-  new THREE.Vector3(0, 112, -60), // above the skyline: welcome
-  new THREE.Vector3(0, 96, -150),
-  new THREE.Vector3(0, 68, -250), // down the avenue
-  new THREE.Vector3(0, 70, -340),
-  new THREE.Vector3(14, 96, A.z + 170), // the arena comes into view
-  new THREE.Vector3(62, 74, A.z + 66), // over the rim
-  new THREE.Vector3(34, 28, A.z + 24), // dropping into the bowl
-  new THREE.Vector3(-4, 15, A.z + 27), // face to face with the trophy
-  new THREE.Vector3(-118, 72, A.z - 30), // rising out past the rim: open sky for the last word
-], false, 'centripetal');
-const railLook = new THREE.CatmullRomCurve3([
-  mobile ? new THREE.Vector3(-26, 47, -24) : new THREE.Vector3(-14, 58, -37),
-  new THREE.Vector3(-10, 70, -60),
-  new THREE.Vector3(0, 70, -500),
-  new THREE.Vector3(0, 60, -520),
-  new THREE.Vector3(0, 52, -480),
-  new THREE.Vector3(0, 40, A.z),
-  new THREE.Vector3(0, 20, A.z),
-  new THREE.Vector3(0, 6, A.z),
-  new THREE.Vector3(0, mobile ? 1 : 8, A.z),
-  new THREE.Vector3(0, mobile ? 1 : 9, A.z),
-  new THREE.Vector3(-40, 64, A.z - 600),
-], false, 'centripetal');
+// where the camera is and what it looks at, stop by stop (each stop gets an equal share of the scroll)
+const G = LAYOUT.gateZ, A = ARENA;
+const STOPS = [
+  // the great gate from the road, the portrait scroll on the left
+  [mobile ? [-6, 7, 384] : [16, 9, 390], mobile ? [-10, 1, 300] : [22, 19, 300]],
+  [[2, 11, G + 16], [0, 13, G - 60]], // through the gate
+  [[0, 13, G - 50], [0, 20, 120]], // the main street: lanterns, signboards, shops
+  [[0, 16, 190], [0, 22, 60]], // over the bridge
+  [[0, 21, 110], [0, 26, 0]], // the tower ahead
+  [mobile ? [74, 84, 112] : [46, 58, 62], mobile ? [0, 12, 0] : [0, 24, 0]], // around the tower and its crest
+  [[130, 150, 170], mobile ? [0, 0, -110] : [0, 40, -260]], // the whole village, the cliff and the sun
+  [[330, 110, 60], [A.x, 20, A.z]], // over the forest to the stadium
+  [[A.x + 60, 70, A.z + 70], [A.x, 6, A.z]], // over the rim
+  [[A.x + 30, mobile ? 22 : 20, A.z + 26], [A.x, mobile ? 2 : 7, A.z]], // into the bowl
+  [[A.x - 4, 12, A.z + 25], [A.x, mobile ? 3 : 8.5, A.z]], // face to face with the trophy
+  [[A.x - 90, 74, A.z - 60], [-300, 110, -700]], // up and out, into the sunset
+];
+const V = (a) => new THREE.Vector3(...a);
+const railPos = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[0])), false, 'centripetal');
+const railLook = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[1])), false, 'centripetal');
+const at = (i) => i / (STOPS.length - 1); // scroll progress at a stop
 
 // ---------- scroll ----------
 const lenis = reduce ? null : new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, touchMultiplier: 1.4 });
@@ -107,14 +104,13 @@ window.addEventListener('scroll', () => { if (!lenis) progress = readProgress();
 
 // in-page links ride the rail
 document.querySelectorAll('a[href^="#w-"]').forEach((a) => a.addEventListener('click', (e) => {
-  const id = a.getAttribute('href');
-  const panel = $(id);
+  const panel = $(a.getAttribute('href'));
   if (!panel?.dataset.range) return;
   e.preventDefault();
   const [from] = panel.dataset.range.split(',').map(Number);
   const max = document.documentElement.scrollHeight - window.innerHeight;
-  const y = (from + 0.04) * max;
-  lenis ? lenis.scrollTo(y, { duration: 2.4 }) : window.scrollTo({ top: y, behavior: 'smooth' });
+  const y = (from + 0.03) * max;
+  lenis ? lenis.scrollTo(y, { duration: 3 }) : window.scrollTo({ top: y, behavior: 'smooth' });
 }));
 
 // panels show over their stretch of the journey
@@ -130,8 +126,7 @@ function updatePanels(p) {
 const roamBtn = $('#w-roam'), roamT = $('#w-roam-t'), roamHint = $('#w-roamhint');
 const keys = new Set();
 let roaming = false, yaw = 0, pitch = 0, back = 0;
-const roamPos = new THREE.Vector3();
-const backFrom = new THREE.Vector3(), backQ = new THREE.Quaternion();
+const roamPos = new THREE.Vector3(), backFrom = new THREE.Vector3(), backQ = new THREE.Quaternion();
 function setRoam(on) {
   if (on === roaming) return;
   roaming = on;
@@ -144,7 +139,6 @@ function setRoam(on) {
     roamPos.copy(camera.position);
     const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
     yaw = e.y; pitch = e.x;
-    canvas.focus?.();
   } else {
     // glide back onto the rail from wherever the visitor went
     backFrom.copy(camera.position); backQ.copy(camera.quaternion); back = 1;
@@ -172,35 +166,30 @@ canvas.addEventListener('pointermove', (e) => {
 canvas.addEventListener('pointerup', () => { drag = null; });
 canvas.addEventListener('wheel', (e) => { if (!roaming) return; e.preventDefault(); roamPos.addScaledVector(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion), -e.deltaY * 0.05); }, { passive: false });
 
-const fwd = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+const fwd = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), mv = new THREE.Vector3(), roamQ = new THREE.Quaternion(), eul = new THREE.Euler();
 function roamStep(dt) {
-  const speed = 46;
   fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   right.set(Math.cos(yaw), 0, -Math.sin(yaw));
-  const mv = new THREE.Vector3();
+  mv.set(0, 0, 0);
   if (keys.has('w') || keys.has('arrowup')) mv.add(fwd);
   if (keys.has('s') || keys.has('arrowdown')) mv.sub(fwd);
   if (keys.has('d') || keys.has('arrowright')) mv.add(right);
   if (keys.has('a') || keys.has('arrowleft')) mv.sub(right);
   if (keys.has(' ') || keys.has('e')) mv.add(up);
   if (keys.has('shift') || keys.has('q')) mv.sub(up);
-  if (mv.lengthSq()) roamPos.addScaledVector(mv.normalize(), speed * dt);
-  // stay inside the world, above the ground
-  roamPos.x = THREE.MathUtils.clamp(roamPos.x, -600, 600);
-  roamPos.z = THREE.MathUtils.clamp(roamPos.z, -760, 260);
-  roamPos.y = THREE.MathUtils.clamp(roamPos.y, 3, 260);
-  // towers are solid: step out through the nearest wall (or stand on the roof)
-  for (const [x, z, w, h, d] of city?.towers || []) {
-    const m = 2.5, hx = w / 2 + m, hz = d / 2 + m;
-    const dx = roamPos.x - x, dz = roamPos.z - z;
-    if (Math.abs(dx) >= hx || Math.abs(dz) >= hz || roamPos.y >= h + m) continue;
-    const px = hx - Math.abs(dx), pz = hz - Math.abs(dz), py = h + m - roamPos.y;
-    if (py < px && py < pz) roamPos.y = h + m;
-    else if (px < pz) roamPos.x = x + Math.sign(dx || 1) * hx;
-    else roamPos.z = z + Math.sign(dz || 1) * hz;
+  if (mv.lengthSq()) roamPos.addScaledVector(mv.normalize(), 40 * dt);
+  roamPos.x = THREE.MathUtils.clamp(roamPos.x, -1300, 1300);
+  roamPos.z = THREE.MathUtils.clamp(roamPos.z, -1300, 1300);
+  roamPos.y = THREE.MathUtils.clamp(roamPos.y, heightAt(roamPos.x, roamPos.z) + 2.5, 420);
+  // buildings are solid: step out through the nearest side, or stand on the roof
+  for (const [x, z, rad, h] of village?.colliders || []) {
+    const dx = roamPos.x - x, dz = roamPos.z - z, d = Math.hypot(dx, dz), m = rad + 1.5;
+    if (d >= m || roamPos.y >= h + 1.5) continue;
+    if (h + 1.5 - roamPos.y < m - d) roamPos.y = h + 1.5;
+    else { const k = m / (d || 1); roamPos.x = x + (dx || 1) * k; roamPos.z = z + dz * k; }
   }
   camera.position.lerp(roamPos, 1 - Math.exp(-dt * 10));
-  camera.quaternion.slerp(new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ')), 1 - Math.exp(-dt * 14));
+  camera.quaternion.slerp(roamQ.setFromEuler(eul.set(pitch, yaw, 0, 'YXZ')), 1 - Math.exp(-dt * 14));
 }
 
 // ---------- loop ----------
@@ -210,18 +199,17 @@ window.addEventListener('pointermove', (e) => { mouse.x = e.clientX / window.inn
 const prog = $('#w-prog');
 let smooth = 0, last = performance.now();
 function railPose(p, outPos, outQ) {
-  // both curves by the same segment parameter, so where it is and where it looks stay paired (each stop gets equal scroll)
   railPos.getPoint(p, outPos);
   railLook.getPoint(p, look);
-  // a touch of parallax from the pointer
-  look.x += mouse.sx * 14; look.y -= mouse.sy * 8;
+  look.x += mouse.sx * 14; look.y -= mouse.sy * 8; // a touch of parallax from the pointer
   lookM.lookAt(outPos, look, up);
   outQ.setFromRotationMatrix(lookM);
 }
+const ss = THREE.MathUtils.smoothstep;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  const time = now / 1000;
+  const t = now / 1000;
   lenis?.raf(now);
   mouse.sx += (mouse.x - mouse.sx) * (1 - Math.exp(-dt * 3));
   mouse.sy += (mouse.y - mouse.sy) * (1 - Math.exp(-dt * 3));
@@ -241,11 +229,13 @@ function frame(now) {
     updatePanels(smooth);
     prog.style.transform = `scaleX(${smooth})`;
   }
-  // the crowd flares as the camera drops into the bowl
-  const pulse = THREE.MathUtils.smoothstep(smooth, 0.72, 0.8) * (1 - THREE.MathUtils.smoothstep(smooth, 0.82, 0.95));
-  city?.update(time);
-  arena?.update(time, roaming ? 0 : pulse);
-  renderer.render(scene, camera);
+  // the gate opens as the journey starts; the crowd rises as the camera drops into the bowl
+  const p = roaming ? 1 : smooth;
+  land?.update(t);
+  village?.update(t, ss(p, 0.005, at(1) * 0.9));
+  arena?.update(t, roaming ? 0.3 : ss(p, at(8), at(9)));
+  leaves?.update(t, camera.position);
+  post.render(scene, camera, t);
   requestAnimationFrame(frame);
 }
 
@@ -254,6 +244,7 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  post.setSize(w, h);
 }
 window.addEventListener('resize', resize);
 

@@ -57,6 +57,7 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 
 /* panels: fixed over the world, each faded in over its stretch of the journey by main.js */
 .w-panel { position: fixed; z-index: 2; opacity: 0; visibility: hidden; transform: translateY(24px); transition: opacity .5s var(--ease-out), transform .7s var(--ease-out), visibility 0s .5s; pointer-events: none; }
+.w-panel::before { content: ''; position: absolute; inset: -18% -14%; z-index: -1; background: radial-gradient(closest-side, rgba(10, 4, 8, .55), rgba(10, 4, 8, .28) 55%, transparent); pointer-events: none; }
 .w-panel.is-on { opacity: 1; visibility: visible; transform: none; transition: opacity .5s var(--ease-out), transform .7s var(--ease-out), visibility 0s; pointer-events: auto; }
 .is-roaming .w-panel { opacity: 0 !important; visibility: hidden !important; }
 .w-panel--hero { right: var(--gutter); bottom: 12vh; width: min(520px, calc(100vw - 2 * var(--gutter))); display: flex; flex-direction: column; gap: 16px; }
@@ -108,7 +109,7 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
   #w-roam { display: none; }
 }
 /* free roam needs a keyboard for now */
-@media (pointer: coarse) { #w-roam { display: none; } }
+@media (pointer: coarse) { #w-roam, .w-fine { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .w-panel, .w-panel.is-on { transition: opacity .2s, visibility 0s; transform: none; }
   .wl.is-cut .wl__half--a, .wl.is-cut .wl__half--b { animation: wl-fade .3s forwards; }

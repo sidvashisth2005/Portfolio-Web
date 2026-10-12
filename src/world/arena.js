@@ -1,190 +1,152 @@
 import * as THREE from 'three';
-import { PAL, part, toon, glow, textTexture } from './toon.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { rng, Bins, box, cyl, paint, place, gableRoof, roofTiles } from './kit.js';
+import { toon, glow, textTexture } from './toon.js';
+import { LAYOUT } from './land.js';
 
-// The HackNITR 7.0 arena: stepped stands holding one light for each of the 6,200 participants, a stage with the
-// trophy, spotlights sweeping in, a crimson neon roof ring and a big screen with the result.
-export const ARENA = new THREE.Vector3(0, 0, -520);
-
-const crowdVert = /* glsl */ `
-attribute float aPhase;
-attribute vec3 aColor;
-uniform float uTime;
-uniform float uSize;
-uniform float uPulse;
-varying vec3 vColor;
-varying float vA;
-#include <fog_pars_vertex>
-void main() {
-  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-  float tw = 0.55 + 0.45 * sin(uTime * (1.5 + aPhase * 2.5) + aPhase * 40.0);
-  vA = tw;
-  vColor = mix(aColor, vec3(1.0), uPulse * 0.5);
-  gl_PointSize = clamp(uSize * (0.7 + 0.6 * tw + uPulse) * (190.0 / -mvPosition.z), 1.0, 7.0);
-  gl_Position = projectionMatrix * mvPosition;
-  #include <fog_vertex>
-}`;
-const crowdFrag = /* glsl */ `
-varying vec3 vColor;
-varying float vA;
-#include <fog_pars_fragment>
-void main() {
-  float d = length(gl_PointCoord - 0.5);
-  float a = smoothstep(0.5, 0.1, d) * vA;
-  gl_FragColor = vec4(vColor * (1.0 + 2.0 * smoothstep(0.25, 0.0, d)), a);
-  #include <fog_fragment>
-}`;
-
-// a light beam: additive cone that fades along its length and at its edges
-const beamVert = 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }';
-const beamFrag = /* glsl */ `
-uniform vec3 uColor;
-uniform float uOpacity;
-varying vec2 vUv;
-varying vec3 vN;
-varying vec3 vV;
-void main() {
-  float edge = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
-  float along = smoothstep(0.0, 0.25, vUv.y) * (1.0 - smoothstep(0.7, 1.0, vUv.y));
-  gl_FragColor = vec4(uColor * edge * along * uOpacity, 1.0);
-}`;
+// The exam stadium where HackNITR 7.0 is fought: a stone bowl under a ring of tiled roofs, a grass field with a
+// few trees, 6,200 spectators (one per participant) who rise and cheer as you arrive, crimson banners, lanterns
+// strung round the rim, the result on a great hanging banner, and the trophy on its dais.
+export const ARENA = LAYOUT.arena;
 
 export function buildArena(scene, { mobile }) {
   const g = new THREE.Group();
   g.position.copy(ARENA);
   scene.add(g);
+  const bins = new Bins();
+  const r = rng(99);
   const updates = [];
-  const rnd = (() => { let s = 99; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
+  const STEPS = 10, R0 = 52, R1 = 92, H0 = 4, H1 = 30;
 
-  // stands: a stepped bowl turned on a lathe
-  const STEPS = 9, R0 = 46, R1 = 86, H0 = 2, H1 = 30;
+  // stands: stone steps turned on a lathe, with a plastered outer wall and a tiled roof ring on posts
   const prof = [new THREE.Vector2(R0 - 0.01, 0), new THREE.Vector2(R0, H0)];
   for (let i = 0; i < STEPS; i++) {
-    const r = R0 + ((R1 - R0) * (i + 1)) / STEPS, y = H0 + ((H1 - H0) * (i + 1)) / STEPS;
-    prof.push(new THREE.Vector2(r - (R1 - R0) / STEPS, y), new THREE.Vector2(r, y));
+    const rr = R0 + ((R1 - R0) * (i + 1)) / STEPS, y = H0 + ((H1 - H0) * (i + 1)) / STEPS;
+    prof.push(new THREE.Vector2(rr - (R1 - R0) / STEPS, y), new THREE.Vector2(rr, y));
   }
-  prof.push(new THREE.Vector2(R1 + 3, H1 + 4), new THREE.Vector2(R1 + 3, 0));
-  const stands = part(new THREE.LatheGeometry(prof, mobile ? 64 : 120), 0, { mat: toon(0x1d0910), line: 0.35 });
-  g.add(stands);
+  prof.push(new THREE.Vector2(R1 + 2, H1), new THREE.Vector2(R1 + 2, 0));
+  const lathe = new THREE.LatheGeometry(prof, mobile ? 72 : 128);
+  g.add(new THREE.Mesh(lathe, toon(0x9a8a7c)));
+  // the arena wall around the field, with gates
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(R0 + 0.4, R0 + 0.4, H0 + 0.6, 96, 1, true), toon(0xd8c9b0, { side: THREE.DoubleSide })).translateY((H0 + 0.6) / 2));
+  // the roof ring: tiled gable sections on posts all the way round
+  const RS = mobile ? 28 : 40;
+  for (let i = 0; i < RS; i++) {
+    const a = (i / RS) * Math.PI * 2;
+    const x = Math.cos(a) * (R1 - 3), z = Math.sin(a) * (R1 - 3);
+    const len = (2 * Math.PI * (R1 - 3)) / RS + 0.4;
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, H1 + 12, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -a, 0)), new THREE.Vector3(1, 1, 1));
+    bins.addAll(gableRoof(12, len, 2.6, 1.2, 0x4a4552).map((p) => ['roof', p]), m);
+    bins.add('wood', box(0.9, 12, 0.9, 0x4a2e22, { at: [Math.cos(a) * (R1 - 8), H1 + 6, Math.sin(a) * (R1 - 8)] }));
+    bins.add('wood', box(0.9, 12, 0.9, 0x4a2e22, { at: [Math.cos(a) * (R1 + 1.5), H1 + 6, Math.sin(a) * (R1 + 1.5)] }));
+  }
+  // the outer wall
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(R1 + 2.2, R1 + 3, H1, 96, 1, true), toon(0xe2d3b8)).translateY(H1 / 2));
 
-  // the field and its neon rings
-  g.add(part(new THREE.CylinderGeometry(R0, R0, 0.6, 96), 0, { at: [0, 0.3, 0], mat: toon(0x0b080b), line: 0 }));
-  [18, 32, 44].forEach((r, i) => {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, i === 0 ? 0.35 : 0.2, 6, 128), glow(i === 0 ? PAL.crimson : PAL.deep));
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.7;
-    g.add(ring);
+  // the field: grass, a sand ring and a few trees, the dais at the centre
+  g.add(new THREE.Mesh(new THREE.CircleGeometry(R0, 96).rotateX(-Math.PI / 2), toon(0x6f9a3e)).translateY(0.1));
+  const sand = new THREE.Mesh(new THREE.RingGeometry(R0 - 7, R0, 96).rotateX(-Math.PI / 2), toon(0xc9a978));
+  sand.position.y = 0.15;
+  g.add(sand);
+  bins.add('stone', cyl(12, 13, 2.6, 40, 0x8d7d70, { at: [0, 1.3, 0] }));
+  bins.add('stone', cyl(9, 9.6, 1.2, 40, 0xb3a492, { at: [0, 3.2, 0] }));
+  [[-30, -14], [28, 20], [-18, 30]].forEach(([x, z]) => {
+    bins.add('wood', cyl(0.6, 0.9, 7, 7, 0x5a3a2a, { at: [x, 3.5, z] }));
+    bins.add('leaf', place(paint(new THREE.IcosahedronGeometry(4.6, 1), 0x4f8a3a), { at: [x, 9, z] }));
   });
 
-  // one light per participant: 6,200 on desktop, a lighter crowd on phones
+  // spectators: a little figure (body, head, a raised arm), 6,200 of them in the stands
+  const fig = mergeGeometries([
+    paint(new THREE.CylinderGeometry(0.42, 0.55, 1.5, 6), 0xffffff).translate(0, 0.75, 0),
+    paint(new THREE.SphereGeometry(0.38, 8, 6), 0xf0c8a0).translate(0, 1.85, 0),
+    paint(new THREE.BoxGeometry(0.2, 0.9, 0.2), 0xffffff).translate(0.45, 1.75, 0),
+  ]);
   const N = mobile ? 2600 : 6200;
-  const pos = new Float32Array(N * 3), col = new Float32Array(N * 3), ph = new Float32Array(N);
-  const warm = new THREE.Color(0xfff1e0), red = new THREE.Color(PAL.hot), gold = new THREE.Color(PAL.ki);
+  const fans = new THREE.InstancedMesh(fig, toon(0xffffff, { vertexColors: true }), N);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), c = new THREE.Color();
+  const CLOTH = [0xe0182d, 0x2b4a6e, 0x3f7f7a, 0xd9772b, 0xf0e6d6, 0x4a4552, 0x6b3a8e, 0x8a6a2a, 0x1a1214];
   for (let i = 0; i < N; i++) {
-    const k = Math.floor(rnd() * STEPS);
+    const k = Math.floor(r() * STEPS);
     const rIn = R0 + ((R1 - R0) * k) / STEPS, rOut = R0 + ((R1 - R0) * (k + 1)) / STEPS;
-    const r = rIn + 0.6 + rnd() * (rOut - rIn - 1.2), a = rnd() * Math.PI * 2;
-    pos.set([Math.cos(a) * r, H0 + ((H1 - H0) * (k + 1)) / STEPS + 0.9 + rnd() * 0.6, Math.sin(a) * r], i * 3);
-    const c = rnd() < 0.18 ? red : rnd() < 0.04 ? gold : warm;
-    col.set([c.r, c.g, c.b], i * 3);
-    ph[i] = rnd();
+    const rr = (rIn + rOut) / 2 + (r() - 0.5) * 1.2, a = r() * Math.PI * 2;
+    const y = H0 + ((H1 - H0) * (k + 1)) / STEPS;
+    m4.compose(new THREE.Vector3(Math.cos(a) * rr, y, Math.sin(a) * rr), q.setFromAxisAngle(up, -a - Math.PI / 2), new THREE.Vector3(1, 0.9 + r() * 0.25, 1));
+    fans.setMatrixAt(i, m4);
+    fans.setColorAt(i, c.set(CLOTH[Math.floor(r() * CLOTH.length)]));
   }
-  const cg = new THREE.BufferGeometry();
-  cg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  cg.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
-  cg.setAttribute('aPhase', new THREE.BufferAttribute(ph, 1));
-  const crowdU = { uTime: { value: 0 }, uSize: { value: mobile ? 2.2 : 1.7 }, uPulse: { value: 0 } };
-  const crowd = new THREE.Points(cg, new THREE.ShaderMaterial({
-    vertexShader: crowdVert, fragmentShader: crowdFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: true,
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, crowdU]),
-  }));
-  crowd.material.uniforms.uTime = crowdU.uTime;
-  crowd.material.uniforms.uPulse = crowdU.uPulse;
-  crowd.material.uniforms.uSize = crowdU.uSize;
-  g.add(crowd);
+  // they bob and wave; cheering lifts them off their seats
+  const cheer = { value: 0 }, time = { value: 0 };
+  fans.material.onBeforeCompile = (sh) => {
+    sh.uniforms.uCheer = cheer; sh.uniforms.uTime = time;
+    sh.vertexShader = 'uniform float uCheer; uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `
+      vec3 transformed = vec3(position);
+      float ph = float(gl_InstanceID) * 1.7;
+      float hop = max(0.0, sin(uTime * (4.0 + mod(ph, 3.0)) + ph)) * (0.08 + uCheer * 0.6);
+      transformed.y += hop;
+      if (position.x > 0.3) transformed.y += uCheer * 0.4 * (0.5 + 0.5 * sin(uTime * 8.0 + ph));`);
+  };
+  fans.material.customProgramCacheKey = () => 'fans';
+  fans.instanceColor.needsUpdate = true;
+  fans.frustumCulled = false;
+  g.add(fans);
 
-  // the stage and the trophy
-  g.add(part(new THREE.CylinderGeometry(11, 12, 2.4, 48), 0, { at: [0, 1.2, 0], mat: toon(0x14070b), line: 0.2 }));
-  const edge = new THREE.Mesh(new THREE.TorusGeometry(11.2, 0.25, 6, 96), glow(PAL.hot));
-  edge.rotation.x = Math.PI / 2; edge.position.y = 2.45;
-  g.add(edge);
+  // crimson banners hung from the roof ring, kanji on each
+  const ban = textTexture((x, w, h) => {
+    x.fillStyle = '#b8232c'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#1a0a0e'; x.fillRect(0, 0, w, h * 0.06); x.fillRect(0, h * 0.94, w, h * 0.06);
+    x.fillStyle = '#f4ead8'; x.font = `${w * 0.7}px "Dela Gothic One", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('勝', w / 2, h * 0.3); x.fillText('大', w / 2, h * 0.58); x.fillText('会', w / 2, h * 0.8);
+  }, 128, 512);
+  const bm = new THREE.MeshBasicMaterial({ map: ban, side: THREE.DoubleSide, fog: true });
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + 0.13;
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(4, 16), bm);
+    b.position.set(Math.cos(a) * (R1 - 7.4), H1 + 2, Math.sin(a) * (R1 - 7.4));
+    b.rotation.y = -a - Math.PI / 2;
+    g.add(b);
+  }
+  // the result: a great banner over the north stand
+  const res = textTexture((x, w, h) => {
+    x.fillStyle = '#f0e6d6'; x.fillRect(0, 0, w, h);
+    x.strokeStyle = '#b8232c'; x.lineWidth = 18; x.strokeRect(20, 20, w - 40, h - 40);
+    x.fillStyle = '#1a0a0e'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `900 ${h * 0.42}px "Big Shoulders Display", sans-serif`; x.fillText('RANK 1 · HACKNITR 7.0', w / 2, h * 0.42);
+    x.fillStyle = '#b8232c'; x.font = `500 ${h * 0.11}px "Azeret Mono", monospace`;
+    x.fillText('6,200+ PARTICIPANTS · 20+ COUNTRIES · SOLE PRESENTER', w / 2, h * 0.78);
+  }, 2048, 420);
+  const rb = new THREE.Mesh(new THREE.PlaneGeometry(70, 14.4), new THREE.MeshBasicMaterial({ map: res, fog: true, side: THREE.DoubleSide }));
+  rb.position.set(0, H1 + 26, -(R1 - 4));
+  g.add(rb);
+  bins.add('wood', box(74, 1.2, 1.2, 0x3a2418, { at: [0, H1 + 33.6, -(R1 - 4)] }));
+  [-36, 36].forEach((x) => bins.add('wood', box(1.4, 22, 1.4, 0x3a2418, { at: [x, H1 + 23, -(R1 - 4)] })));
+
+  // lanterns round the rim
+  const LN = mobile ? 48 : 90;
+  const lan = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.8, 0.8, 1.6, 10), glow(0xff6a3a), LN);
+  for (let i = 0; i < LN; i++) { const a = (i / LN) * Math.PI * 2; m4.makeTranslation(Math.cos(a) * (R1 - 1), H1 + 8.4 - Math.abs(Math.sin(i * 1.3)) * 0.8, Math.sin(a) * (R1 - 1)); lan.setMatrixAt(i, m4); }
+  g.add(lan);
+
+  // the trophy on the dais, turning slowly in a ring of gold light
   const cup = [[0, 0], [2.2, 0], [2.2, 0.5], [0.7, 0.9], [0.5, 2.6], [0.9, 3.0], [2.6, 3.6], [3.2, 5.8], [3.4, 7.4], [3.0, 7.5], [2.7, 5.9], [0.01, 5.0]].map(([x, y]) => new THREE.Vector2(x, y));
-  const trophy = part(new THREE.LatheGeometry(cup, 40), 0, { at: [0, 2.4, 0], mat: toon(PAL.ki, { emissive: 0x3a2a00 }), line: 0.12 });
+  const gold = toon(0xffc93a, { emissive: 0x4a3000 });
+  const trophy = new THREE.Group();
+  trophy.position.y = 3.8;
+  trophy.add(new THREE.Mesh(new THREE.LatheGeometry(cup, 40), gold));
+  [-1, 1].forEach((s) => { const hnd = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.28, 8, 20, Math.PI), gold); hnd.position.set(s * 3.3, 5.8, 0); hnd.rotation.z = s > 0 ? -Math.PI / 2 : Math.PI / 2; trophy.add(hnd); });
   g.add(trophy);
-  [-1, 1].forEach((s) => {
-    const handle = part(new THREE.TorusGeometry(1.5, 0.28, 8, 20, Math.PI), 0, { at: [s * 3.3, 8.2, 0], rot: [0, 0, s > 0 ? -Math.PI / 2 : Math.PI / 2], mat: toon(PAL.ki, { emissive: 0x3a2a00 }), line: 0.06 });
-    g.add(handle);
-  });
-  const halo = new THREE.Mesh(new THREE.RingGeometry(5.5, 6.2, 64), glow(PAL.ki, { transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
-  halo.position.y = 7;
+  const halo = new THREE.Mesh(new THREE.RingGeometry(5.6, 6.1, 64), glow(0xffd60a, { transparent: true, opacity: 0.55, side: THREE.DoubleSide }));
+  halo.position.y = 8.6;
   g.add(halo);
-  updates.push((time) => { trophy.rotation.y = time * 0.4; halo.rotation.z = time * 0.2; halo.scale.setScalar(1 + Math.sin(time * 2) * 0.05); });
+  updates.push((t) => { trophy.rotation.y = t * 0.4; halo.rotation.z = t * 0.2; halo.scale.setScalar(1 + Math.sin(t * 2) * 0.05); });
 
-  // light towers around the bowl with beams converging on the stage
-  const beamMat = new THREE.ShaderMaterial({ vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uColor: { value: new THREE.Color(0xff6a78) }, uOpacity: { value: 0.32 } } });
-  const beams = [];
-  const TOWERS = 6;
-  for (let i = 0; i < TOWERS; i++) {
-    const a = (i / TOWERS) * Math.PI * 2 + 0.3;
-    const base = new THREE.Vector3(Math.cos(a) * (R1 + 8), 0, Math.sin(a) * (R1 + 8));
-    g.add(part(new THREE.BoxGeometry(1.6, 52, 1.6), 0, { at: [base.x, 26, base.z], mat: toon(PAL.steel), line: 0.1 }));
-    const head = new THREE.Mesh(new THREE.BoxGeometry(5, 2.4, 1.2), glow(0xffe1e4));
-    head.position.set(base.x, 52, base.z);
-    head.lookAt(0, 0, 0);
-    g.add(head);
-    const top = new THREE.Vector3(base.x, 52, base.z), aim = new THREE.Vector3(0, 3, 0);
-    const len = top.distanceTo(aim);
-    const cone = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 9, len, 24, 1, true), beamMat);
-    cone.geometry.translate(0, -len / 2, 0);
-    cone.position.copy(top);
-    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), aim.clone().sub(top).normalize());
-    beams.push({ cone, top, a });
-    g.add(cone);
-  }
-  updates.push((time) => {
-    beams.forEach((b, i) => {
-      const aim = new THREE.Vector3(Math.sin(time * 0.6 + i) * 7, 3, Math.cos(time * 0.5 + i * 1.7) * 7);
-      b.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), aim.sub(b.top).normalize());
-    });
-  });
-
-  // roof ring
-  const ring = part(new THREE.TorusGeometry(R1 + 4, 1.4, 10, 160), 0, { at: [0, H1 + 14, 0], rot: [Math.PI / 2, 0, 0], mat: toon(PAL.steel), line: 0.2 });
-  g.add(ring);
-  const neonRing = new THREE.Mesh(new THREE.TorusGeometry(R1 + 4, 0.35, 6, 200), glow(PAL.crimson));
-  neonRing.rotation.x = Math.PI / 2; neonRing.position.y = H1 + 12.4;
-  g.add(neonRing);
-
-  // the big screen
-  const scr = textTexture((c, w, h) => {
-    const gr = c.createLinearGradient(0, 0, w, 0);
-    gr.addColorStop(0, '#5a0712'); gr.addColorStop(0.5, '#e0182d'); gr.addColorStop(1, '#5a0712');
-    c.fillStyle = gr; c.fillRect(0, 0, w, h);
-    c.fillStyle = 'rgba(0,0,0,.18)';
-    for (let y = 0; y < h; y += 6) c.fillRect(0, y, w, 2);
-    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
-    c.font = `900 ${h * 0.5}px "Big Shoulders Display", sans-serif`;
-    c.fillText('RANK 1 · HACKNITR 7.0', w / 2, h * 0.42);
-    c.font = `500 ${h * 0.12}px "Azeret Mono", monospace`;
-    c.fillText('6,200+ PARTICIPANTS  ·  20+ COUNTRIES  ·  SOLE PRESENTER', w / 2, h * 0.8);
-  }, 2048, 400);
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(64, 12.5), new THREE.MeshBasicMaterial({ map: scr, fog: true, toneMapped: false }));
-  screen.position.set(0, H1 + 24, -(R1 - 6));
-  g.add(screen);
-  g.add(part(new THREE.BoxGeometry(66, 14.5, 1.2), 0, { at: [0, H1 + 24, -(R1 - 5.2)], mat: toon(PAL.steel), line: 0.15 }));
-  [-26, 26].forEach((x) => g.add(part(new THREE.BoxGeometry(1.2, 18, 1.2), 0, { at: [x, H1 + 9, -(R1 - 5)], mat: toon(PAL.steel), line: 0.08 })));
-
-  const sign = textTexture((c, w, h) => {
-    c.clearRect(0, 0, w, h);
-    c.font = `${h * 0.8}px "Dela Gothic One", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.shadowColor = '#ff2e44'; c.shadowBlur = 40; c.fillStyle = '#ff4a5c'; c.fillText('大会', w / 2, h / 2);
-  }, 512, 256);
-  const kj = new THREE.Mesh(new THREE.PlaneGeometry(24, 12), new THREE.MeshBasicMaterial({ map: sign, transparent: true, fog: true, toneMapped: false, depthWrite: false }));
-  kj.position.set(0, H1 + 40, -(R1 - 6));
-  g.add(kj);
+  bins.build({
+    roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }), wood: toon(0xffffff, { vertexColors: true }),
+    stone: toon(0xffffff, { vertexColors: true }), leaf: toon(0xffffff, { vertexColors: true }),
+  }, g);
 
   return {
     group: g,
-    // pulse: 0..1, the crowd flaring when the camera arrives
-    update(time, pulse = 0) { crowdU.uTime.value = time; crowdU.uPulse.value = pulse; updates.forEach((f) => f(time)); },
+    // cheering: 0..1 as the camera drops into the bowl
+    update(t, cheering = 0) { time.value = t; cheer.value = cheering; updates.forEach((f) => f(t)); },
   };
 }
