@@ -35,4 +35,16 @@ try {
   const b = document.querySelector('.pl-sound');
   if (b && localStorage.getItem('sv-sound') === 'off') { b.dataset.state = 'off'; b.lastElementChild.textContent = 'Sound off'; }
 } catch { /* storage blocked */ }
+// the way back to the 3D village: on the opening screen only, and only where the village can run
+const vb = document.getElementById('village-btn');
+if (vb) {
+  let gl = false;
+  try { gl = !!document.createElement('canvas').getContext('webgl2'); } catch { /* no WebGL */ }
+  if (!gl) vb.remove();
+  else {
+    const away = () => vb.classList.toggle('is-away', window.scrollY > window.innerHeight * 0.4);
+    away();
+    addEventListener('scroll', away, { passive: true });
+  }
+}
 requestAnimationFrame(() => setTimeout(() => import('./main.js'), 0));

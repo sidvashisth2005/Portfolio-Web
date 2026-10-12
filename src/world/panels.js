@@ -85,7 +85,7 @@ export function panelsHTML() {
       <p class="label label--red">回想 · Flashbacks</p>
       <h2 class="w-h2">Frames from the arc.</h2>
       <p class="w-lede">Trophies, stages, juries and the squad: real photographs hung in a ring round the stone. Scroll to walk past them; ${gallery.length} in the full site.</p>
-      <a class="w-pill w-pill--lg" href="./#flashbacks">See them all ↗</a>
+      <a class="w-pill w-pill--lg" href="./?site=2d#flashbacks">See them all ↗</a>
     </section>
     ${PHOTO_SHOTS.map((g, k) => `<section class="w-panel w-panel--low w-card w-card--strip" data-key="photos${k + 1}" aria-label="Photographs">
       <p class="label label--red">回想 · Frames ${g[0] + 1}–${g[g.length - 1] + 1} of ${gallery.slice(0, 10).length}</p>
@@ -108,7 +108,7 @@ export function panelsHTML() {
       <div class="w-ctas">
         <a class="w-pill w-pill--red w-pill--lg" href="mailto:${profile.email}">Hire me ↗</a>
         <a class="w-pill w-pill--lg" href="resume.pdf" download>Résumé ↓</a>
-        <a class="w-pill w-pill--lg" href="./">Open the full site ↗</a>
+        <a class="w-pill w-pill--lg" href="./?site=2d">Open the full site ↗</a>
       </div>
       <p class="label w-links"><a href="mailto:${profile.email}">${profile.email}</a> · <a href="tel:+918871592579">${profile.phone}</a> · <a href="${profile.linkedin}" target="_blank" rel="noopener">LinkedIn</a> · <a href="${profile.github}" target="_blank" rel="noopener">GitHub</a></p>
     </section>`;

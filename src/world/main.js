@@ -23,7 +23,7 @@ const canvas = $('#w-canvas');
 function hasGL() {
   try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; }
 }
-if (!hasGL()) window.location.replace('./'); // no 3D here: the full site is the world
+if (!hasGL()) window.location.replace('./?site=2d'); // no 3D here: the full site is the world
 
 // ---------- loader ----------
 const bars = document.querySelectorAll('.wl__bar i');

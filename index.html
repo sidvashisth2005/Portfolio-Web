@@ -19,6 +19,8 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <style>html,body{background:#060608;margin:0}</style>
+  <!-- first visits open the 3D village; see public/front-door.js -->
+  <script src="front-door.js"></script>
   <link rel="preload" href="fonts/big-shoulders-display-latin-832b15.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" as="image" href="img/hero-ink-m.webp" media="(max-width: 760px)" fetchpriority="high" />
   <link rel="preload" as="image" href="img/hero-ink.webp" media="(min-width: 761px)" fetchpriority="high" />
@@ -28,6 +30,8 @@
 </head>
 <body class="is-loading">
   <a class="skip" href="#main">Skip to content</a>
+  <!-- the way back into the 3D village, on the opening screen only -->
+  <a class="village-btn" id="village-btn" href="world"><span class="village-btn__kj" aria-hidden="true">閃</span><span>Back to the <span class="village-btn__long">hidden </span>village</span><span aria-hidden="true">↗</span></a>
 
   <!-- Preloader: 一閃, one flash. A brush stroke of 一 ("one"), then a blade cut that splits the screen. -->
   <div class="preloader" id="preloader" role="status" aria-label="Loading the site">
