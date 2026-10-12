@@ -3,22 +3,33 @@
 import './fonts.css';
 import './styles.css';
 
-// The loader's score. Browsers only allow sound after a tap or key, so its code loads on the first one; the audio
-// context is made and resumed right inside the gesture (Safari insists), then handed over.
-const evs = ['pointerdown', 'touchend', 'keydown'];
-let ac = null, score = null;
+// The loader's score. It tries to start on its own as the page opens, but browsers allow that only for some sites
+// and visitors; otherwise it starts on the first click, tap or key. The audio context is resumed inside that gesture
+// (Safari insists) and handed to the score, whose code loads only once there's sound to make.
+const evs = ['pointerdown', 'pointerup', 'click', 'touchend', 'keydown'];
+const AC = window.AudioContext || window.webkitAudioContext;
+let ac = null, score = null, muted = false;
+try { muted = localStorage.getItem('sv-sound') === 'off'; } catch { /* storage blocked */ }
+const play = (fromButton = false) => { score ||= import('./ui/loaderSound.js'); score.then((m) => m.loaderSound(ac, fromButton)); };
 function wake(e) {
   if (!document.getElementById('preloader')) { evs.forEach((t) => removeEventListener(t, wake, true)); return; }
   try {
-    const AC = window.AudioContext || window.webkitAudioContext;
     ac ||= AC ? new AC({ latencyHint: 'interactive' }) : null;
     if (ac?.state === 'suspended') ac.resume().catch(() => {});
   } catch { /* no audio */ }
-  const fromButton = !!e.target.closest?.('.pl-sound');
-  score ||= import('./ui/loaderSound.js');
-  score.then((m) => m.loaderSound(ac, fromButton));
+  play(!!e.target.closest?.('.pl-sound'));
 }
 evs.forEach((t) => addEventListener(t, wake, { capture: true, passive: true }));
+// on by default: if the browser lets this page make sound without a gesture, the score starts with the intro
+if (AC && !muted) {
+  requestAnimationFrame(() => {
+    try {
+      ac ||= new AC({ latencyHint: 'interactive' });
+      if (ac.state === 'running') play();
+      else ac.resume().then(() => { if (ac.state === 'running') play(); }, () => {});
+    } catch { /* no audio */ }
+  });
+}
 // a visitor who muted it last time sees that straight away
 try {
   const b = document.querySelector('.pl-sound');
