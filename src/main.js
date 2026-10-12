@@ -619,6 +619,10 @@ function setupMisc() {
   tickClock();
   setInterval(tickClock, 1000);
 
+  // Copyright year stays current without a rebuild
+  const year = $('#year');
+  if (year) year.textContent = new Date().getFullYear();
+
   // Copy email
   const copyBtn = $('#copy-mail'), copyState = $('#copy-state');
   copyBtn.addEventListener('click', async () => {

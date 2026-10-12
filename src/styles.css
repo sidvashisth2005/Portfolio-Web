@@ -167,7 +167,11 @@ main, .footer { position: relative; z-index: 1; }
 .menu__line { position: absolute; left: 48px; right: 0; bottom: 0; height: 1px; background: var(--crimson); transform: scaleX(0); transform-origin: left; transition: transform .5s var(--ease-out); }
 .menu__item:hover .menu__line, .menu__item:focus-visible .menu__line { transform: scaleX(1); }
 .menu__side { position: relative; display: flex; flex-direction: column; gap: 10px; flex: 0 1 340px; opacity: 0; }
-.menu__mail { font-size: var(--fs-lead); font-weight: 700; margin: 0; word-break: break-all; }
+.menu__mail { display: block; font-size: var(--fs-lead); font-weight: 700; margin: 0; word-break: break-all; text-decoration: none; }
+.menu__mail:hover { color: var(--crimson-hot); }
+.tel { color: inherit; text-decoration: none; }
+.footer__col .tel { padding: 6px 0; }
+.tel:hover { color: var(--paper); text-decoration: underline; text-underline-offset: 3px; }
 .menu__side p { margin: 0; }
 .menu__socials { display: flex; gap: 18px; font-weight: 700; }
 
