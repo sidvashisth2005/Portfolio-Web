@@ -13,8 +13,10 @@ import { buildArena, ARENA } from './arena.js';
 import { createPost } from './post.js';
 import { buildPlaces } from './places.js';
 import { panelsHTML, wirePanels, PHOTO_SHOTS } from './panels.js';
+import { guard } from '../ui/guard.js';
 import { stats, moves, dojos, gallery } from '../data.js';
 
+guard();
 const $ = (s) => document.querySelector(s);
 const mobile = window.matchMedia('(max-width: 760px)').matches || window.matchMedia('(pointer: coarse)').matches;
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -2,6 +2,9 @@
 // Styles stay here so they're inlined in the page head; the app chunk is fetched and run after the first frame.
 import './fonts.css';
 import './styles.css';
+import { guard } from './ui/guard.js';
+
+guard();
 
 // The loader's score. It tries to start on its own as the page opens, but browsers allow that only for some sites
 // and visitors; otherwise it starts on the first click, tap or key. The audio context is resumed inside that gesture
