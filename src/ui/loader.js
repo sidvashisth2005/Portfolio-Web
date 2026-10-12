@@ -12,7 +12,11 @@ export function createLoader(root) {
   halfB.classList.replace('pl-half--a', 'pl-half--b');
   halfB.setAttribute('aria-hidden', 'true');
   halfB.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+  halfB.querySelector('.pl-sound')?.remove();
   halfA.after(halfB);
+
+  // the score (ui/loaderSound.js, loaded on the first tap) hears the cut through these
+  const sfx = (name, arg, late = 0) => document.dispatchEvent(new CustomEvent('sv:sfx', { detail: { name, arg, late } }));
 
   const slash = root.querySelector('.pl-slash');
   const flash = root.querySelector('.pl-flash');
@@ -95,6 +99,7 @@ export function createLoader(root) {
         if (reduce) {
           setBar(1);
           gsap.timeline({ onComplete: done }).add(() => onLift?.()).to(root, { autoAlpha: 0, duration: 0.4 });
+          sfx('droneOut', 1.2); sfx('resolve'); sfx('end');
           return;
         }
         gsap.ticker.add(drawSparks);
@@ -110,20 +115,38 @@ export function createLoader(root) {
           .to('.pl-ichi', { filter: 'drop-shadow(0 0 28px rgba(255,74,92,.9))', duration: 0.42, ease: 'sine.in' }, '<')
           .to(['.pl-top', '.pl-bottom', '.pl-sub'], { autoAlpha: 0, duration: 0.3 }, '<0.24')
           // the cut
+          .addLabel('cut')
           .set('.pl-half--a', { clipPath: cutA })
           .set('.pl-half--b', { clipPath: cutB })
           .fromTo(slash, { scaleX: 0, autoAlpha: 1 }, { scaleX: 1, duration: 0.16, ease: 'expo.out' })
           .add(burst, '<0.04')
           // impact frame: white, then inverted, then back
           .set(flash, { autoAlpha: 1, backgroundColor: '#fff', mixBlendMode: 'normal' }, '<0.08')
+          .addLabel('flash', '<')
           .set(flash, { mixBlendMode: 'difference' }, '+=0.05')
           .set(flash, { autoAlpha: 0 }, '+=0.06')
           // halves slide apart along the cut
           .set(root, { backgroundColor: 'transparent' })
           .add(() => onLift?.())
           .to('.pl-half--a', { x: () => -W * 0.06, y: () => -H * 0.75, rotation: -3, duration: 1.15, ease: 'expo.inOut' }, '+=0.02')
+          .addLabel('lift', '<')
           .to('.pl-half--b', { x: () => W * 0.06, y: () => H * 0.75, rotation: 3, duration: 1.15, ease: 'expo.inOut' }, '<')
           .to(slash, { autoAlpha: 0, scaleY: 6, duration: 0.5, ease: 'power2.out' }, '<');
+        // the score rides the timeline: each hit fires from the tick that reaches its mark, so it lands on the frame
+        // it belongs to even when the main thread is busy
+        const { cut, flash: fl, lift } = tl.labels;
+        // (a sweep starts short by the overshoot so it still ends on its mark)
+        const hit = (at, name, arg) => tl.add(() => sfx(name, arg, arg > 0.2 ? tl.time() - at : 0), at);
+        hit(0, 'riser', cut);
+        hit(cut, 'slice');
+        hit(fl, 'impact');
+        hit(lift, 'whoosh', 1.15);
+        hit(lift + 0.1, 'ka', -0.35);
+        hit(lift + 0.22, 'ka', 0.35);
+        hit(lift + 0.4, 'taiko', 1);
+        hit(lift + 0.55, 'droneOut', 1.8);
+        hit(lift + 1.15, 'resolve');
+        tl.add(() => sfx('end'), lift + 1.15);
       });
     },
   };
