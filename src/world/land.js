@@ -10,7 +10,13 @@ export const LAYOUT = {
   riverZ: 150,
   arena: new THREE.Vector3(470, 0, -60),
   cliffZ: -385,
+  // the other stops on the journey: [x, ground, z] and the radius kept clear of houses and trees
+  shrine: { at: [-440, 16, -30], clear: 110 },
+  library: { at: [-160, 0, -102], clear: 42 },
+  training: { at: [65, 0, -178], clear: 46 },
+  memorial: { at: [90, 0, 246], clear: 34 },
 };
+export const reserved = (x, z) => ['shrine', 'library', 'training', 'memorial'].some((k) => Math.hypot(x - LAYOUT[k].at[0], z - LAYOUT[k].at[2]) < LAYOUT[k].clear);
 
 export function heightAt(x, z) {
   const r = Math.hypot(x, z);
@@ -21,7 +27,9 @@ export function heightAt(x, z) {
   const a = LAYOUT.arena;
   h *= smooth(130, 230, Math.hypot(x - a.x, z - a.z)); // a level pad for the stadium
   if (z > LAYOUT.gateZ - 20) h *= smooth(24, 90, Math.abs(x)); // the road out of the gate runs level through the hills
-  return h;
+  const s = LAYOUT.shrine.at; // the shrine stands on a levelled terrace in the western hills
+  const k = smooth(120, 70, Math.hypot(x - s[0], z - s[2]));
+  return h + (s[1] - h) * k;
 }
 
 const skyVert = 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rng, fbm, paint, place } from './kit.js';
 import { toon } from './toon.js';
-import { LAYOUT } from './land.js';
+import { LAYOUT, reserved } from './land.js';
 
 // The forest the village hides in: two kinds of tree (tall layered cedars and round broadleaf canopies), lumpy
 // cel-shaded foliage, thousands of them instanced; and leaves drifting through the air around the camera.
@@ -52,6 +52,7 @@ export function buildForest(scene, { mobile, heightAt }) {
     if (Math.hypot(x - A.x, z - A.z) < 140) continue;
     if (z > LAYOUT.gateZ - 10 && Math.abs(x) < 40 && z < LAYOUT.gateZ + 200) continue; // the road out of the gate
     if (z < LAYOUT.cliffZ + 60 && z > LAYOUT.cliffZ - 60 && Math.abs(x) < 280) continue; // the cliff
+    if (reserved(x, z)) continue;
     if (inside && (Math.abs(x) < 30 || Math.abs(Math.hypot(x, z) - 150) < 14 || Math.abs(z - LAYOUT.riverZ) < 18)) continue;
     const y = heightAt(x, z);
     if (y > 230) continue;

@@ -76,6 +76,43 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 .w-rank { margin: 0; display: flex; align-items: baseline; gap: 16px; font: 900 var(--fs-h2)/.9 var(--f-display); text-transform: uppercase; }
 .w-rank b { font-size: clamp(96px, 13vw, 200px); color: var(--crimson); text-shadow: 0 0 50px rgba(224, 24, 45, .55); }
 
+/* the information panels at the later stops */
+.w-panel--left { left: var(--gutter); top: 50%; translate: 0 -50%; width: min(460px, calc(100vw - 2 * var(--gutter))); display: flex; flex-direction: column; gap: 14px; }
+.w-card { gap: 14px; }
+/* a top band: when the scene itself carries the detail (the Two sides boards) */
+.w-panel--top { left: 50%; top: calc(88px + 2vh); translate: -50% 0; width: min(900px, calc(100vw - 2 * var(--gutter))); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+.w-panel--top .w-h2 { font-size: clamp(26px, 2.6vw, 38px); }
+.w-panel--top .w-two { gap: 8px 40px; }
+.w-panel--top .w-list { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 2px 14px; }
+.w-panel--top .w-list li { font-size: 15px; }
+/* low panels sit under the scene: a wide band across the bottom */
+.w-panel--low { left: 50%; bottom: 7vh; translate: -50% 0; width: min(880px, calc(100vw - 2 * var(--gutter))); display: flex; flex-direction: column; gap: 10px; }
+.w-panel--low .w-h2 { font-size: clamp(28px, 3vw, 42px); }
+.w-panel--low .w-stats { grid-template-columns: repeat(3, 1fr); }
+.w-panel--low .w-two { grid-template-columns: 1fr 1fr; }
+.w-card .w-h2 { font-size: clamp(32px, 3.6vw, 52px); }
+.w-two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.w-list, .w-stats, .w-moves, .w-stages, .w-quests, .w-eps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; text-shadow: 0 2px 14px rgba(0, 0, 0, .9); }
+.w-list li { font-size: var(--fs-body); }
+.w-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+.w-stats li { display: flex; flex-direction: column; gap: 2px; }
+.w-stats b { font: 900 clamp(30px, 3vw, 42px)/1 var(--f-display); color: var(--crimson-hot); }
+.w-stats span { font-size: 15px; line-height: 1.35; }
+.w-stats em { font: 500 12px/1.4 var(--f-mono); letter-spacing: .12em; color: var(--muted); font-style: normal; }
+.w-moves li, .w-stages li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+.w-kj { font: 30px/1.1 var(--f-jp); color: var(--crimson-hot); }
+.w-moves b, .w-stages b, .w-quests b { display: block; font: 800 var(--fs-body)/1.3 var(--f-body); }
+.w-moves p, .w-stages p { margin: 4px 0 0; font-size: 15px; line-height: 1.4; }
+.w-moves strong, .w-stages strong { color: var(--crimson-hot); }
+.w-moves a { display: inline-block; margin-top: 4px; font: 500 var(--fs-label)/1.4 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--paper); }
+.w-quests span { display: block; font-size: 15px; line-height: 1.4; color: var(--soft); }
+.w-eps li { display: flex; gap: 12px; align-items: baseline; font-size: var(--fs-body); }
+.w-links { line-height: 2; }
+.w-links a { color: var(--paper); }
+@media (max-width: 760px) {
+  .w-two, .w-stats { grid-template-columns: 1fr; }
+}
+
 /* free roam */
 .w-roamhint { position: fixed; z-index: 15; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); translate: -50% 0; padding: 12px 18px; border-radius: 12px; background: rgba(6, 6, 8, .7); border: 1px solid rgba(244, 242, 238, .2); backdrop-filter: blur(6px); white-space: nowrap; }
 .w-progress { position: fixed; z-index: 15; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(244, 242, 238, .08); }

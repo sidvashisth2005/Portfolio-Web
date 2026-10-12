@@ -10,6 +10,8 @@ import { buildVillage } from './village.js';
 import { buildForest, buildLeaves } from './nature.js';
 import { buildArena, ARENA } from './arena.js';
 import { createPost } from './post.js';
+import { buildPlaces } from './places.js';
+import { panelsHTML, wirePanels } from './panels.js';
 
 const $ = (s) => document.querySelector(s);
 const mobile = window.matchMedia('(max-width: 760px)').matches || window.matchMedia('(pointer: coarse)').matches;
@@ -45,7 +47,7 @@ scene.add(sun, new THREE.HemisphereLight(0xffa98a, 0x3a3a5a, 1.1), new THREE.Amb
 
 const portrait = new Promise((res, rej) => new THREE.TextureLoader().load(mobile ? 'img/hero-ink-m.webp' : 'img/hero-ink.webp', (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, rej));
 
-let land, village, arena, leaves;
+let land, village, arena, leaves, places;
 async function build() {
   // painted signs use the site's fonts, so wait for them first
   await Promise.all([
@@ -60,6 +62,8 @@ async function build() {
   buildForest(scene, { mobile, heightAt });
   setLoad(0.7); await tick();
   arena = buildArena(scene, { mobile });
+  // phones travel the shorter journey, so the places beyond it aren't built there
+  if (!mobile) places = buildPlaces(scene, { mobile });
   leaves = buildLeaves(scene, { mobile });
   setLoad(0.82);
   resize();
@@ -70,27 +74,66 @@ async function build() {
 }
 
 // ---------- the rail ----------
-// where the camera is and what it looks at, stop by stop (each stop gets an equal share of the scroll)
+// where the camera is and what it looks at, stop by stop (each stop gets an equal share of the scroll).
+// Desktop takes the whole journey; phones take the shorter one (gate, street, tower, stadium) and the full site
+// carries the rest.
 const G = LAYOUT.gateZ, A = ARENA;
-const STOPS = [
+const [SX, SY, SZ] = LAYOUT.shrine.at, [LX, , LZ] = LAYOUT.library.at, [TX, , TZ] = LAYOUT.training.at, [MX, , MZ] = LAYOUT.memorial.at;
+const LF = [-LX / Math.hypot(LX, LZ), -LZ / Math.hypot(LX, LZ)]; // the library's front, toward the heart
+const LR = [LF[1], -LF[0]]; // to the right as you face into it
+const CZ = LAYOUT.cliffZ;
+const START = [
   // the great gate from the road, the portrait scroll on the left
-  [mobile ? [-6, 7, 384] : [16, 9, 390], mobile ? [-10, 1, 300] : [22, 19, 300]],
+  [mobile ? [-6, 7, 384] : [16, 9, 390], mobile ? [-10, 1, 300] : [22, 19, 300], 'gate'],
   [[2, 11, G + 16], [0, 13, G - 60]], // through the gate
-  [[0, 13, G - 50], [0, 20, 120]], // the main street: lanterns, signboards, shops
+  [[0, 13, G - 50], [0, 20, 120], 'street'], // the main street: lanterns, signboards, shops
   [[0, 16, 190], [0, 22, 60]], // over the bridge
   [[0, 21, 110], [0, 26, 0]], // the tower ahead
-  [mobile ? [74, 84, 112] : [46, 58, 62], mobile ? [0, 12, 0] : [0, 24, 0]], // around the tower and its crest
-  [[130, 150, 170], mobile ? [0, 0, -110] : [0, 40, -260]], // the whole village, the cliff and the sun
-  [[330, 110, 60], [A.x, 20, A.z]], // over the forest to the stadium
-  [[A.x + 60, 70, A.z + 70], [A.x, 6, A.z]], // over the rim
-  [[A.x + 30, mobile ? 22 : 20, A.z + 26], [A.x, mobile ? 2 : 7, A.z]], // into the bowl
-  [[A.x - 4, 12, A.z + 25], [A.x, mobile ? 3 : 8.5, A.z]], // face to face with the trophy
-  [[A.x - 90, 74, A.z - 60], [-300, 110, -700]], // up and out, into the sunset
+  [mobile ? [74, 84, 112] : [46, 58, 62], mobile ? [0, 12, 0] : [0, 24, 0], 'tower'], // around the tower and its crest
+];
+const STADIUM = [
+  [[330, 110, 60], [A.x, 20, A.z], 'toStadium'], // over the forest to the stadium
+  [[A.x + 60, 70, A.z + 70], [A.x, 6, A.z], 'rim'], // over the rim
+  [[A.x + 30, mobile ? 22 : 20, A.z + 26], [A.x, mobile ? 2 : 7, A.z], 'bowl'], // into the bowl
+  [[A.x - 4, 12, A.z + 25], [A.x, mobile ? 3 : 8.5, A.z], 'trophy'], // face to face with the trophy
+];
+const STOPS = mobile ? [
+  ...START,
+  [[130, 150, 170], [0, 0, -110], 'overview'], // the whole village, the cliff and the sun
+  ...STADIUM,
+  [[A.x - 90, 74, A.z - 60], [-300, 110, -700], 'sunset'], // up and out, into the sunset
+] : [
+  ...START,
+  [[-120, 150, 160], [-300, 20, -40], 'overview'], // over the village, turning west to the hills
+  [[SX + 70, SY + 7, SZ + 7], [SX + 8, SY + 9, SZ - 3], 'torii'], // the path of torii up to the shrine
+  [[SX + 50, SY + 22, SZ], [SX - 4, SY + 8, SZ], 'sides'], // over the last torii: the two great boards either side of the path, the hall between
+  [[SX - 6, SY + 2.6, SZ - 3], [SX - 6, SY + 4.6, SZ - 24], 'stats'], // the ema rack, up in the top half of the view
+  [[LX + LF[0] * 60, 30, LZ + LF[1] * 60], [LX, 8, LZ], 'toLibrary'], // back over the wall to the library
+  [[LX + LF[0] * 30 - LR[0] * 4, 9.5, LZ + LF[1] * 30 - LR[1] * 4], [LX - LF[0] * 8 + LR[0] * 12, 9.6, LZ - LF[1] * 8 + LR[1] * 12], 'moves'], // the four scrolls on the left, the panel on the right
+  [[TX + 45, 62, TZ + 48], [TX - 5, 2, TZ - 2], 'toTraining'], // the training ground from above
+  [[TX + 34, 10, TZ + 6], [TX - 10, 4, TZ - 22], 'training'], // the posts and the four stage stones, left of the panel
+  [[TX + 26, 16, TZ + 36], [TX - 18, 4, TZ - 10], 'quests'],
+  ...STADIUM,
+  [[A.x + 10, 30, A.z + 20], [A.x, 54, A.z - 88], 'awards'], // up to the great banner
+  [[280, 90, 120], [MX, 5, MZ], 'overVillage'], // back over the village
+  [[MX - 4, 7.6, MZ - 3], [MX + 8, 5.2, MZ + 16], 'memorial'], // inside the ring of photographs, the stone behind
+  [[80, 120, 120], [40, 190, CZ], 'rise'], // rising toward the cliff
+  [[34, 212, CZ + 52], [60, 216, CZ], 'onair'], // the radio mast and the ON AIR hut
+  [[-40, 216, CZ + 32], [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
 ];
 const V = (a) => new THREE.Vector3(...a);
 const railPos = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[0])), false, 'centripetal');
 const railLook = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[1])), false, 'centripetal');
-const at = (i) => i / (STOPS.length - 1); // scroll progress at a stop
+const N = STOPS.length - 1;
+const stop = (name) => STOPS.findIndex((s) => s[2] === name);
+const at = (name) => stop(name) / N; // scroll progress at a named stop
+// each panel shows from a little before its stop until a little after: [stop, before, after] in stops
+const SHOW = {
+  hero: ['gate', 0, 0.5], welcome: ['street', 0.4, 0.9], about: ['tower', 0.4, 0.6], tournament: ['toStadium', 0.3, 0.8],
+  rank: ['trophy', 0.6, 0.55], end: ['sunset', 0.3, 0.1],
+  sides: ['sides', 0.3, 0.6], stats: ['stats', 0.3, 0.6], moves: ['moves', 0.3, 0.6], training: ['training', 0.3, 0.6], quests: ['quests', 0.3, 0.5],
+  awards: ['awards', 0.3, 0.6], flashbacks: ['memorial', 0.3, 0.6], onair: ['onair', 0.3, 0.6], contact: ['summit', 0.2, 0.1],
+};
 
 // ---------- scroll ----------
 const lenis = reduce ? null : new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, touchMultiplier: 1.4 });
@@ -113,8 +156,17 @@ document.querySelectorAll('a[href^="#w-"]').forEach((a) => a.addEventListener('c
   lenis ? lenis.scrollTo(y, { duration: 3 }) : window.scrollTo({ top: y, behavior: 'smooth' });
 }));
 
-// panels show over their stretch of the journey
-const panels = [...document.querySelectorAll('.w-panel')].map((el) => ({ el, r: el.dataset.range.split(',').map(Number), on: false }));
+// the later stops' panels come from the portfolio's data; each panel shows over its stretch of the journey
+$('#w-content').insertAdjacentHTML('beforeend', panelsHTML());
+wirePanels();
+// scroll length: about a screen and a quarter per stop
+$('#w-content').style.height = `${(N + 1) * (mobile ? 85 : 110)}vh`;
+const panels = [...document.querySelectorAll('.w-panel')].map((el) => {
+  const sh = SHOW[el.dataset.key], i = sh ? stop(sh[0]) : -1;
+  if (i < 0) { el.remove(); return null; } // not on this journey
+  el.dataset.range = `${(i - sh[1]) / N},${(i + sh[2]) / N}`;
+  return { el, r: [(i - sh[1]) / N, (i + sh[2]) / N], on: false };
+}).filter(Boolean);
 function updatePanels(p) {
   panels.forEach((x) => {
     const on = p >= x.r[0] && p < x.r[1];
@@ -182,7 +234,7 @@ function roamStep(dt) {
   roamPos.z = THREE.MathUtils.clamp(roamPos.z, -1300, 1300);
   roamPos.y = THREE.MathUtils.clamp(roamPos.y, heightAt(roamPos.x, roamPos.z) + 2.5, 420);
   // buildings are solid: step out through the nearest side, or stand on the roof
-  for (const [x, z, rad, h] of village?.colliders || []) {
+  for (const [x, z, rad, h] of [...(village?.colliders || []), ...(places?.colliders || [])]) {
     const dx = roamPos.x - x, dz = roamPos.z - z, d = Math.hypot(dx, dz), m = rad + 1.5;
     if (d >= m || roamPos.y >= h + 1.5) continue;
     if (h + 1.5 - roamPos.y < m - d) roamPos.y = h + 1.5;
@@ -232,8 +284,11 @@ function frame(now) {
   // the gate opens as the journey starts; the crowd rises as the camera drops into the bowl
   const p = roaming ? 1 : smooth;
   land?.update(t);
-  village?.update(t, ss(p, 0.005, at(1) * 0.9));
-  arena?.update(t, roaming ? 0.3 : ss(p, at(8), at(9)));
+  village?.update(t, ss(p, 0.005, (1 / N) * 0.9));
+  // (on the long journey they settle again once the camera has left the stadium)
+  const settle = stop('overVillage') > 0 ? ss(p, at('awards') + 0.02, at('overVillage')) : 0;
+  arena?.update(t, roaming ? 0.3 : ss(p, at('rim'), at('bowl')) * (1 - settle));
+  places?.update(t);
   leaves?.update(t, camera.position);
   post.render(scene, camera, t);
   requestAnimationFrame(frame);

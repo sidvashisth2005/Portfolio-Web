@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { rng, fbm, Bins, box, cyl, sphere, place, paint, gableRoof, gableEnd, roofTiles } from './kit.js';
 import { toon, glow, textTexture, PAL } from './toon.js';
-import { LAYOUT } from './land.js';
+import { LAYOUT, reserved } from './land.js';
 
 // The hidden village, laid out like the anime's: a round crimson tower at the heart, streets radiating out to the
 // wall, a main street from the great gate lined with shops, lanterns and signboards, and houses that mix tiled
@@ -77,7 +77,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     if (Math.abs(rr - 150) < 9 || Math.abs(rr - 230) < 7) return true;
     if (RADIALS.some((ra) => Math.abs(Math.atan2(Math.sin(a - ra), Math.cos(a - ra))) * rr < 7)) return true;
     if (Math.abs(z - LAYOUT.riverZ) < 16) return true;
-    return rr < 62;
+    return rr < 62 || reserved(x, z);
   };
   // the main street runs from the plaza out through the gate and on into the forest
   const paving = new THREE.Mesh(new THREE.PlaneGeometry(MAIN * 2 + 4, LAYOUT.gateZ + 420).rotateX(-Math.PI / 2), toon(0xb79a72));
