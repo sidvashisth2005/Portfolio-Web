@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { rng, fbm, Bins, box, cyl, sphere, place, paint, gableRoof, gableEnd, roofTiles } from './kit.js';
+import { rng, fbm, Bins, box, cyl, sphere, place, paint, gableRoof, gableEnd, roofTiles, breathe } from './kit.js';
 import { toon, triToon, glow, textTexture, PAL } from './toon.js';
 import { plaster, wood, stone, thatch, paving } from './textures.js';
 import { LAYOUT, reserved } from './land.js';
@@ -16,117 +16,140 @@ const CONE_TOWERS = [[2.6, 122], [0.45, 128], [-1.1, 118], [2.0, 200]];
 const SIGNS = ['修行', '大会', '光', '伝', '巻', '力', '技', '勝', '戦', '影'];
 
 // one house, built at the origin facing +z (its street), as [material, geometry] pieces
+// A house can be planned without being built: in a dry run every random draw happens exactly as in the real one,
+// but no geometry is made, so a lot can be tried and turned down cheaply. Only houses that fit are built.
+let DRY = false;
+const bx = (...a) => (DRY ? null : box(...a)), cy = (...a) => (DRY ? null : cyl(...a));
+const pl = (g, o) => (DRY ? null : place(g, o)), pt = (g, c) => (DRY ? null : paint(g, c));
+const gr = (...a) => (DRY ? [] : gableRoof(...a)), ge = (...a) => (DRY ? null : gableEnd(...a));
+function plan(r, kind) {
+  const s0 = r.save();
+  DRY = true;
+  const H = house(r, kind);
+  DRY = false;
+  return { ...H, kind, s0 };
+}
+// build a planned house: replay its draws from where the plan started, then carry on from where the plan ended
+function realize(r, H) {
+  const s1 = r.save();
+  r.load(H.s0);
+  const R = house(r, H.kind);
+  r.load(s1);
+  return R.P;
+}
+
 function house(r, kind) {
   const P = [];
   const wall = WALLS[Math.floor(r() * WALLS.length)], roof = ROOFS[Math.floor(r() * ROOFS.length)];
   if (kind === 'trad') {
     const w = 9 + r() * 6, d = 8 + r() * 5, fl = r() < 0.4 ? 2 : 1, h = fl * 4.4;
-    P.push(['plaster', box(w, h, d, wall, { at: [0, h / 2, 0] })]);
-    P.push(['wood', box(w + 0.3, 0.9, d + 0.3, WOOD, { at: [0, 0.45, 0] })]);
-    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => P.push(['wood', box(0.5, h, 0.5, WOOD, { at: [sx * w / 2, h / 2, sz * d / 2] })]));
-    if (fl === 2) P.push(['wood', box(w + 0.4, 0.4, d + 0.4, WOOD, { at: [0, 4.4, 0] })]);
+    P.push(['plaster', bx(w, h, d, wall, { at: [0, h / 2, 0] })]);
+    P.push(['wood', bx(w + 0.3, 0.9, d + 0.3, WOOD, { at: [0, 0.45, 0] })]);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => P.push(['wood', bx(0.5, h, 0.5, WOOD, { at: [sx * w / 2, h / 2, sz * d / 2] })]));
+    if (fl === 2) P.push(['wood', bx(w + 0.4, 0.4, d + 0.4, WOOD, { at: [0, 4.4, 0] })]);
     // windows: lattice panels, some lit for the evening
     for (let f = 0; f < fl; f++) for (let i = 0; i < Math.max(1, Math.floor(w / 4.5)); i++) {
       const x = -w / 2 + (i + 0.5) * (w / Math.max(1, Math.floor(w / 4.5)));
-      P.push([r() < 0.45 ? 'lit' : 'glass', box(2, 1.6, 0.2, 0x000000, { at: [x, 2.4 + f * 4.4, d / 2 + 0.08] })]);
+      P.push([r() < 0.45 ? 'lit' : 'glass', bx(2, 1.6, 0.2, 0x000000, { at: [x, 2.4 + f * 4.4, d / 2 + 0.08] })]);
     }
-    P.push(['wood', box(2, 3, 0.3, DARK, { at: [w * 0.25, 1.5, d / 2 + 0.1] })]); // door
+    P.push(['wood', bx(2, 3, 0.3, DARK, { at: [w * 0.25, 1.5, d / 2 + 0.1] })]); // door
     const rise = 2.4 + r() * 1.4;
-    gableRoof(w, d, rise, 1.4, roof).forEach((g) => P.push(['roof', place(g, { at: [0, h, 0] })]));
-    [-1, 1].forEach((s) => P.push(['plaster', place(gableEnd(w, rise, 0.3, wall), { at: [0, h, s * d / 2], rot: [0, s < 0 ? Math.PI : 0, 0] })]));
-    if (r() < 0.3) P.push(['tank', cyl(1.5, 1.5, 2.6, 14, 0x8a9aa6, { at: [w / 2 - 2, h + rise * 0.4 + 1.3, -d / 4] })]);
+    gr(w, d, rise, 1.4, roof).forEach((g) => P.push(['roof', pl(g, { at: [0, h, 0] })]));
+    [-1, 1].forEach((s) => P.push(['plaster', pl(ge(w, rise, 0.3, wall), { at: [0, h, s * d / 2], rot: [0, s < 0 ? Math.PI : 0, 0] })]));
+    if (r() < 0.3) P.push(['tank', cy(1.5, 1.5, 2.6, 14, 0x8a9aa6, { at: [w / 2 - 2, h + rise * 0.4 + 1.3, -d / 4] })]);
     return { P, w, d, h: h + rise };
   }
   if (kind === 'pagoda') {
     // white walls under stacked hip-roof skirts, red tiles over a green fascia at every floor, in the anime's manner
     const w = 12 + r() * 5, d = 10 + r() * 3, fl = 2 + Math.floor(r() * 2), fh = 4.2, h = fl * fh;
     const skirtC = r() < 0.75 ? 0xc0392b : 0x3f6fae, bandC = r() < 0.7 ? 0x3f8f5a : 0x8e2a2a;
-    P.push(['plaster', box(w, h, d, 0xf4efe6, { at: [0, h / 2, 0] })]);
-    P.push(['wood', box(w + 0.3, 0.9, d + 0.3, 0x7d6a5c, { at: [0, 0.45, 0] })]);
+    P.push(['plaster', bx(w, h, d, 0xf4efe6, { at: [0, h / 2, 0] })]);
+    P.push(['wood', bx(w + 0.3, 0.9, d + 0.3, 0x7d6a5c, { at: [0, 0.45, 0] })]);
     const hip = (bw, bd, tw, td, hh, y, color) => {
+      if (DRY) return null;
       const g = new THREE.BoxGeometry(bw, hh, bd);
       const p = g.attributes.position;
       for (let i = 0; i < p.count; i++) if (p.getY(i) > 0) { p.setX(i, p.getX(i) * tw / bw); p.setZ(i, p.getZ(i) * td / bd); }
       const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * bw / 0.9, uv.getY(i) * hh / 0.9);
       g.computeVertexNormals();
-      return place(paint(g, color), { at: [0, y + hh / 2, 0] });
+      return pl(pt(g, color), { at: [0, y + hh / 2, 0] });
     };
     for (let f = 0; f < fl; f++) {
       const n = Math.max(2, Math.floor(w / 3.2));
-      for (let i = 0; i < n; i++) P.push([r() < 0.4 ? 'lit' : 'glass', box(1.5, 1.5, 0.2, 0x000000, { at: [-w / 2 + (i + 0.5) * (w / n), 1.9 + f * fh, d / 2 + 0.08] })]);
+      for (let i = 0; i < n; i++) P.push([r() < 0.4 ? 'lit' : 'glass', bx(1.5, 1.5, 0.2, 0x000000, { at: [-w / 2 + (i + 0.5) * (w / n), 1.9 + f * fh, d / 2 + 0.08] })]);
       if (f < fl - 1) {
-        P.push(['plaster', box(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, (f + 1) * fh - 0.9, 0] })]);
+        P.push(['plaster', bx(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, (f + 1) * fh - 0.9, 0] })]);
         P.push(['roof', hip(w + 3.4, d + 3.4, w + 0.4, d + 0.4, 1.4, (f + 1) * fh - 0.6, skirtC)]);
       }
     }
-    P.push(['plaster', box(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, h - 0.3, 0] })]);
+    P.push(['plaster', bx(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, h - 0.3, 0] })]);
     P.push(['roof', hip(w + 3, d + 3, w * 0.35, d * 0.2, 3.6, h, skirtC)]);
-    if (r() < 0.5) P.push(['tank', cyl(1.4, 1.4, 2.2, 14, 0x8a9aa6, { at: [w * 0.3, h + 2.6, -d * 0.2] })]);
-    P.push(['wood', box(2.2, 3, 0.3, DARK, { at: [w * 0.28, 1.5, d / 2 + 0.1] })]);
+    if (r() < 0.5) P.push(['tank', cy(1.4, 1.4, 2.2, 14, 0x8a9aa6, { at: [w * 0.3, h + 2.6, -d * 0.2] })]);
+    P.push(['wood', bx(2.2, 3, 0.3, DARK, { at: [w * 0.28, 1.5, d / 2 + 0.1] })]);
     return { P, w: w + 3.4, d: d + 3.4, h: h + 4 };
   }
   if (kind === 'apt') {
     // the mid-rise: 3-5 floors, balconies on the street side, a zigzag stair climbing the outside wall
     const w = 12 + r() * 6, d = 10 + r() * 4, fl = 3 + Math.floor(r() * 3), fh = 3.6, h = fl * fh;
-    P.push(['plaster', box(w, h, d, wall, { at: [0, h / 2, 0] })]);
-    P.push(['plaster', box(w + 0.6, 1, d + 0.6, 0xd8cfc2, { at: [0, h + 0.5, 0] })]);
-    P.push(['wood', box(w + 0.2, 1, d + 0.2, 0x7d6a5c, { at: [0, 0.5, 0] })]);
+    P.push(['plaster', bx(w, h, d, wall, { at: [0, h / 2, 0] })]);
+    P.push(['plaster', bx(w + 0.6, 1, d + 0.6, 0xd8cfc2, { at: [0, h + 0.5, 0] })]);
+    P.push(['wood', bx(w + 0.2, 1, d + 0.2, 0x7d6a5c, { at: [0, 0.5, 0] })]);
     for (let f = 0; f < fl; f++) {
       const n = Math.max(2, Math.floor(w / 3.4));
       for (let i = 0; i < n; i++) {
         const x = -w / 2 + (i + 0.5) * (w / n);
-        P.push([r() < 0.38 ? 'lit' : 'glass', box(1.6, 1.6, 0.2, 0x000000, { at: [x, 1.9 + f * fh, d / 2 + 0.08] })]);
-        if (i < 3) P.push([r() < 0.3 ? 'lit' : 'glass', box(0.2, 1.6, 1.6, 0x000000, { at: [-w / 2 - 0.08, 1.9 + f * fh, -d / 2 + (i + 0.7) * (d / 3.2)] })]);
+        P.push([r() < 0.38 ? 'lit' : 'glass', bx(1.6, 1.6, 0.2, 0x000000, { at: [x, 1.9 + f * fh, d / 2 + 0.08] })]);
+        if (i < 3) P.push([r() < 0.3 ? 'lit' : 'glass', bx(0.2, 1.6, 1.6, 0x000000, { at: [-w / 2 - 0.08, 1.9 + f * fh, -d / 2 + (i + 0.7) * (d / 3.2)] })]);
       }
       if (f > 0) {
-        P.push(['plaster', box(w * 0.56, 0.35, 1.7, 0xd8cfc2, { at: [-w * 0.12, f * fh, d / 2 + 0.85] })]);
-        P.push(['wood', box(w * 0.56, 1, 0.14, DARK, { at: [-w * 0.12, f * fh + 0.65, d / 2 + 1.65] })]);
+        P.push(['plaster', bx(w * 0.56, 0.35, 1.7, 0xd8cfc2, { at: [-w * 0.12, f * fh, d / 2 + 0.85] })]);
+        P.push(['wood', bx(w * 0.56, 1, 0.14, DARK, { at: [-w * 0.12, f * fh + 0.65, d / 2 + 1.65] })]);
       }
     }
     // the outside stair: a flight per floor, alternating direction, with a landing at each floor
     const run = d * 0.7, ang = Math.atan2(fh, run);
     for (let f = 0; f < fl - 1; f++) {
       const dir = f % 2 ? 1 : -1;
-      P.push(['wood', box(1.5, 0.3, Math.hypot(run, fh), 0x6b5a50, { at: [w / 2 + 1, f * fh + fh / 2 + 0.2, 0], rot: [dir * ang, 0, 0] })]);
-      P.push(['wood', box(1.6, 0.3, 1.8, 0x6b5a50, { at: [w / 2 + 1, (f + 1) * fh + 0.2, -dir * (run / 2 + 0.6)] })]);
-      P.push(['wood', box(0.12, 1, Math.hypot(run, fh), DARK, { at: [w / 2 + 1.75, f * fh + fh / 2 + 0.9, 0], rot: [dir * ang, 0, 0] })]);
+      P.push(['wood', bx(1.5, 0.3, Math.hypot(run, fh), 0x6b5a50, { at: [w / 2 + 1, f * fh + fh / 2 + 0.2, 0], rot: [dir * ang, 0, 0] })]);
+      P.push(['wood', bx(1.6, 0.3, 1.8, 0x6b5a50, { at: [w / 2 + 1, (f + 1) * fh + 0.2, -dir * (run / 2 + 0.6)] })]);
+      P.push(['wood', bx(0.12, 1, Math.hypot(run, fh), DARK, { at: [w / 2 + 1.75, f * fh + fh / 2 + 0.9, 0], rot: [dir * ang, 0, 0] })]);
     }
     const tx = (r() - 0.5) * (w - 6), tz = (r() - 0.5) * (d - 6);
     [0, 1].forEach((k) => {
       if (k && r() < 0.5) return;
       const ox = tx + k * 4.2;
-      P.push(['tank', cyl(1.7, 1.7, 3, 16, k ? 0xa58a6e : 0x8a9aa6, { at: [ox, h + 3.1, tz] })]);
-      P.push(['tank', cyl(1.8, 1.8, 0.35, 16, 0x5d6870, { at: [ox, h + 4.7, tz] })]);
-      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => P.push(['wood', box(0.22, 1.6, 0.22, DARK, { at: [ox + a * 1.1, h + 0.8, tz + b * 1.1] })]));
+      P.push(['tank', cy(1.7, 1.7, 3, 16, k ? 0xa58a6e : 0x8a9aa6, { at: [ox, h + 3.1, tz] })]);
+      P.push(['tank', cy(1.8, 1.8, 0.35, 16, 0x5d6870, { at: [ox, h + 4.7, tz] })]);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => P.push(['wood', bx(0.22, 1.6, 0.22, DARK, { at: [ox + a * 1.1, h + 0.8, tz + b * 1.1] })]));
     });
-    if (r() < 0.6) P.push(['plaster', box(3.2, 2.6, 3.2, wall, { at: [-w / 2 + 2.4, h + 1.3, -d / 2 + 2.4] })]);
+    if (r() < 0.6) P.push(['plaster', bx(3.2, 2.6, 3.2, wall, { at: [-w / 2 + 2.4, h + 1.3, -d / 2 + 2.4] })]);
     return { P, w: w + 2.6, d, h: h + 5 };
   }
   // the stucco block: 2-4 floors, flat roof with a parapet, a round water tank on legs, a little roof hut
   const w = 10 + r() * 7, d = 9 + r() * 6, fl = 2 + Math.floor(r() * 3), h = fl * 3.8;
-  P.push(['plaster', box(w, h, d, wall, { at: [0, h / 2, 0] })]);
-  P.push(['plaster', box(w + 0.6, 0.9, d + 0.6, 0xd8cfc2, { at: [0, h + 0.45, 0] })]);
-  P.push(['wood', box(w + 0.2, 1, d + 0.2, 0x7d6a5c, { at: [0, 0.5, 0] })]);
+  P.push(['plaster', bx(w, h, d, wall, { at: [0, h / 2, 0] })]);
+  P.push(['plaster', bx(w + 0.6, 0.9, d + 0.6, 0xd8cfc2, { at: [0, h + 0.45, 0] })]);
+  P.push(['wood', bx(w + 0.2, 1, d + 0.2, 0x7d6a5c, { at: [0, 0.5, 0] })]);
   for (let f = 0; f < fl; f++) {
     const n = Math.max(1, Math.floor(w / 3.6));
     for (let i = 0; i < n; i++) {
       const x = -w / 2 + (i + 0.5) * (w / n);
-      P.push([r() < 0.35 ? 'lit' : 'glass', box(1.8, 1.6, 0.2, 0x000000, { at: [x, 2 + f * 3.8, d / 2 + 0.08] })]);
-      if (r() < 0.5) P.push([r() < 0.35 ? 'lit' : 'glass', box(0.2, 1.6, 1.8, 0x000000, { at: [w / 2 + 0.08, 2 + f * 3.8, -d / 2 + (i + 0.5) * (d / n)] })]);
+      P.push([r() < 0.35 ? 'lit' : 'glass', bx(1.8, 1.6, 0.2, 0x000000, { at: [x, 2 + f * 3.8, d / 2 + 0.08] })]);
+      if (r() < 0.5) P.push([r() < 0.35 ? 'lit' : 'glass', bx(0.2, 1.6, 1.8, 0x000000, { at: [w / 2 + 0.08, 2 + f * 3.8, -d / 2 + (i + 0.5) * (d / n)] })]);
     }
     // a striped awning over some ground floors
-    if (f === 0 && r() < 0.35) P.push(['red', box(w * 0.6, 0.25, 2, ROOFS[Math.floor(r() * 3)], { at: [0, 3.3, d / 2 + 1], rot: [0.25, 0, 0] })]);
+    if (f === 0 && r() < 0.35) P.push(['red', bx(w * 0.6, 0.25, 2, ROOFS[Math.floor(r() * 3)], { at: [0, 3.3, d / 2 + 1], rot: [0.25, 0, 0] })]);
   }
   const tx = (r() - 0.5) * (w - 5), tz = (r() - 0.5) * (d - 5);
-  P.push(['tank', cyl(1.9, 1.9, 3.2, 16, r() < 0.5 ? 0x8a9aa6 : 0xa58a6e, { at: [tx, h + 3.2, tz] })]);
-  P.push(['tank', cyl(2.0, 2.0, 0.4, 16, 0x5d6870, { at: [tx, h + 4.9, tz] })]);
-  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => P.push(['wood', box(0.25, 1.6, 0.25, DARK, { at: [tx + a * 1.2, h + 0.8, tz + b * 1.2] })]));
-  if (r() < 0.5) P.push(['plaster', box(3, 2.4, 3, wall, { at: [-tx * 0.5, h + 1.2, -tz * 0.5 + 1] })]);
-  if (r() < 0.5) P.push(['tank', box(1.6, 1.1, 1, 0x9aa0a6, { at: [w / 2 - 1.2, h + 1.4, d / 2 - 1] })]); // AC unit
+  P.push(['tank', cy(1.9, 1.9, 3.2, 16, r() < 0.5 ? 0x8a9aa6 : 0xa58a6e, { at: [tx, h + 3.2, tz] })]);
+  P.push(['tank', cy(2.0, 2.0, 0.4, 16, 0x5d6870, { at: [tx, h + 4.9, tz] })]);
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => P.push(['wood', bx(0.25, 1.6, 0.25, DARK, { at: [tx + a * 1.2, h + 0.8, tz + b * 1.2] })]));
+  if (r() < 0.5) P.push(['plaster', bx(3, 2.4, 3, wall, { at: [-tx * 0.5, h + 1.2, -tz * 0.5 + 1] })]);
+  if (r() < 0.5) P.push(['tank', bx(1.6, 1.1, 1, 0x9aa0a6, { at: [w / 2 - 1.2, h + 1.4, d / 2 - 1] })]); // AC unit
   return { P, w, d, h: h + 5 };
 }
 
-export function buildVillage(scene, { mobile, portrait, heightAt }) {
+export async function buildVillage(scene, { mobile, portrait, heightAt }) {
   const g = new THREE.Group();
   scene.add(g);
   const bins = new Bins();
@@ -179,7 +202,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     const rad = Math.hypot(H.w, H.d) * 0.42;
     if (!free(x, z, rad, fr, idx)) return false;
     m4.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, Math.atan2(nx, nz)), new THREE.Vector3(1, 1, 1));
-    bins.addAll(H.P, m4);
+    bins.addAll(realize(r, H), m4);
     lots.push([x, z, rad, fr, idx]);
     colliders.push([x, z, rad, H.h]);
     if (shop) {
@@ -191,59 +214,64 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   };
   let fr = 0;
   // the main street: shops shoulder to shoulder from the gate to the plaza
-  [-1, 1].forEach((side) => {
+  for (const side of [-1, 1]) {
     fr++;
     let z = LAYOUT.gateZ - 26, i = 0;
     while (z > 104) {
+      await breathe();
       if (Math.abs(z - LAYOUT.riverZ) < 20) { z -= 4; continue; }
-      const H = house(r, kindFor('shop'));
+      const H = plan(r, kindFor('shop'));
       // the house faces the street: its front normal points toward the centre line
       if (put(H, side * (MAIN + 2), z - H.w / 2, -side, 0, SET, fr, i++, true)) z -= H.w + GAP; else z -= 3;
     }
-  });
+  }
   // the ring roads, both sides
-  [[150, 9, 'core'], [230, 7, 'edge']].forEach(([R0, half, zone]) => {
-    [-1, 1].forEach((side) => {
+  for (const [R0, half, zone] of [[150, 9, 'core'], [230, 7, 'edge']]) {
+    for (const side of [-1, 1]) {
       fr++;
       const rad0 = R0 + side * half; // the frontage line
       let a = 0, i = 0;
       while (a < Math.PI * 2) {
+        await breathe();
         if (mobile && zone === 'edge' && i % 2) { a += 14 / rad0; i++; continue; }
-        const H = house(r, kindFor(zone));
+        const H = plan(r, kindFor(zone));
         const am = a + (H.w / 2) / rad0;
         const nx = Math.cos(am) * -side, nz = Math.sin(am) * -side; // facing the road
         if (put(H, Math.cos(am) * rad0, Math.sin(am) * rad0, nx, nz, SET, fr, i++, false)) a += (H.w + GAP) / rad0; else a += 4 / rad0;
       }
-    });
-  });
+    }
+  }
   // the radial lanes, both sides, between the plaza and the wall
-  if (!mobile) RADIALS.forEach((ra) => {
+  if (!mobile) for (const ra of RADIALS) {
     const dx = Math.cos(ra), dz = Math.sin(ra), px0 = -dz, pz0 = dx;
-    [-1, 1].forEach((side) => {
+    for (const side of [-1, 1]) {
       fr++;
       let d = 100, i = 0;
       while (d < LAYOUT.wallR - 20) {
-        const H = house(r, kindFor(d < 160 ? 'core' : 'edge'));
+        await breathe();
+        const H = plan(r, kindFor(d < 160 ? 'core' : 'edge'));
         const cx = dx * (d + H.w / 2) + px0 * side * 7, cz = dz * (d + H.w / 2) + pz0 * side * 7;
         if (put(H, cx, cz, -px0 * side, -pz0 * side, SET, fr, i++, false)) d += H.w + GAP; else d += 4;
       }
-    });
-  });
+    }
+  }
   // back lots: a few low courtyard houses and gardens between the rows
   fr++;
   for (let n = 0, tries = 0; n < (mobile ? 40 : 140) && tries < 4000; tries++) {
+    await breathe();
     const rr = 100 + r() * 185, a = r() * Math.PI * 2, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
-    const H = house(r, 'trad');
+    const H = plan(r, 'trad');
     const face = Math.atan2(-x, -z);
     const rad = Math.hypot(H.w, H.d) * 0.42 + 2;
     if (!free(x, z, rad, fr, -9)) continue;
     m4.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, face), new THREE.Vector3(1, 1, 1));
-    bins.addAll(H.P, m4);
+    bins.addAll(realize(r, H), m4);
     lots.push([x, z, rad, fr, -9]);
     colliders.push([x, z, rad, H.h]);
     n++;
   }
 
+  await breathe();
   // the heart: the village's headquarters, the biggest thing in the valley, built in the anime's manner as a
   // stack of round tiers: a grey stone base, a wide straw-gold skirt roof, the orange-red hall, a second skirt, the
   // upper drum under an overhanging rim, and the village crest on a great white disc on the roof's front edge,
@@ -359,6 +387,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     colliders.push([x, z, 9.5, 34]);
   });
 
+  await breathe();
   // the great gate: two timber pillars under a tiled roof, doors that swing open as you arrive
   const GZ = LAYOUT.gateZ;
   [-1, 1].forEach((s) => {
@@ -430,6 +459,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     scroll.add(rod);
   });
 
+  await breathe();
   // utility poles down the main street and around the ring, with sagging wires between them
   const poles = [];
   for (let z = GZ - 20; z > 70; z -= 26) [-1, 1].forEach((s) => poles.push([s * (MAIN + 2.5), z]));
@@ -456,6 +486,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   wg.setAttribute('position', new THREE.Float32BufferAttribute(wire, 3));
   g.add(new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0x1a1214 })));
 
+  await breathe();
   // paper lanterns: red with a warm glow, hung at shops and strung over the main street
   for (let z = GZ - 14; z > 70; z -= 9) lanterns.push([(r() - 0.5) * 6, 10.4 - Math.sin(((z % 26) / 26) * Math.PI) * 1.2, z]);
   const sc = new THREE.Vector3();
@@ -510,6 +541,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     g.add(m);
   });
 
+  await breathe();
   const mats = {
     plaster: triToon(plaster(), 0.16), wood: triToon(wood(), 0.32), stone: triToon(stone(), 0.2), red: triToon(plaster(), 0.08),
     thatch: triToon(thatch(), 0.26), tank: toon(0xffffff, { vertexColors: true }), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),

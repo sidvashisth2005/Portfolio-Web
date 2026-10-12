@@ -41,7 +41,8 @@ export function triToon(tex, scale = 0.25, opts = {}) {
       vec3 triT = texture2D(tTri, vTriP.zy * uTri).rgb * triB.x + texture2D(tTri, vTriP.xz * uTri).rgb * triB.y + texture2D(tTri, vTriP.xy * uTri).rgb * triB.z;
       diffuseColor.rgb *= triT;`);
   };
-  m.customProgramCacheKey = () => `tri${tex.uuid}${scale}`;
+  // the texture and scale are uniforms, so every triplanar material shares one shader program
+  m.customProgramCacheKey = () => 'tri';
   return m;
 }
 

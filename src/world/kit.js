@@ -7,7 +7,22 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 export function rng(seed = 1) {
   let s = seed % 2147483647;
   if (s <= 0) s += 2147483646;
-  return () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  // the state can be saved and restored, to replay a stretch of draws exactly
+  r.save = () => s;
+  r.load = (v) => { s = v; };
+  return r;
+}
+
+// Building the world is a lot of work for one frame: long builders await breathe() as they go, which hands the main
+// thread back to the browser (input, paint) whenever about 10ms of work has piled up since it last did.
+let _since = 0;
+export async function breathe() {
+  const now = performance.now();
+  if (!_since) _since = now;
+  if (now - _since < 10) return;
+  await new Promise((r) => setTimeout(r, 0));
+  _since = performance.now();
 }
 
 // value noise and fbm for terrain and rock

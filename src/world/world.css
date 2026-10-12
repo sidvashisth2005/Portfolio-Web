@@ -144,8 +144,9 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 .w-bar--b { bottom: 0; height: var(--lbb); display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 var(--gutter) env(safe-area-inset-bottom, 0px); }
 .is-roaming .w-bar--t { transform: translateY(-100%); }
 .is-roaming .w-bar--b { transform: translateY(100%); }
-.w-cap { display: flex; align-items: center; gap: 16px; min-width: 0; opacity: 0; transform: translateY(10px); transition: opacity .45s var(--ease-out), transform .7s var(--ease-out); }
-.w-cap.is-on { opacity: 1; transform: none; }
+/* the caption wipes in from the left like a lower third (no fade, so it is always at full contrast) */
+.w-cap { display: flex; align-items: center; gap: 16px; min-width: 0; visibility: hidden; clip-path: inset(0 100% 0 0); transition: clip-path .4s cubic-bezier(.7, 0, .84, 0), visibility 0s .4s; }
+.w-cap.is-on { visibility: visible; clip-path: inset(0 0 0 0); transition: clip-path .8s var(--ease-out), visibility 0s; }
 .w-cap__k { flex: none; font: clamp(26px, 2.4vw, 36px)/1 var(--f-jp); color: var(--crimson-hot); text-shadow: 0 0 24px rgba(224, 24, 45, .45); }
 .w-cap__tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; border-left: 1px solid rgba(244, 242, 238, .22); padding-left: 16px; }
 .w-cap__tx b { font: 400 clamp(20px, 1.8vw, 28px)/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; }

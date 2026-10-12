@@ -57,6 +57,7 @@ export function createPost(renderer, { scale = 1 } = {}) {
   qs.add(quad);
   const qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   return {
+    target: rt, // the world renders into this, so its shaders are compiled for it
     setSize(w, h) {
       renderer.getDrawingBufferSize(size);
       rt.setSize(Math.round(size.x * scale), Math.round(size.y * scale));

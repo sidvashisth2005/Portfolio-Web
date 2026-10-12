@@ -20,10 +20,6 @@ const mobile = window.matchMedia('(max-width: 760px)').matches || window.matchMe
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas = $('#w-canvas');
 
-function hasGL() {
-  try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; }
-}
-if (!hasGL()) window.location.replace('./?site=2d'); // no 3D here: the full site is the world
 
 // ---------- loader ----------
 const bars = document.querySelectorAll('.wl__bar i');
@@ -33,8 +29,23 @@ setLoad(0.08);
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 // ---------- renderer, scene, camera, light ----------
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75));
+// three needs WebGL 2; without it the full site is the world
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' }); } catch {
+  window.location.replace('./?site=2d');
+  throw new Error('no WebGL 2');
+}
+// A machine drawing WebGL in software (no GPU, or a blocked one) can't keep up at full resolution: render at
+// three-quarter size there and let the browser scale the frame up. Everyone with a GPU gets the full one.
+const soft = (() => {
+  try {
+    const gl = renderer.getContext();
+    let name = gl.getParameter(gl.RENDERER) || '';
+    if (/^webkit webgl$/i.test(name)) { const ext = gl.getExtension('WEBGL_debug_renderer_info'); if (ext) name = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || name; }
+    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+  } catch { return false; }
+})();
+renderer.setPixelRatio(soft ? 0.75 : Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0xd8704e, mobile ? 320 : 420, mobile ? 1500 : 1900);
@@ -57,20 +68,29 @@ async function build() {
     document.fonts.load('500 20px "Azeret Mono"'), document.fonts.load('100px "Anton"'), document.fonts.load('700 20px "Archivo"'),
   ]).catch(() => {});
   setLoad(0.2);
-  land = buildLand(scene, { mobile, sunDir });
+  land = await buildLand(scene, { mobile, sunDir });
   setLoad(0.35); await tick();
-  village = buildVillage(scene, { mobile, portrait, heightAt });
+  village = await buildVillage(scene, { mobile, portrait, heightAt });
   setLoad(0.55); await tick();
   buildForest(scene, { mobile, heightAt });
   setLoad(0.7); await tick();
   arena = buildArena(scene, { mobile });
   // phones travel the shorter journey, so the places beyond it aren't built there
+  await tick();
   if (!mobile) places = buildPlaces(scene, { mobile });
   leaves = buildLeaves(scene, { mobile });
   setLoad(0.82);
   resize();
   railPose(0, camera.position, camera.quaternion);
-  await (renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve(renderer.compile(scene, camera)));
+  // compile and link every shader up front, a part of the world at a time (so the page stays responsive), for the
+  // target the world actually renders into: the post pass's buffer
+  renderer.setRenderTarget(post.target);
+  for (const part of scene.children.filter((o) => !o.isLight).flatMap((o) => (o.isGroup ? o.children : [o]))) {
+    renderer.compile(part, camera, scene);
+    renderer.info.programs.forEach((pr) => pr.getUniforms()); // waits for the link here, not in the first frame
+    await tick();
+  }
+  renderer.setRenderTarget(null);
   await portrait.catch(() => {});
   setLoad(1);
 }
@@ -481,9 +501,12 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+let sized = '';
 function resize() {
   // the world renders only inside the letterbox, so nothing in a shot is hidden under the bars
   const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
+  if (sized === `${w}x${h}`) return;
+  sized = `${w}x${h}`;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
@@ -492,6 +515,8 @@ function resize() {
 window.addEventListener('resize', resize);
 
 // ---------- go ----------
+// size the frame before the build, while nothing is queued for the GPU (resizing later waits on all of it)
+resize();
 window.history.scrollRestoration = 'manual';
 // for the screenshot checks: the stops by name, and a jump straight to a point of the journey
 window.__rail = {
@@ -506,8 +531,9 @@ build().then(() => {
     const wl = $('#wl');
     wl.classList.add('is-cut');
     document.body.classList.remove('is-loading');
-    // the opening title card comes in as the halves part
-    setTimeout(() => { rolling = true; }, 1000);
+    // the opening title card plays first, as the halves part; the name comes in after it
+    rolling = true; pending = -1;
+    showCard(0);
     setTimeout(() => wl.remove(), 1600);
   }, 250);
 });

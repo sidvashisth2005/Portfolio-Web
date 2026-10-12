@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { fbm, smooth, rng, Bins, box, paint, place, gableRoof, roofTiles } from './kit.js';
+import { fbm, smooth, rng, Bins, box, paint, place, gableRoof, roofTiles, breathe } from './kit.js';
 import { toon, triToon, textTexture } from './toon.js';
 import { plaster, wood, stone, grass, rock } from './textures.js';
 
@@ -101,7 +101,7 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-export function buildLand(scene, { mobile, sunDir }) {
+export async function buildLand(scene, { mobile, sunDir }) {
   const g = new THREE.Group();
   scene.add(g);
   const updates = [];
@@ -114,6 +114,7 @@ export function buildLand(scene, { mobile, sunDir }) {
   g.add(new THREE.Mesh(new THREE.SphereGeometry(2600, 48, 24), new THREE.ShaderMaterial({ vertexShader: skyVert, fragmentShader: skyFrag, side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyU })));
   updates.push((t) => { skyU.uTime.value = t; });
 
+  await breathe();
   // terrain, coloured by height and slope: meadow, forest floor, rock, a little snow on the far peaks
   const size = 3600, seg = mobile ? 140 : 220;
   const tg = new THREE.PlaneGeometry(size, size, seg, seg);
@@ -139,6 +140,7 @@ export function buildLand(scene, { mobile, sunDir }) {
   const bins = new Bins();
   const r = rng(77);
 
+  await breathe();
   // the cliff: a wall of stratified rock, its face carved with the village crest
   const cz = LAYOUT.cliffZ;
   const cg = new THREE.BoxGeometry(560, 210, 80, 96, 36, 6);
@@ -170,6 +172,7 @@ export function buildLand(scene, { mobile, sunDir }) {
   const cliff = new THREE.Mesh(cg, triToon(rock(), 0.022));
   cliff.position.set(0, 103, cz);
   g.add(cliff);
+  await breathe();
   // the crest: a ring cut by one slash, 一閃 down its side, painted into the stone
   const crest = textTexture((x, w, h) => {
     x.clearRect(0, 0, w, h);
@@ -186,6 +189,7 @@ export function buildLand(scene, { mobile, sunDir }) {
   crestM.position.set(140, 124, cz + 37);
   g.add(crestM);
 
+  await breathe();
   // the cliff's monument, made for this village: the portfolio's own face carved into the rock, as the anime's
   // villages carve their leaders. The relief is baked from a portrait (img/carve.webp: height in red, the carved
   // area in alpha) and raised out of the smoothed face; 作る戦略家 is cut down its left side.
@@ -197,7 +201,7 @@ export function buildLand(scene, { mobile, sunDir }) {
   img.onload = () => {
     const cv = document.createElement('canvas');
     cv.width = img.width; cv.height = img.height;
-    const cx = cv.getContext('2d');
+    const cx = cv.getContext('2d', { willReadFrequently: true }); // read back on the CPU: a GPU canvas stalls the page here
     cx.drawImage(img, 0, 0);
     const px = cx.getImageData(0, 0, img.width, img.height).data;
     const sample = (u, v) => {
@@ -235,6 +239,7 @@ export function buildLand(scene, { mobile, sunDir }) {
   cutM.position.set(FACE_X - 90, 116, cz + 37.2);
   g.add(cutM);
 
+  await breathe();
   // river and banks
   const rz = LAYOUT.riverZ;
   const water = new THREE.Mesh(new THREE.PlaneGeometry(1200, 18, 1, 1).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
@@ -260,6 +265,7 @@ export function buildLand(scene, { mobile, sunDir }) {
     });
   }
 
+  await breathe();
   // the village wall: plastered stone with a tiled coping, broken only at the gate
   const W = LAYOUT.wallR, segs = mobile ? 90 : 150;
   const segL = (2 * Math.PI * W) / segs + 0.3;
