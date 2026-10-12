@@ -331,7 +331,9 @@ function updateFilm(i, d) {
   if (ch !== chapter) {
     chapter = ch;
     slate.innerHTML = `<b>${CHAPTERS[ch][1] === '終' ? 'Finale' : `Ch. ${pad(ch + 1)}`}</b> ${CHAPTERS[ch][2]}<span>Shot ${pad(i + 1)} / ${pad(N + 1)}</span>`;
+    // a new chapter: its text waits until its title card has played
     pending = ch; hideCard();
+    if (rolling) document.body.classList.add('is-titling');
   } else slate.lastChild && (slate.lastChild.textContent = `Shot ${pad(i + 1)} / ${pad(N + 1)}`);
 }
 
