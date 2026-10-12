@@ -20,6 +20,31 @@ export function gradientMap() {
 
 export const toon = (color, opts = {}) => new THREE.MeshToonMaterial({ color, gradientMap: gradientMap(), ...opts });
 
+// A toon material whose surface texture is applied by world position (triplanar): the texture's colour multiplies
+// the piece's vertex colour, at `scale` repeats per metre, the same density on any wall, roof or rock.
+export function triToon(tex, scale = 0.25, opts = {}) {
+  const m = new THREE.MeshToonMaterial({ color: 0xffffff, vertexColors: true, gradientMap: gradientMap(), ...opts });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.tTri = { value: tex };
+    sh.uniforms.uTri = { value: scale };
+    sh.vertexShader = 'varying vec3 vTriP;\nvarying vec3 vTriN;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      vec4 triW = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        triW = instanceMatrix * triW;
+      #endif
+      triW = modelMatrix * triW;
+      vTriP = triW.xyz;
+      vTriN = normalize(mat3(modelMatrix) * objectNormal);`);
+    sh.fragmentShader = 'uniform sampler2D tTri;\nuniform float uTri;\nvarying vec3 vTriP;\nvarying vec3 vTriN;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+      vec3 triB = pow(abs(normalize(vTriN)), vec3(4.0));
+      triB /= (triB.x + triB.y + triB.z);
+      vec3 triT = texture2D(tTri, vTriP.zy * uTri).rgb * triB.x + texture2D(tTri, vTriP.xz * uTri).rgb * triB.y + texture2D(tTri, vTriP.xy * uTri).rgb * triB.z;
+      diffuseColor.rgb *= triT;`);
+  };
+  m.customProgramCacheKey = () => `tri${tex.uuid}${scale}`;
+  return m;
+}
+
 // Outline: a back-face copy pushed out along its normals and drawn in ink (works on smooth meshes)
 const hulls = new Map();
 export function hullMaterial(thickness = 0.08, color = 0x000000) {

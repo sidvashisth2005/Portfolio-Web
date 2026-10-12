@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rng, Bins, box, cyl, paint, place, gableRoof, roofTiles } from './kit.js';
-import { toon, glow, textTexture } from './toon.js';
+import { toon, triToon, glow, textTexture } from './toon.js';
+import { stone, boards, wood } from './textures.js';
 import { LAYOUT } from './land.js';
 
 // The exam stadium where HackNITR 7.0 is fought: a stone bowl under a ring of tiled roofs, a grass field with a
@@ -26,7 +27,7 @@ export function buildArena(scene, { mobile }) {
   }
   prof.push(new THREE.Vector2(R1 + 2, H1), new THREE.Vector2(R1 + 2, 0));
   const lathe = new THREE.LatheGeometry(prof, mobile ? 72 : 128);
-  g.add(new THREE.Mesh(lathe, toon(0x9a8a7c)));
+  g.add(new THREE.Mesh(lathe, triToon(stone(), 0.2, { vertexColors: false, color: 0xb0a594 })));
   // the arena wall around the field, with gates
   g.add(new THREE.Mesh(new THREE.CylinderGeometry(R0 + 0.4, R0 + 0.4, H0 + 0.6, 96, 1, true), toon(0xd8c9b0, { side: THREE.DoubleSide })).translateY((H0 + 0.6) / 2));
   // the roof ring: tiled gable sections on posts all the way round
@@ -41,7 +42,11 @@ export function buildArena(scene, { mobile }) {
     bins.add('wood', box(0.9, 12, 0.9, 0x4a2e22, { at: [Math.cos(a) * (R1 + 1.5), H1 + 6, Math.sin(a) * (R1 + 1.5)] }));
   }
   // the outer wall
-  g.add(new THREE.Mesh(new THREE.CylinderGeometry(R1 + 2.2, R1 + 3, H1, 96, 1, true), toon(0xe2d3b8)).translateY(H1 / 2));
+  // the outer wall: tall red boards banded in grey, the anime's stadium
+  const wallM = triToon(boards(), 0.16, { vertexColors: false, color: 0xc0392b, side: THREE.DoubleSide });
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(R1 + 2.2, R1 + 3, H1 + 8, 128, 1, true), wallM).translateY((H1 + 8) / 2));
+  [H1 * 0.35, H1 * 0.75].forEach((y) => g.add(new THREE.Mesh(new THREE.CylinderGeometry(R1 + 3.4, R1 + 3.4, 1.4, 128, 1, true), toon(0xb8b0a8, { side: THREE.DoubleSide })).translateY(y)));
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(R1 + 3.6, R1 + 3.6, 1.6, 128, 1, true), toon(0xd8d0c6, { side: THREE.DoubleSide })).translateY(H1 + 8));
 
   // the field: grass, a sand ring and a few trees, the dais at the centre
   g.add(new THREE.Mesh(new THREE.CircleGeometry(R0, 96).rotateX(-Math.PI / 2), toon(0x6f9a3e)).translateY(0.1));
@@ -140,8 +145,8 @@ export function buildArena(scene, { mobile }) {
   updates.push((t) => { trophy.rotation.y = t * 0.4; halo.rotation.z = t * 0.2; halo.scale.setScalar(1 + Math.sin(t * 2) * 0.05); });
 
   bins.build({
-    roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }), wood: toon(0xffffff, { vertexColors: true }),
-    stone: toon(0xffffff, { vertexColors: true }), leaf: toon(0xffffff, { vertexColors: true }),
+    roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }), wood: triToon(wood(), 0.34),
+    stone: triToon(stone(), 0.2), leaf: toon(0xffffff, { vertexColors: true }),
   }, g);
 
   return {

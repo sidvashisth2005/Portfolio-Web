@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { rng, Bins, box, cyl, place, paint, gableRoof, gableEnd, roofTiles } from './kit.js';
-import { toon, glow, textTexture } from './toon.js';
+import { toon, triToon, glow, textTexture } from './toon.js';
+import { plaster, wood, stone } from './textures.js';
 import { LAYOUT } from './land.js';
 import { stats, moves, dojos, gallery } from '../data.js';
 
@@ -221,9 +222,9 @@ export function buildPlaces(scene, { mobile }) {
   {
   const S = site('memorial'), g = S.g, bins = S.bins;
   const mx = 0, mz = 0;
-  const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(4.4, 0).scale(0.8, 1.6, 0.5), toon(0x5f5852));
-  stone.position.set(mx, 6, mz - 4);
-  g.add(stone);
+  const memStone = new THREE.Mesh(new THREE.DodecahedronGeometry(4.4, 0).scale(0.8, 1.6, 0.5), toon(0x5f5852));
+  memStone.position.set(mx, 6, mz - 4);
+  g.add(memStone);
   bins.add('stone', box(14, 1, 8, 0x8d847c, { at: [mx, 0.5, mz - 4] }));
   S.col([mx, mz - 4, 6, 12]);
   const photos = gallery.slice(0, mobile ? 6 : 10);
@@ -297,8 +298,8 @@ export function buildPlaces(scene, { mobile }) {
   // each site's lantern lights and its pieces, merged per material
   const m4 = new THREE.Matrix4();
   const mats = {
-    ver: toon(0xffffff, { vertexColors: true }), blk: toon(0xffffff, { vertexColors: true }), stone: toon(0xffffff, { vertexColors: true }),
-    wood: toon(0xffffff, { vertexColors: true }), plaster: toon(0xffffff, { vertexColors: true }), paper: toon(0xffffff, { vertexColors: true }),
+    ver: triToon(plaster(), 0.2), blk: toon(0xffffff, { vertexColors: true }), stone: triToon(stone(), 0.22),
+    wood: triToon(wood(), 0.34), plaster: triToon(plaster(), 0.16), paper: toon(0xffffff, { vertexColors: true }),
     rope: toon(0xffffff, { vertexColors: true }), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),
   };
   const lampMat = glow(0xffb070);

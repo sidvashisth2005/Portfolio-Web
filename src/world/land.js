@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { fbm, smooth, rng, Bins, box, paint, place, gableRoof, roofTiles } from './kit.js';
-import { toon, textTexture } from './toon.js';
+import { toon, triToon, textTexture } from './toon.js';
+import { plaster, wood, stone, grass, rock } from './textures.js';
 
 let fine = null;
 function fineSteps() {
@@ -121,18 +122,18 @@ export function buildLand(scene, { mobile, sunDir }) {
   for (let i = 0; i < pos.count; i++) pos.setY(i, heightAt(pos.getX(i), pos.getZ(i)));
   tg.computeVertexNormals();
   const col = new Float32Array(pos.count * 3), nrm = tg.attributes.normal;
-  const meadow = new THREE.Color(0x6f8f3a), floor = new THREE.Color(0x3b5a2a), rock = new THREE.Color(0x6e5a52), snow = new THREE.Color(0xf1e6e0), dirt = new THREE.Color(0x9b7a52);
+  const meadow = new THREE.Color(0x6f8f3a), floor = new THREE.Color(0x3b5a2a), rockC = new THREE.Color(0x6e5a52), snow = new THREE.Color(0xf1e6e0), dirt = new THREE.Color(0x9b7a52);
   const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), steep = 1 - nrm.getY(i);
     const r = Math.hypot(x, z);
     c.copy(r < 300 ? meadow : floor).lerp(dirt, r < 300 ? 0.15 * fbm(x * 0.05, z * 0.05) : 0);
-    c.lerp(rock, smooth(0.25, 0.5, steep) + smooth(160, 240, y) * 0.6);
+    c.lerp(rockC, smooth(0.25, 0.5, steep) + smooth(160, 240, y) * 0.6);
     c.lerp(snow, smooth(250, 300, y));
     col.set([c.r, c.g, c.b], i * 3);
   }
   tg.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const terrain = new THREE.Mesh(tg, toon(0xffffff, { vertexColors: true }));
+  const terrain = new THREE.Mesh(tg, triToon(grass(), 0.06));
   g.add(terrain);
 
   const bins = new Bins();
@@ -166,7 +167,7 @@ export function buildLand(scene, { mobile, sunDir }) {
     cc.set([c.r, c.g, c.b], i * 3);
   }
   cg.setAttribute('color', new THREE.BufferAttribute(cc, 3));
-  const cliff = new THREE.Mesh(cg, toon(0xffffff, { vertexColors: true }));
+  const cliff = new THREE.Mesh(cg, triToon(rock(), 0.022));
   cliff.position.set(0, 103, cz);
   g.add(cliff);
   // the crest: a ring cut by one slash, 一閃 down its side, painted into the stone
@@ -218,7 +219,7 @@ export function buildLand(scene, { mobile, sunDir }) {
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     geo.computeVertexNormals();
     // five tones of stone (the rest of the world uses three) so the features of the face read clearly
-    carve.add(new THREE.Mesh(geo, toon(0xffffff, { vertexColors: true, gradientMap: fineSteps() })));
+    carve.add(new THREE.Mesh(geo, triToon(rock(), 0.05, { gradientMap: fineSteps() })));
   };
   img.src = 'img/carve.webp';
   const cut = textTexture((x, w, h) => {
@@ -273,8 +274,8 @@ export function buildLand(scene, { mobile, sunDir }) {
   }
 
   const mats = {
-    stone: toon(0xffffff, { vertexColors: true }), plaster: toon(0xffffff, { vertexColors: true }), wood: toon(0xffffff, { vertexColors: true }),
-    red: toon(0xffffff, { vertexColors: true }), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),
+    stone: triToon(stone(), 0.2), plaster: triToon(plaster(), 0.14), wood: triToon(wood(), 0.32),
+    red: triToon(wood(), 0.32), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),
   };
   bins.build(mats, g);
   return { group: g, mats, update: (t) => updates.forEach((f) => f(t)) };

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { rng, fbm, Bins, box, cyl, sphere, place, paint, gableRoof, gableEnd, roofTiles } from './kit.js';
-import { toon, glow, textTexture, PAL } from './toon.js';
+import { toon, triToon, glow, textTexture, PAL } from './toon.js';
+import { plaster, wood, stone, thatch, paving } from './textures.js';
 import { LAYOUT, reserved } from './land.js';
 
 // The hidden village, laid out like the anime's: a round crimson tower at the heart, streets radiating out to the
@@ -35,6 +36,34 @@ function house(r, kind) {
     [-1, 1].forEach((s) => P.push(['plaster', place(gableEnd(w, rise, 0.3, wall), { at: [0, h, s * d / 2], rot: [0, s < 0 ? Math.PI : 0, 0] })]));
     if (r() < 0.3) P.push(['tank', cyl(1.5, 1.5, 2.6, 14, 0x8a9aa6, { at: [w / 2 - 2, h + rise * 0.4 + 1.3, -d / 4] })]);
     return { P, w, d, h: h + rise };
+  }
+  if (kind === 'pagoda') {
+    // white walls under stacked hip-roof skirts, red tiles over a green fascia at every floor, in the anime's manner
+    const w = 12 + r() * 5, d = 10 + r() * 3, fl = 2 + Math.floor(r() * 2), fh = 4.2, h = fl * fh;
+    const skirtC = r() < 0.75 ? 0xc0392b : 0x3f6fae, bandC = r() < 0.7 ? 0x3f8f5a : 0x8e2a2a;
+    P.push(['plaster', box(w, h, d, 0xf4efe6, { at: [0, h / 2, 0] })]);
+    P.push(['wood', box(w + 0.3, 0.9, d + 0.3, 0x7d6a5c, { at: [0, 0.45, 0] })]);
+    const hip = (bw, bd, tw, td, hh, y, color) => {
+      const g = new THREE.BoxGeometry(bw, hh, bd);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) if (p.getY(i) > 0) { p.setX(i, p.getX(i) * tw / bw); p.setZ(i, p.getZ(i) * td / bd); }
+      const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * bw / 0.9, uv.getY(i) * hh / 0.9);
+      g.computeVertexNormals();
+      return place(paint(g, color), { at: [0, y + hh / 2, 0] });
+    };
+    for (let f = 0; f < fl; f++) {
+      const n = Math.max(2, Math.floor(w / 3.2));
+      for (let i = 0; i < n; i++) P.push([r() < 0.4 ? 'lit' : 'glass', box(1.5, 1.5, 0.2, 0x000000, { at: [-w / 2 + (i + 0.5) * (w / n), 1.9 + f * fh, d / 2 + 0.08] })]);
+      if (f < fl - 1) {
+        P.push(['plaster', box(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, (f + 1) * fh - 0.9, 0] })]);
+        P.push(['roof', hip(w + 3.4, d + 3.4, w + 0.4, d + 0.4, 1.4, (f + 1) * fh - 0.6, skirtC)]);
+      }
+    }
+    P.push(['plaster', box(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, h - 0.3, 0] })]);
+    P.push(['roof', hip(w + 3, d + 3, w * 0.35, d * 0.2, 3.6, h, skirtC)]);
+    if (r() < 0.5) P.push(['tank', cyl(1.4, 1.4, 2.2, 14, 0x8a9aa6, { at: [w * 0.3, h + 2.6, -d * 0.2] })]);
+    P.push(['wood', box(2.2, 3, 0.3, DARK, { at: [w * 0.28, 1.5, d / 2 + 0.1] })]);
+    return { P, w: w + 3.4, d: d + 3.4, h: h + 4 };
   }
   if (kind === 'apt') {
     // the mid-rise: 3-5 floors, balconies on the street side, a zigzag stair climbing the outside wall
@@ -120,42 +149,99 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     return rr < 92 || reserved(x, z); // the headquarters' plaza
   };
   // the main street runs from the plaza out through the gate and on into the forest
-  const paving = new THREE.Mesh(new THREE.PlaneGeometry(MAIN * 2 + 4, LAYOUT.gateZ + 420).rotateX(-Math.PI / 2), toon(0xb79a72));
-  paving.position.set(0, 0.06, (LAYOUT.gateZ + 420) / 2);
-  g.add(paving);
-  [150, 230].forEach((rad) => { const ring = new THREE.Mesh(new THREE.RingGeometry(rad - 6, rad + 6, 160).rotateX(-Math.PI / 2), toon(0xa88e6a)); ring.position.y = 0.05; g.add(ring); });
-  const plaza = new THREE.Mesh(new THREE.CircleGeometry(88, 72).rotateX(-Math.PI / 2), toon(0xc9b08a));
+  const street = new THREE.Mesh(new THREE.PlaneGeometry(MAIN * 2 + 4, LAYOUT.gateZ + 420).rotateX(-Math.PI / 2), triToon(paving(), 0.09, { vertexColors: false, color: 0xd9c4a4 }));
+  street.position.set(0, 0.06, (LAYOUT.gateZ + 420) / 2);
+  g.add(street);
+  [150, 230].forEach((rad) => { const ring = new THREE.Mesh(new THREE.RingGeometry(rad - 8, rad + 8, 200).rotateX(-Math.PI / 2), triToon(paving(), 0.09, { vertexColors: false, color: 0xcbb592 })); ring.position.y = 0.05; g.add(ring); });
+  const plaza = new THREE.Mesh(new THREE.CircleGeometry(88, 72).rotateX(-Math.PI / 2), triToon(paving(), 0.07, { vertexColors: false, color: 0xe2d2b4 }));
   plaza.position.y = 0.07;
   g.add(plaza);
 
-  // houses on lots in rings, each turned to face the heart of the village (shops face the main street)
-  const target = mobile ? 300 : 880;
-  let placed = 0, tries = 0;
-  const lots = [];
-  while (placed < target && tries++ < target * 30) {
-    const rr = 96 + Math.sqrt(r()) * 192, a = r() * Math.PI * 2;
-    let x = Math.cos(a) * rr, z = Math.sin(a) * rr;
-    const shop = z > 20 && Math.abs(x) < 34 && r() < 0.9;
-    if (shop) x = Math.sign(x || 1) * (MAIN + 10 + r() * 4);
-    if (onStreet(x, z) && !shop) continue;
-    if (shop && Math.abs(z - LAYOUT.riverZ) < 22) continue;
-    if (lots.some(([lx, lz, lr]) => Math.hypot(lx - x, lz - z) < lr + 4.5)) continue;
-    const k0 = r(), core = rr < 135; // the heart of the village builds up; the edges stay low and traditional
-    const kind = shop ? (k0 < 0.55 ? 'trad' : 'block') : core ? (k0 < 0.42 ? 'apt' : k0 < 0.78 ? 'block' : 'trad') : (k0 < 0.48 ? 'trad' : k0 < 0.8 ? 'block' : 'apt');
-    const H = house(r, kind);
-    const face = shop ? (x > 0 ? -Math.PI / 2 : Math.PI / 2) : Math.atan2(-x, -z);
+  // houses in rows along the streets, each facing its street with an even gap to its neighbours and a setback
+  // from the road: every frontage (both sides of the main street, the two ring roads and the radial lanes) is
+  // walked a house-width at a time. What's left behind the rows becomes back lanes, gardens and a few courtyards.
+  const lots = []; // [x, z, radius, frontage, index]
+  const GAP = 2.6, SET = 3;
+  const kindFor = (zone) => {
+    const k0 = r();
+    if (zone === 'shop') return k0 < 0.45 ? 'trad' : k0 < 0.65 ? 'pagoda' : 'block';
+    if (zone === 'core') return k0 < 0.3 ? 'apt' : k0 < 0.58 ? 'pagoda' : k0 < 0.8 ? 'block' : 'trad';
+    return k0 < 0.45 ? 'trad' : k0 < 0.6 ? 'pagoda' : k0 < 0.85 ? 'block' : 'apt';
+  };
+  const free = (x, z, rad, fr, idx) => {
+    if (onStreet(x, z)) return false;
+    if (Math.hypot(x, z) > LAYOUT.wallR - 14) return false;
+    return !lots.some(([lx, lz, lr, lf, li]) => !(lf === fr && Math.abs(li - idx) === 1) && Math.hypot(lx - x, lz - z) < lr + rad);
+  };
+  // place a house whose front faces direction `face`, its front edge `back` metres behind a frontage point
+  const put = (H, px, pz, nx, nz, back, fr, idx, shop) => {
+    const x = px - nx * (back + H.d / 2), z = pz - nz * (back + H.d / 2);
+    const rad = Math.hypot(H.w, H.d) * 0.42;
+    if (!free(x, z, rad, fr, idx)) return false;
+    m4.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, Math.atan2(nx, nz)), new THREE.Vector3(1, 1, 1));
+    bins.addAll(H.P, m4);
+    lots.push([x, z, rad, fr, idx]);
+    colliders.push([x, z, rad, H.h]);
+    if (shop) {
+      // a lantern at the door and a vertical signboard by it
+      lanterns.push([px - nx * (back - 0.6), 4.6, pz - nz * (back - 0.6)]);
+      signs.push([px - nx * (back - 1), 7.5, pz - nz * (back - 1) + (r() - 0.5) * 3, Math.atan2(nx, nz) + Math.PI / 2, Math.floor(r() * SIGNS.length)]);
+    }
+    return true;
+  };
+  let fr = 0;
+  // the main street: shops shoulder to shoulder from the gate to the plaza
+  [-1, 1].forEach((side) => {
+    fr++;
+    let z = LAYOUT.gateZ - 26, i = 0;
+    while (z > 104) {
+      if (Math.abs(z - LAYOUT.riverZ) < 20) { z -= 4; continue; }
+      const H = house(r, kindFor('shop'));
+      // the house faces the street: its front normal points toward the centre line
+      if (put(H, side * (MAIN + 2), z - H.w / 2, -side, 0, SET, fr, i++, true)) z -= H.w + GAP; else z -= 3;
+    }
+  });
+  // the ring roads, both sides
+  [[150, 9, 'core'], [230, 7, 'edge']].forEach(([R0, half, zone]) => {
+    [-1, 1].forEach((side) => {
+      fr++;
+      const rad0 = R0 + side * half; // the frontage line
+      let a = 0, i = 0;
+      while (a < Math.PI * 2) {
+        if (mobile && zone === 'edge' && i % 2) { a += 14 / rad0; i++; continue; }
+        const H = house(r, kindFor(zone));
+        const am = a + (H.w / 2) / rad0;
+        const nx = Math.cos(am) * -side, nz = Math.sin(am) * -side; // facing the road
+        if (put(H, Math.cos(am) * rad0, Math.sin(am) * rad0, nx, nz, SET, fr, i++, false)) a += (H.w + GAP) / rad0; else a += 4 / rad0;
+      }
+    });
+  });
+  // the radial lanes, both sides, between the plaza and the wall
+  if (!mobile) RADIALS.forEach((ra) => {
+    const dx = Math.cos(ra), dz = Math.sin(ra), px0 = -dz, pz0 = dx;
+    [-1, 1].forEach((side) => {
+      fr++;
+      let d = 100, i = 0;
+      while (d < LAYOUT.wallR - 20) {
+        const H = house(r, kindFor(d < 160 ? 'core' : 'edge'));
+        const cx = dx * (d + H.w / 2) + px0 * side * 7, cz = dz * (d + H.w / 2) + pz0 * side * 7;
+        if (put(H, cx, cz, -px0 * side, -pz0 * side, SET, fr, i++, false)) d += H.w + GAP; else d += 4;
+      }
+    });
+  });
+  // back lots: a few low courtyard houses and gardens between the rows
+  fr++;
+  for (let n = 0, tries = 0; n < (mobile ? 40 : 140) && tries < 4000; tries++) {
+    const rr = 100 + r() * 185, a = r() * Math.PI * 2, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+    const H = house(r, 'trad');
+    const face = Math.atan2(-x, -z);
+    const rad = Math.hypot(H.w, H.d) * 0.42 + 2;
+    if (!free(x, z, rad, fr, -9)) continue;
     m4.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, face), new THREE.Vector3(1, 1, 1));
     bins.addAll(H.P, m4);
-    const rad = Math.hypot(H.w, H.d) / 2;
-    lots.push([x, z, rad]);
-    colliders.push([x, z, rad * 0.85, H.h]);
-    placed++;
-    // shops along the main street: a hanging lantern and a vertical signboard
-    if (shop) {
-      const sx = x - Math.sign(x) * (H.d / 2 + 0.6);
-      lanterns.push([sx, 4.6, z + (r() - 0.5) * 4]);
-      signs.push([sx - Math.sign(x) * 0.4, 7.5, z + H.w * 0.3, x > 0 ? -Math.PI / 2 : Math.PI / 2, Math.floor(r() * SIGNS.length)]);
-    }
+    lots.push([x, z, rad, fr, -9]);
+    colliders.push([x, z, rad, H.h]);
+    n++;
   }
 
   // the heart: the village's headquarters, the biggest thing in the valley, built in the anime's manner as a
@@ -163,7 +249,8 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   // upper drum under an overhanging rim, and the village crest on a great white disc on the roof's front edge,
   // flanked by two white horns. Two lower round wings with their own skirts stand behind it.
   const HQS = 1.6; // everything below is built at 1:1 and scaled up as one piece
-  const HQ = 0xd44a2c, RIM = 0x7a2418, GOLD = 0xe2b75e, BASEC = 0xb8afa4, WHITE = 0xf2ece2;
+  // (the thatch and plaster textures carry their own tone, so these colours are lighter than they read)
+  const HQ = 0xec6a4c, RIM = 0x8e2c1e, GOLD = 0xfff0c4, BASEC = 0xd2cbc2, WHITE = 0xffffff;
   const H = [];
   const ring = (r0, r1, h, y, color, key = 'red') => H.push([key, cyl(r1, r0, h, 72, color, { at: [0, y + h / 2, 0] })]);
   const windowsRound = (rad, y, n, skipFront, w = 2.4, h = 2.6) => {
@@ -181,14 +268,16 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   H.push(['wood', box(7, 5.6, 0.6, 0x2a1f22, { at: [0, 4.8, 31] })]);
   H.push(['stone', box(11, 1, 3.4, 0x8d847c, { at: [0, 8.2, 31.6] })]);
   // 2 · the first skirt roof, wide and gold
-  H.push(['roof', cyl(25.5, 33.5, 4, 72, GOLD, { at: [0, 11, 0] })]);
+  H.push(['thatch', cyl(25.5, 33.5, 4, 72, GOLD, { at: [0, 11, 0] })]);
+  H.push(['wood', place(paint(new THREE.TorusGeometry(29.6, 0.32, 6, 96), 0x2a1f22), { at: [0, 11.2, 0], rot: [Math.PI / 2, 0, 0] })]); // the rope
   // 3 · the orange-red hall
   ring(25, 25, 11, 12.6, HQ);
   ring(25.3, 25.3, 0.6, 18.6, RIM);
   windowsRound(25, 16, 30, 0);
   windowsRound(25, 21.4, 30, 0);
   // 4 · the second skirt
-  H.push(['roof', cyl(20, 27.5, 3.6, 72, GOLD, { at: [0, 25.2, 0] })]);
+  H.push(['thatch', cyl(20, 27.5, 3.6, 72, GOLD, { at: [0, 25.2, 0] })]);
+  H.push(['wood', place(paint(new THREE.TorusGeometry(23.9, 0.3, 6, 96), 0x2a1f22), { at: [0, 25.3, 0] , rot: [Math.PI / 2, 0, 0] })]);
   // 5 · the upper drum, its rim and roof deck
   ring(19.5, 19.5, 9, 26.6, HQ);
   windowsRound(19.5, 31, 24, 0.5);
@@ -196,20 +285,17 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   H.push(['stone', cyl(19.6, 19.6, 0.4, 72, 0x6a5e58, { at: [0, 37.3, 0] })]);
   H.push(['plaster', box(5, 3, 4, WHITE, { at: [-6, 38.9, -8] })]);
   H.push(['tank', cyl(1.8, 1.8, 3, 16, 0x8a9aa6, { at: [6, 39.6, -9] })]);
-  // 6 · two white horns rising either side of the crest
-  [-1, 1].forEach((k) => {
-    const horn = new THREE.CylinderGeometry(0.25, 1.4, 11, 10, 6);
-    const hp = horn.attributes.position;
-    for (let i = 0; i < hp.count; i++) { const t = (hp.getY(i) + 5.5) / 11; hp.setX(i, hp.getX(i) + k * t * t * 3.2); }
-    horn.computeVertexNormals();
-    H.push(['plaster', place(paint(horn, WHITE), { at: [k * 11.5, 42.8, 14.5] })]);
-  });
+  // 6 · a crown of white pillars round the roof's rim
+  for (let i = 0; i < 8; i++) {
+    const b = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    H.push(['plaster', cyl(0.7, 1, 7, 10, WHITE, { at: [Math.cos(b) * 19.4, 40.4, Math.sin(b) * 19.4] })]);
+  }
   // 7 · the wings: lower round halls behind, each with a gold skirt and a red cap
   [-1, 1].forEach((k) => {
     const wx = k * 33, wz = -8;
     H.push(['stone', cyl(16, 16.5, 2, 48, 0x9a8e84, { at: [wx, 1, wz] })]);
     H.push(['red', cyl(14, 14, 10, 48, HQ, { at: [wx, 7, wz] })]);
-    H.push(['roof', cyl(11.5, 17, 3.2, 48, GOLD, { at: [wx, 13.6, wz] })]);
+    H.push(['thatch', cyl(11.5, 17, 3.2, 48, GOLD, { at: [wx, 13.6, wz] })]);
     H.push(['red', cyl(11, 11, 4, 48, HQ, { at: [wx, 17.2, wz] })]);
     H.push(['red', cyl(12, 11.2, 1.2, 48, RIM, { at: [wx, 19.6, wz] })]);
     for (let i = 0; i < 16; i++) {
@@ -217,10 +303,15 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
       H.push([i % 3 ? 'glass' : 'lit', box(2, 2.4, 0.4, 0x000000, { at: [wx + Math.cos(a) * 14.1, 7.4, wz + Math.sin(a) * 14.1], rot: [0, Math.PI / 2 - a, 0] })]);
     }
   });
-  bins.addAll(H, new THREE.Matrix4().makeScale(HQS, HQS, HQS));
-  colliders.push([0, 0, 34 * HQS, 50 * HQS], [-33 * HQS, -8 * HQS, 17 * HQS, 21 * HQS], [33 * HQS, -8 * HQS, 17 * HQS, 21 * HQS]);
+  const TER = 4; // the terrace height
+  bins.add('stone', cyl(64, 66, TER, 80, 0xa49c92, { at: [0, TER / 2, 0] }));
+  bins.add('stone', cyl(64.6, 64.6, 0.8, 80, 0x8a8278, { at: [0, TER + 0.4, 0] }));
+  for (let k = 0; k < 6; k++) bins.add('stone', box(26 - k, 0.68, 2.2, 0xb3a492, { at: [0, 0.34 + k * 0.68, 66 + 6 * 2.2 - k * 2.2] }));
+  bins.addAll(H, new THREE.Matrix4().makeTranslation(0, TER, 0).multiply(new THREE.Matrix4().makeScale(HQS, HQS, HQS)));
+  colliders.push([0, 0, 34 * HQS, 50 * HQS + 4], [-33 * HQS, -8 * HQS, 17 * HQS, 21 * HQS + 4], [33 * HQS, -8 * HQS, 17 * HQS, 21 * HQS + 4]);
   const hq = new THREE.Group(); // the painted parts, scaled with the rest
   hq.scale.setScalar(HQS);
+  hq.position.y = 4;
   g.add(hq);
   // the crest on its great white disc, framed and propped on the roof's front edge
   const crestTex = textTexture((x, w, h) => {
@@ -420,8 +511,8 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   });
 
   const mats = {
-    plaster: toon(0xffffff, { vertexColors: true }), wood: toon(0xffffff, { vertexColors: true }), stone: toon(0xffffff, { vertexColors: true }),
-    red: toon(0xffffff, { vertexColors: true }), tank: toon(0xffffff, { vertexColors: true }), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),
+    plaster: triToon(plaster(), 0.16), wood: triToon(wood(), 0.32), stone: triToon(stone(), 0.2), red: triToon(plaster(), 0.08),
+    thatch: triToon(thatch(), 0.26), tank: toon(0xffffff, { vertexColors: true }), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),
     glass: toon(0x2a2430), lit: glow(0xffc070),
   };
   bins.build(mats, g);
