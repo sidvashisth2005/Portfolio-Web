@@ -70,8 +70,9 @@ export function panelsHTML() {
       <div class="w-ctas">
         <a class="w-pill w-pill--red w-pill--lg" href="mailto:${profile.email}">Hire me ↗</a>
         <a class="w-pill w-pill--lg" href="resume.pdf" download>Résumé ↓</a>
+        <a class="w-pill w-pill--lg" href="./">Open the full site ↗</a>
       </div>
-      <p class="label w-links"><a href="mailto:${profile.email}">${profile.email}</a> · <a href="tel:+918871592579">${profile.phone}</a> · <a href="${profile.linkedin}" target="_blank" rel="noopener">LinkedIn</a> · <a href="${profile.github}" target="_blank" rel="noopener">GitHub</a> · <a href="./">Full site</a></p>
+      <p class="label w-links"><a href="mailto:${profile.email}">${profile.email}</a> · <a href="tel:+918871592579">${profile.phone}</a> · <a href="${profile.linkedin}" target="_blank" rel="noopener">LinkedIn</a> · <a href="${profile.github}" target="_blank" rel="noopener">GitHub</a></p>
     </section>`;
 }
 

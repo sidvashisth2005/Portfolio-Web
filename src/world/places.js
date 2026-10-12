@@ -55,9 +55,23 @@ export function buildPlaces(scene, { mobile }) {
   const colliders = [];
   const updates = [];
   const tex = new THREE.TextureLoader();
+  // each place is built at 1:1 round its own origin, then placed and scaled up as one piece
+  const sites = [];
+  function site(key) {
+    const { at, scale: k } = LAYOUT[key];
+    const sg = new THREE.Group();
+    sg.position.set(...at);
+    sg.scale.setScalar(k);
+    g.add(sg);
+    const st = { g: sg, bins: new Bins(), lights: [], col: ([x, z, rr, h]) => colliders.push([at[0] + x * k, at[2] + z * k, rr * k, at[1] + h * k]) };
+    sites.push(st);
+    return st;
+  }
 
   // ---------- the shrine: Two sides and Battle stats ----------
-  const [sx, sy, sz] = LAYOUT.shrine.at;
+  {
+  const S = site('shrine'), g = S.g, bins = S.bins, lights = S.lights;
+  const sx = 0, sy = 0, sz = 0;
   // a stone path from the east, five torii along it, stone lanterns either side
   bins.add('stone', box(84, 0.4, 7, 0xb3a492, { at: [sx + 30, sy + 0.2, sz] }));
   for (let i = 0; i < 5; i++) torii(bins, sx + 60 - i * 9, sy, sz, Math.PI / 2, 1 - i * 0.03);
@@ -74,7 +88,7 @@ export function buildPlaces(scene, { mobile }) {
   gableRoof(20, 14, 5.4, 3, 0x3f7f7a).forEach((p) => H.push(['roof', place(p, { at: [0, 11, 0] })]));
   [-1, 1].forEach((k) => H.push(['plaster', place(gableEnd(20, 5.4, 0.3, 0xf0e6d6), { at: [0, 11, k * 7], rot: [0, k < 0 ? Math.PI : 0, 0] })]));
   bins.addAll(H, hall);
-  colliders.push([sx - 26, sz, 14, sy + 17]);
+  S.col([sx - 26, sz, 14, sy + 17]);
   // Two sides: a pair of great painted boards facing the path, Strategist on the left, Builder on the right
   const sideBoard = (label, kanji, title, items, dark) => board(12, 16, (x, w, h) => {
     x.fillStyle = dark ? '#1a1214' : '#f0e6d6'; x.fillRect(0, 0, w, h);
@@ -117,9 +131,13 @@ export function buildPlaces(scene, { mobile }) {
     updates.push((t) => { e.rotation.z = Math.sin(t * 1.3 + i) * 0.04; });
   });
 
+  }
+
   // ---------- the library: Special moves ----------
-  const [lx, , lz] = LAYOUT.library.at;
-  const lf = Math.atan2(-lx, -lz); // the open front faces the heart of the village
+  {
+  const S = site('library'), g = S.g, bins = S.bins, lights = S.lights;
+  const lf = Math.atan2(-LAYOUT.library.at[0], -LAYOUT.library.at[2]); // the open front faces the heart of the village
+  const lx = 0, lz = 0;
   const LM = new THREE.Matrix4().compose(new THREE.Vector3(lx, 0, lz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), lf), new THREE.Vector3(1, 1, 1));
   const L = [];
   L.push(['stone', box(48, 1.6, 26, 0x9a8e84, { at: [0, 0.8, 0] })]);
@@ -135,7 +153,7 @@ export function buildPlaces(scene, { mobile }) {
     for (let j = 0; j < 18; j++) L.push(['paper', cyl(0.35, 0.35, 1.8, 8, j % 3 ? PAPER : 0xd8b48e, { at: [k * 19.6, 3 + (j % 4) * 2.4, -7.5 + Math.floor(j / 4) * 3.6], rot: [0, 0, Math.PI / 2] })]);
   });
   bins.addAll(L, LM);
-  colliders.push([lx, lz, 24, 26]);
+  S.col([lx, lz, 24, 26]);
   const scrollGroup = new THREE.Group();
   scrollGroup.applyMatrix4(LM);
   g.add(scrollGroup);
@@ -156,8 +174,12 @@ export function buildPlaces(scene, { mobile }) {
     lights.push(new THREE.Vector3(-15 + i * 10, 18.5, -8).applyMatrix4(LM).toArray());
   });
 
+  }
+
   // ---------- the training ground: the Training arc ----------
-  const [tx, , tz] = LAYOUT.training.at;
+  {
+  const S = site('training'), g = S.g, bins = S.bins;
+  const tx = 0, tz = 0;
   const tg = new THREE.Mesh(new THREE.CircleGeometry(40, 48).rotateX(-Math.PI / 2), toon(0xa88a62));
   tg.position.set(tx, 0.08, tz);
   g.add(tg);
@@ -169,7 +191,7 @@ export function buildPlaces(scene, { mobile }) {
     bins.add('wood', cyl(0.9, 1, 7, 10, 0x8a6a4a, { at: [tx + o, 3.5, tz + 10 + (i === 1 ? -2 : 0)] }));
     bins.add('rope', cyl(1.05, 1.05, 0.5, 10, 0xd8c9a0, { at: [tx + o, 4.6, tz + 10 + (i === 1 ? -2 : 0)] }));
   });
-  colliders.push([tx, tz + 9, 9, 7.5]);
+  S.col([tx, tz + 9, 9, 7.5]);
   // four stage stones in an arc, newest on the right, each carved with its stage, place, years and result
   const stages = [...dojos].reverse();
   stages.forEach((d, i) => {
@@ -186,27 +208,31 @@ export function buildPlaces(scene, { mobile }) {
       x.fillStyle = '#b8232c'; ink(x, w * 0.24, display, '900 '); x.fillText(d.metric, w / 2, h * 0.8);
     }, 256);
     st.position.set(px, 5.5, pz);
-    st.lookAt(tx, 5.5, tz + 10);
+    st.rotation.y = Math.atan2(tx - px, tz + 10 - pz); // face the posts (turned by hand: lookAt is world-space)
     g.add(st);
     const back = new THREE.Mesh(new THREE.BoxGeometry(6.4, 9.4, 1.4), toon(0x7f766e));
     back.position.copy(st.position); back.quaternion.copy(st.quaternion); back.translateZ(-0.75);
     g.add(back);
   });
 
+  }
+
   // ---------- the memorial grove: Flashbacks ----------
-  const [mx, , mz] = LAYOUT.memorial.at;
+  {
+  const S = site('memorial'), g = S.g, bins = S.bins;
+  const mx = 0, mz = 0;
   const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(4.4, 0).scale(0.8, 1.6, 0.5), toon(0x5f5852));
   stone.position.set(mx, 6, mz - 4);
   g.add(stone);
   bins.add('stone', box(14, 1, 8, 0x8d847c, { at: [mx, 0.5, mz - 4] }));
-  colliders.push([mx, mz - 4, 6, 12]);
+  S.col([mx, mz - 4, 6, 12]);
   const photos = gallery.slice(0, mobile ? 6 : 10);
   photos.forEach((ph, i) => {
     const n = photos.length, a2 = Math.PI * (1.15 + (i / (n - 1)) * 0.7); // a half ring opening toward the street
     const fx = mx + Math.cos(a2) * 20, fz = mz - Math.sin(a2) * 20 - 4;
     const frame = new THREE.Group();
     frame.position.set(fx, 0, fz);
-    frame.lookAt(mx, 0, mz - 4); // each photograph faces the stone, and the street beyond it
+    frame.rotation.y = Math.atan2(mx - fx, mz - 4 - fz); // each photograph faces the stone, and the street beyond it
     g.add(frame);
     const pic = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 3.9), new THREE.MeshBasicMaterial({ color: 0x3a3030, fog: true, side: THREE.DoubleSide }));
     pic.position.y = 6.2;
@@ -218,9 +244,13 @@ export function buildPlaces(scene, { mobile }) {
     tex.load(ph.src.replace('gallery/', 'gallery/gl/'), (t) => { t.colorSpace = THREE.SRGBColorSpace; pic.material.map = t; pic.material.color.set(0xffffff); pic.material.needsUpdate = true; }, undefined, () => {});
   });
 
+  }
+
   // ---------- the cliff top: On air and the summit ----------
-  const cz = LAYOUT.cliffZ, top = 200;
-  const MX = 70;
+  {
+  const S = site('mast'), g = S.g, bins = S.bins;
+  const cz = 0, top = 0, MX = 0;
+  S.col([0, 0, 10, 40]);
   bins.add('stone', box(16, 50, 16, 0x8a6f62, { at: [MX, top - 23, cz] }));
   bins.add('stone', box(14, 46, 12, 0x8a6f62, { at: [MX - 12, top - 23, cz + 2] }));
   // a lattice radio mast
@@ -246,8 +276,11 @@ export function buildPlaces(scene, { mobile }) {
   onair.position.set(MX - 13.5, top + 4.8, cz + 5.62);
   g.add(onair);
   updates.push((t) => { onair.material.color.setScalar(Math.sin(t * 1.6) > -0.6 ? 1 : 0.35); });
+  }
+  {
+  const S = site('summit'), g = S.g, bins = S.bins;
+  const cz = 0, top = 0, SX = 0;
   // the summit lookout: a deck with a rail and a crimson banner
-  const SX = 12; // east of the carved face, so its footing never stands on the portrait's head
   bins.add('stone', box(22, 50, 16, 0x8a6f62, { at: [SX, top - 24, cz + 10] }));
   bins.add('wood', box(20, 0.8, 14, 0x6b4630, { at: [SX, top + 1.4, cz + 10] }));
   for (let i = 0; i < 9; i++) bins.add('wood', box(0.4, 2.2, 0.4, 0x4a2e22, { at: [SX - 9.6 + i * 2.4, top + 2.9, cz + 16.8] }));
@@ -259,16 +292,62 @@ export function buildPlaces(scene, { mobile }) {
   const fp = flag.geometry.attributes.position, fx0 = Float32Array.from(fp.array);
   updates.push((t) => { for (let i = 0; i < fp.count; i++) { const x = fx0[i * 3]; fp.setZ(i, Math.sin(t * 4 + x * 1.2) * 0.35 * (x + 3) / 6); } fp.needsUpdate = true; });
 
-  // the lantern and lamp lights
-  const lg = new THREE.InstancedMesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), glow(0xffb070), lights.length);
-  const m4 = new THREE.Matrix4();
-  lights.forEach(([x, y, z], i) => { m4.makeTranslation(x, y, z); lg.setMatrixAt(i, m4); });
-  g.add(lg);
+  }
 
-  bins.build({
+  // each site's lantern lights and its pieces, merged per material
+  const m4 = new THREE.Matrix4();
+  const mats = {
     ver: toon(0xffffff, { vertexColors: true }), blk: toon(0xffffff, { vertexColors: true }), stone: toon(0xffffff, { vertexColors: true }),
     wood: toon(0xffffff, { vertexColors: true }), plaster: toon(0xffffff, { vertexColors: true }), paper: toon(0xffffff, { vertexColors: true }),
     rope: toon(0xffffff, { vertexColors: true }), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),
-  }, g);
-  return { group: g, colliders, update: (t) => updates.forEach((f) => f(t)) };
+  };
+  const lampMat = glow(0xffb070);
+  sites.forEach(({ g: sg, bins: sb, lights: sl }) => {
+    if (sl.length) {
+      const lg = new THREE.InstancedMesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), lampMat, sl.length);
+      sl.forEach(([x, y, z], i) => { m4.makeTranslation(x, y, z); lg.setMatrixAt(i, m4); });
+      sg.add(lg);
+    }
+    sb.build(mats, sg);
+  });
+  // markers for free roam: a floating sign over every stop that tells part of the story, readable from across the
+  // valley; they fade in when you roam and hide when you're standing at the place itself
+  const A = LAYOUT.arena;
+  const MARKS = [
+    ['中', 'About · HQ', 0, 112, 0], ['一閃', 'The monument', -64, 206, -330], ['二面', 'Two sides · Stats', ...at('shrine', 0, 48, 0)],
+    ['必殺技', 'Special moves', ...at('library', 0, 40, 0)], ['修行', 'Training arc', ...at('training', 0, 30, 0)],
+    ['大会', 'HackNITR 7.0', A.x, 96, A.z], ['回想', 'Flashbacks', ...at('memorial', 0, 26, 0)], ['放送', 'On air', ...at('mast', 0, 70, 0)],
+    ['つづく', 'Contact', ...at('summit', 0, 36, 0)],
+  ];
+  function at(key, x, y, z) { const { at: c, scale: k } = LAYOUT[key]; return [c[0] + x * k, c[1] + y * k, c[2] + z * k]; }
+  const signs = MARKS.map(([kj, en, x, y, z]) => {
+    const t = textTexture((c, w, h) => {
+      c.fillStyle = 'rgba(16,6,10,.86)'; c.beginPath(); c.roundRect(6, 6, w - 12, h - 12, 26); c.fill();
+      c.strokeStyle = '#e0182d'; c.lineWidth = 8; c.stroke();
+      c.textBaseline = 'middle'; c.textAlign = 'left';
+      c.fillStyle = '#ff4a5c'; c.font = `${h * 0.5}px "Dela Gothic One", sans-serif`; c.fillText(kj, 34, h * 0.53);
+      const kw = c.measureText(kj).width;
+      c.fillStyle = '#f4ead8'; c.font = `900 ${h * 0.42}px "Big Shoulders Display", sans-serif`; c.fillText(en.toUpperCase(), 34 + kw + 26, h * 0.54);
+    }, 1024, 200);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+    sp.scale.set(52, 10.2, 1);
+    sp.position.set(x, y, z);
+    sp.renderOrder = 10;
+    g.add(sp);
+    return { sp, base: y, ph: x * 0.01 };
+  });
+  const tmp = new THREE.Vector3();
+  return {
+    group: g, colliders,
+    // roaming: 0..1, how far free roam has faded in; cam: where the camera is
+    update(t, cam, roaming = 0) {
+      updates.forEach((f) => f(t));
+      signs.forEach((m) => {
+        m.sp.position.y = m.base + Math.sin(t * 1.2 + m.ph) * 1.5;
+        const d = cam ? tmp.copy(m.sp.position).sub(cam).length() : 999;
+        m.sp.material.opacity = roaming * THREE.MathUtils.smoothstep(d, 60, 140);
+        m.sp.visible = m.sp.material.opacity > 0.01;
+      });
+    },
+  };
 }

@@ -8,8 +8,10 @@ import { LAYOUT, reserved } from './land.js';
 // gable roofs with plain stucco blocks crowned by round water tanks, all strung together by utility poles.
 // Original throughout: the crest is 一閃, the kanji are the portfolio's own.
 const WALLS = [0xeadcc2, 0xe2c9a2, 0xe9bf98, 0xf0e6d6, 0xbfd3c2, 0xd8b48e, 0xe6d3b0];
-const ROOFS = [0xb3262e, 0xc0532e, 0x3f7f7a, 0x4a4552, 0xd9772b, 0x8e2a2a, 0x5b6b4a];
+const ROOFS = [0xb3262e, 0xc0532e, 0x3f7f7a, 0x4a4552, 0xd9772b, 0x8e2a2a, 0x5b6b4a, 0xd9b25a, 0x3f6fae, 0x3f6fae];
 const WOOD = 0x5a3b2a, DARK = 0x2a1f22;
+// round towers with blue cone roofs: [angle, radius] round the plaza (kept clear of houses)
+const CONE_TOWERS = [[2.6, 122], [0.45, 128], [-1.1, 118], [2.0, 200]];
 const SIGNS = ['修行', '大会', '光', '伝', '巻', '力', '技', '勝', '戦', '影'];
 
 // one house, built at the origin facing +z (its street), as [material, geometry] pieces
@@ -114,14 +116,15 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     if (Math.abs(rr - 150) < 9 || Math.abs(rr - 230) < 7) return true;
     if (RADIALS.some((ra) => Math.abs(Math.atan2(Math.sin(a - ra), Math.cos(a - ra))) * rr < 7)) return true;
     if (Math.abs(z - LAYOUT.riverZ) < 16) return true;
-    return rr < 62 || reserved(x, z);
+    if (CONE_TOWERS.some(([ta, tr]) => Math.hypot(x - Math.cos(ta) * tr, z - Math.sin(ta) * tr) < 20)) return true;
+    return rr < 92 || reserved(x, z); // the headquarters' plaza
   };
   // the main street runs from the plaza out through the gate and on into the forest
   const paving = new THREE.Mesh(new THREE.PlaneGeometry(MAIN * 2 + 4, LAYOUT.gateZ + 420).rotateX(-Math.PI / 2), toon(0xb79a72));
   paving.position.set(0, 0.06, (LAYOUT.gateZ + 420) / 2);
   g.add(paving);
   [150, 230].forEach((rad) => { const ring = new THREE.Mesh(new THREE.RingGeometry(rad - 6, rad + 6, 160).rotateX(-Math.PI / 2), toon(0xa88e6a)); ring.position.y = 0.05; g.add(ring); });
-  const plaza = new THREE.Mesh(new THREE.CircleGeometry(60, 64).rotateX(-Math.PI / 2), toon(0xc9b08a));
+  const plaza = new THREE.Mesh(new THREE.CircleGeometry(88, 72).rotateX(-Math.PI / 2), toon(0xc9b08a));
   plaza.position.y = 0.07;
   g.add(plaza);
 
@@ -130,7 +133,7 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
   let placed = 0, tries = 0;
   const lots = [];
   while (placed < target && tries++ < target * 30) {
-    const rr = 70 + Math.sqrt(r()) * 215, a = r() * Math.PI * 2;
+    const rr = 96 + Math.sqrt(r()) * 192, a = r() * Math.PI * 2;
     let x = Math.cos(a) * rr, z = Math.sin(a) * rr;
     const shop = z > 20 && Math.abs(x) < 34 && r() < 0.9;
     if (shop) x = Math.sign(x || 1) * (MAIN + 10 + r() * 4);
@@ -155,52 +158,71 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     }
   }
 
-  // the heart: the village's headquarters, in the anime's manner. A broad round orange-red hall of three floors
-  // under an overhanging rim and a flat roof; a smaller drum rising from the roof; the village crest on a great
-  // white disc standing on the roof's front edge; an entrance porch at its foot and two wings behind it.
-  const T = { r: 24, h: 24, base: 2 };
-  const HQ = 0xc4432a, RIM = 0x7a2418, HQ2 = 0xe2c9a2;
-  const top = T.base + T.h;
-  bins.add('stone', cyl(30, 31, 2, 64, 0x9a8e84, { at: [0, 1, 0] }));
-  [0, 1, 2].forEach((k) => bins.add('stone', box(16 - k * 2, 0.7, 4, 0xb3a492, { at: [0, 0.35 + k * 0.7, 32 - k * 2] })));
-  bins.add('red', cyl(T.r, T.r, T.h, 64, HQ, { at: [0, T.base + T.h / 2, 0] }));
-  [10, 18].forEach((y) => bins.add('red', cyl(T.r + 0.3, T.r + 0.3, 0.7, 64, RIM, { at: [0, y, 0] })));
-  // three rows of windows round the drum (the porch takes the front of the ground floor)
-  [6, 14, 22].forEach((y, row) => {
-    for (let i = 0; i < 30; i++) {
-      const a = (i / 30) * Math.PI * 2 + (row % 2) * 0.1;
-      if (row === 0 && Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < 0.42) continue;
-      bins.add((i + row) % 4 ? 'glass' : 'lit', box(2.4, 2.8, 0.4, 0x000000, { at: [Math.cos(a) * (T.r + 0.1), y, Math.sin(a) * (T.r + 0.1)], rot: [0, Math.PI / 2 - a, 0] }));
+  // the heart: the village's headquarters, the biggest thing in the valley, built in the anime's manner as a
+  // stack of round tiers: a grey stone base, a wide straw-gold skirt roof, the orange-red hall, a second skirt, the
+  // upper drum under an overhanging rim, and the village crest on a great white disc on the roof's front edge,
+  // flanked by two white horns. Two lower round wings with their own skirts stand behind it.
+  const HQS = 1.6; // everything below is built at 1:1 and scaled up as one piece
+  const HQ = 0xd44a2c, RIM = 0x7a2418, GOLD = 0xe2b75e, BASEC = 0xb8afa4, WHITE = 0xf2ece2;
+  const H = [];
+  const ring = (r0, r1, h, y, color, key = 'red') => H.push([key, cyl(r1, r0, h, 72, color, { at: [0, y + h / 2, 0] })]);
+  const windowsRound = (rad, y, n, skipFront, w = 2.4, h = 2.6) => {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      if (skipFront && Math.abs(Math.atan2(Math.sin(a - Math.PI / 2), Math.cos(a - Math.PI / 2))) < skipFront) continue;
+      H.push([(i * 7) % 5 ? 'glass' : 'lit', box(w, h, 0.4, 0x000000, { at: [Math.cos(a) * (rad + 0.1), y, Math.sin(a) * (rad + 0.1)], rot: [0, Math.PI / 2 - a, 0] })]);
+    }
+  };
+  H.push(['stone', cyl(35, 36, 2, 72, 0x9a8e84, { at: [0, 1, 0] })]);
+  [0, 1, 2, 3].forEach((k) => H.push(['stone', box(18 - k * 2, 0.7, 4, 0xb3a492, { at: [0, 0.35 + k * 0.7, 38 - k * 2] })]));
+  // 1 · the grey stone base with the entrance
+  ring(31, 31, 7, 2, BASEC, 'stone');
+  windowsRound(31, 5.4, 36, 0.3, 1.8, 1.8);
+  H.push(['wood', box(7, 5.6, 0.6, 0x2a1f22, { at: [0, 4.8, 31] })]);
+  H.push(['stone', box(11, 1, 3.4, 0x8d847c, { at: [0, 8.2, 31.6] })]);
+  // 2 · the first skirt roof, wide and gold
+  H.push(['roof', cyl(25.5, 33.5, 4, 72, GOLD, { at: [0, 11, 0] })]);
+  // 3 · the orange-red hall
+  ring(25, 25, 11, 12.6, HQ);
+  ring(25.3, 25.3, 0.6, 18.6, RIM);
+  windowsRound(25, 16, 30, 0);
+  windowsRound(25, 21.4, 30, 0);
+  // 4 · the second skirt
+  H.push(['roof', cyl(20, 27.5, 3.6, 72, GOLD, { at: [0, 25.2, 0] })]);
+  // 5 · the upper drum, its rim and roof deck
+  ring(19.5, 19.5, 9, 26.6, HQ);
+  windowsRound(19.5, 31, 24, 0.5);
+  H.push(['red', cyl(21.2, 20.2, 1.6, 72, RIM, { at: [0, 36.4, 0] })]);
+  H.push(['stone', cyl(19.6, 19.6, 0.4, 72, 0x6a5e58, { at: [0, 37.3, 0] })]);
+  H.push(['plaster', box(5, 3, 4, WHITE, { at: [-6, 38.9, -8] })]);
+  H.push(['tank', cyl(1.8, 1.8, 3, 16, 0x8a9aa6, { at: [6, 39.6, -9] })]);
+  // 6 · two white horns rising either side of the crest
+  [-1, 1].forEach((k) => {
+    const horn = new THREE.CylinderGeometry(0.25, 1.4, 11, 10, 6);
+    const hp = horn.attributes.position;
+    for (let i = 0; i < hp.count; i++) { const t = (hp.getY(i) + 5.5) / 11; hp.setX(i, hp.getX(i) + k * t * t * 3.2); }
+    horn.computeVertexNormals();
+    H.push(['plaster', place(paint(horn, WHITE), { at: [k * 11.5, 42.8, 14.5] })]);
+  });
+  // 7 · the wings: lower round halls behind, each with a gold skirt and a red cap
+  [-1, 1].forEach((k) => {
+    const wx = k * 33, wz = -8;
+    H.push(['stone', cyl(16, 16.5, 2, 48, 0x9a8e84, { at: [wx, 1, wz] })]);
+    H.push(['red', cyl(14, 14, 10, 48, HQ, { at: [wx, 7, wz] })]);
+    H.push(['roof', cyl(11.5, 17, 3.2, 48, GOLD, { at: [wx, 13.6, wz] })]);
+    H.push(['red', cyl(11, 11, 4, 48, HQ, { at: [wx, 17.2, wz] })]);
+    H.push(['red', cyl(12, 11.2, 1.2, 48, RIM, { at: [wx, 19.6, wz] })]);
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      H.push([i % 3 ? 'glass' : 'lit', box(2, 2.4, 0.4, 0x000000, { at: [wx + Math.cos(a) * 14.1, 7.4, wz + Math.sin(a) * 14.1], rot: [0, Math.PI / 2 - a, 0] })]);
     }
   });
-  // the overhanging rim, the parapet and the roof deck
-  bins.add('red', cyl(T.r + 1.8, T.r + 1.2, 1.6, 64, RIM, { at: [0, top + 0.8, 0] }));
-  bins.add('red', cyl(T.r + 1.2, T.r + 1.2, 1.8, 64, HQ, { at: [0, top + 2.5, 0] }));
-  bins.add('stone', cyl(T.r + 0.6, T.r + 0.6, 0.3, 64, 0x6a5e58, { at: [0, top + 3.3, 0] }));
-  // the upper drum and its own rim and roof, with a little hut, a water tank and a mast
-  bins.add('red', cyl(11, 11, 7, 48, HQ, { at: [0, top + 3.4 + 3.5, -2] }));
-  bins.add('red', cyl(12.2, 11.4, 1.2, 48, RIM, { at: [0, top + 11, -2] }));
-  bins.add('stone', cyl(11.6, 11.6, 0.4, 48, 0x6a5e58, { at: [0, top + 11.7, -2] }));
-  for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; bins.add(i % 3 ? 'glass' : 'lit', box(1.8, 2, 0.4, 0x000000, { at: [Math.cos(a) * 11.1, top + 7.6, -2 + Math.sin(a) * 11.1], rot: [0, Math.PI / 2 - a, 0] })); }
-  bins.add('plaster', box(5, 3, 4, HQ2, { at: [-4, top + 13.4, -4] }));
-  bins.add('tank', cyl(1.8, 1.8, 3, 16, 0x8a9aa6, { at: [4, top + 14.6, -5] }));
-  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a2, b2]) => bins.add('wood', box(0.25, 1.4, 0.25, DARK, { at: [4 + a2 * 1.1, top + 12.6, -5 + b2 * 1.1] })));
-  bins.add('wood', cyl(0.15, 0.2, 9, 6, DARK, { at: [0, top + 16.4, -9] }));
-  // the entrance porch with its signboard
-  bins.add('plaster', box(13, 7, 7, HQ2, { at: [0, T.base + 3.5, T.r + 1.6] }));
-  bins.add('red', box(15, 0.9, 9, RIM, { at: [0, T.base + 7.4, T.r + 2] }));
-  bins.add('wood', box(4.4, 5, 0.3, 0x3a2418, { at: [0, T.base + 2.5, T.r + 5.2] }));
-  // two wings behind, three floors each, flat roofs with tanks
-  [-1, 1].forEach((k) => {
-    const m = new THREE.Matrix4().compose(new THREE.Vector3(k * 27, 0, -15), new THREE.Quaternion().setFromAxisAngle(up, k * 0.55), new THREE.Vector3(1, 1, 1));
-    const P = [['plaster', box(18, 15, 16, HQ2, { at: [0, 7.5, 0] })], ['plaster', box(18.8, 0.9, 16.8, 0xd8cfc2, { at: [0, 15.45, 0] })], ['wood', box(18.2, 1, 16.2, 0x7d6a5c, { at: [0, 0.5, 0] })],
-      ['tank', cyl(1.8, 1.8, 3, 16, 0xa58a6e, { at: [k * 4, 17.6, 2] })]];
-    for (let f = 0; f < 3; f++) for (let i = 0; i < 4; i++) P.push([(f + i) % 3 ? 'glass' : 'lit', box(2.2, 1.8, 0.2, 0x000000, { at: [-6.6 + i * 4.4, 3 + f * 4.4, 8.1] })]);
-    bins.addAll(P, m);
-    colliders.push([k * 27, -15, 12, 19]);
-  });
-  colliders.push([0, 0, T.r + 3, top + 20]);
-  // the crest: a great white disc on the roof's front edge, framed and propped from behind
+  bins.addAll(H, new THREE.Matrix4().makeScale(HQS, HQS, HQS));
+  colliders.push([0, 0, 34 * HQS, 50 * HQS], [-33 * HQS, -8 * HQS, 17 * HQS, 21 * HQS], [33 * HQS, -8 * HQS, 17 * HQS, 21 * HQS]);
+  const hq = new THREE.Group(); // the painted parts, scaled with the rest
+  hq.scale.setScalar(HQS);
+  g.add(hq);
+  // the crest on its great white disc, framed and propped on the roof's front edge
   const crestTex = textTexture((x, w, h) => {
     x.fillStyle = '#f4ead8'; x.beginPath(); x.arc(w / 2, h / 2, w * 0.48, 0, Math.PI * 2); x.fill();
     x.strokeStyle = '#b8232c'; x.lineWidth = w * 0.035; x.beginPath(); x.arc(w / 2, h / 2, w * 0.43, 0, Math.PI * 2); x.stroke();
@@ -208,23 +230,42 @@ export function buildVillage(scene, { mobile, portrait, heightAt }) {
     x.fillText('閃', w / 2, h * 0.54);
   }, 512, 512);
   const crest = new THREE.Mesh(new THREE.CircleGeometry(7.6, 64), new THREE.MeshBasicMaterial({ map: crestTex, fog: true }));
-  crest.position.set(0, top + 11.6, T.r - 2.4);
-  g.add(crest);
-  bins.add('red', cyl(8.2, 8.2, 0.8, 64, RIM, { at: [0, top + 11.6, T.r - 2.95], rot: [Math.PI / 2, 0, 0] }));
-  [-4.5, 4.5].forEach((x) => bins.add('wood', box(0.6, 6, 0.6, DARK, { at: [x, top + 4.6, T.r - 3.6] })));
-  // a long banner down the tower
+  crest.position.set(0, 45.6, 17.4);
+  hq.add(crest);
+  const crestBack = new THREE.Mesh(new THREE.CylinderGeometry(8.3, 8.3, 0.9, 64), toon(RIM));
+  crestBack.rotation.x = Math.PI / 2;
+  crestBack.position.set(0, 45.6, 16.85);
+  hq.add(crestBack);
+  [-4.6, 4.6].forEach((x) => { const post = new THREE.Mesh(new THREE.BoxGeometry(0.7, 6, 0.7), toon(DARK)); post.position.set(x, 39.6, 16.2); hq.add(post); });
+  // long banners down the hall, either side of the entrance
   const banner = textTexture((x, w, h) => {
     x.fillStyle = '#1a0a0e'; x.fillRect(0, 0, w, h);
     x.fillStyle = '#e0182d'; x.fillRect(w * 0.08, 0, w * 0.84, h);
     x.fillStyle = '#fff'; x.font = `${w * 0.62}px "Dela Gothic One", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
     ['作', 'る', '戦', '略', '家'].forEach((ch, i) => x.fillText(ch, w / 2, h * (0.12 + i * 0.19)));
   }, 128, 640);
-  [-1, 1].forEach((s) => {
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 17), new THREE.MeshBasicMaterial({ map: banner, fog: true, side: THREE.DoubleSide }));
-    const a = Math.PI / 2 + s * 0.55;
-    b.position.set(Math.cos(a) * (T.r + 0.5), 14.5, Math.sin(a) * (T.r + 0.5));
-    b.rotation.y = -a + Math.PI / 2;
-    g.add(b);
+  [-1, 1].forEach((k) => {
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(3, 10), new THREE.MeshBasicMaterial({ map: banner, fog: true, side: THREE.DoubleSide }));
+    const a = Math.PI / 2 + k * 0.42;
+    b.position.set(Math.cos(a) * 25.4, 18.4, Math.sin(a) * 25.4);
+    b.rotation.y = Math.PI / 2 - a;
+    hq.add(b);
+  });
+
+  // round towers with tall blue cone roofs, landmarks round the plaza
+  CONE_TOWERS.forEach(([a, rr]) => {
+    const x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+    const T = [];
+    T.push(['plaster', cyl(7, 7.4, 18, 24, 0xefe6d6, { at: [0, 9, 0] })]);
+    T.push(['wood', cyl(7.6, 7.6, 1, 24, 0x7d6a5c, { at: [0, 0.5, 0] })]);
+    T.push(['wood', cyl(7.3, 7.3, 0.6, 24, 0x6b4630, { at: [0, 9.4, 0] })]);
+    for (let i = 0; i < 10; i++) { const b = (i / 10) * Math.PI * 2; T.push([i % 3 ? 'glass' : 'lit', box(1.6, 2.2, 0.3, 0x000000, { at: [Math.cos(b) * 7.1, 13.6, Math.sin(b) * 7.1], rot: [0, Math.PI / 2 - b, 0] })]); }
+    const cone = new THREE.ConeGeometry(9.4, 15, 24, 1, true);
+    const cu = cone.attributes.uv; for (let i = 0; i < cu.count; i++) cu.setXY(i, cu.getX(i) * 50, cu.getY(i) * 16);
+    T.push(['roof', place(paint(cone, 0x3f6fae), { at: [0, 25.5, 0] })]);
+    T.push(['plaster', sphere(1.3, 0xf2e6c8, { at: [0, 33.6, 0] })]);
+    bins.addAll(T, new THREE.Matrix4().makeTranslation(x, 0, z));
+    colliders.push([x, z, 9.5, 34]);
   });
 
   // the great gate: two timber pillars under a tiled roof, doors that swing open as you arrive

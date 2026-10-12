@@ -78,9 +78,12 @@ async function build() {
 // Desktop takes the whole journey; phones take the shorter one (gate, street, tower, stadium) and the full site
 // carries the rest.
 const G = LAYOUT.gateZ, A = ARENA;
-const [SX, SY, SZ] = LAYOUT.shrine.at, [LX, , LZ] = LAYOUT.library.at, [TX, , TZ] = LAYOUT.training.at, [MX, , MZ] = LAYOUT.memorial.at;
+// a point near one of the places, in its own 1:1 units (the places are built bigger by their scale)
+const P = (key, x, y, z) => { const { at: c, scale: k } = LAYOUT[key]; return [c[0] + x * k, c[1] + y * k, c[2] + z * k]; };
+const [LX, , LZ] = LAYOUT.library.at, LK = LAYOUT.library.scale;
 const LF = [-LX / Math.hypot(LX, LZ), -LZ / Math.hypot(LX, LZ)]; // the library's front, toward the heart
 const LR = [LF[1], -LF[0]]; // to the right as you face into it
+const PL = (f, r, y) => [LX + (LF[0] * f + LR[0] * r) * LK, y * LK, LZ + (LF[1] * f + LR[1] * r) * LK];
 const CZ = LAYOUT.cliffZ;
 const START = [
   // the great gate from the road, the portrait scroll on the left
@@ -88,10 +91,10 @@ const START = [
   [[2, 11, G + 16], [0, 13, G - 60]], // through the gate
   [[0, 13, G - 50], [0, 20, 120], 'street'], // the main street: lanterns, signboards, shops
   [[0, 16, 190], [0, 22, 60]], // over the bridge
-  [[0, 21, 110], [0, 26, 0]], // the tower ahead
-  [mobile ? [74, 84, 112] : [46, 58, 62], mobile ? [0, 12, 0] : [0, 24, 0], 'tower'], // around the tower and its crest
+  [[0, 24, 150], [0, 40, 0]], // the headquarters ahead, the biggest thing in the valley
+  [mobile ? [110, 104, 176] : [104, 82, 132], mobile ? [0, 26, 0] : [0, 42, 0], 'tower'], // round the headquarters and its crest
   // up to the monument: the face carved into the cliff above the village
-  [[FACE_X + 34, mobile ? 96 : 110, LAYOUT.cliffZ + (mobile ? 230 : 215)], [FACE_X + (mobile ? 0 : 30), mobile ? 122 : 112, LAYOUT.cliffZ + 30], 'monument'],
+  [[FACE_X + 44, mobile ? 100 : 116, LAYOUT.cliffZ + (mobile ? 300 : 280)], [FACE_X + (mobile ? 0 : 40), mobile ? 128 : 118, LAYOUT.cliffZ + 30], 'monument'],
 ];
 const STADIUM = [
   [[330, 110, 60], [A.x, 20, A.z], 'toStadium'], // over the forest to the stadium
@@ -107,21 +110,21 @@ const STOPS = mobile ? [
 ] : [
   ...START,
   [[-120, 150, 160], [-300, 20, -40], 'overview'], // over the village, turning west to the hills
-  [[SX + 70, SY + 7, SZ + 7], [SX + 8, SY + 9, SZ - 3], 'torii'], // the path of torii up to the shrine
-  [[SX + 50, SY + 22, SZ], [SX - 4, SY + 8, SZ], 'sides'], // over the last torii: the two great boards either side of the path, the hall between
-  [[SX - 6, SY + 2.6, SZ - 3], [SX - 6, SY + 4.6, SZ - 24], 'stats'], // the ema rack, up in the top half of the view
-  [[LX + LF[0] * 60, 30, LZ + LF[1] * 60], [LX, 8, LZ], 'toLibrary'], // back over the wall to the library
-  [[LX + LF[0] * 30 - LR[0] * 4, 9.5, LZ + LF[1] * 30 - LR[1] * 4], [LX - LF[0] * 8 + LR[0] * 12, 9.6, LZ - LF[1] * 8 + LR[1] * 12], 'moves'], // the four scrolls on the left, the panel on the right
-  [[TX + 45, 62, TZ + 48], [TX - 5, 2, TZ - 2], 'toTraining'], // the training ground from above
-  [[TX + 34, 10, TZ + 6], [TX - 10, 4, TZ - 22], 'training'], // the posts and the four stage stones, left of the panel
-  [[TX + 26, 16, TZ + 36], [TX - 18, 4, TZ - 10], 'quests'],
+  [P('shrine', 70, 7, 7), P('shrine', 8, 9, -3), 'torii'], // the path of torii up to the shrine
+  [P('shrine', 50, 22, 0), P('shrine', -4, 8, 0), 'sides'], // over the last torii: the two great boards either side of the path, the hall between
+  [P('shrine', -6, 2.6, -3), P('shrine', -6, 4.6, -24), 'stats'], // the ema rack, up in the top half of the view
+  [PL(60, 0, 26), PL(0, 0, 6), 'toLibrary'], // back over the wall to the library
+  [PL(30, -4, 9.5), PL(-8, 12, 9.6), 'moves'], // the four scrolls on the left, the panel on the right
+  [P('training', 45, 50, 48), P('training', -5, 2, -2), 'toTraining'], // the training ground from above
+  [P('training', 27, 8, 5), P('training', -10, 4, -22), 'training'], // the posts and the four stage stones, left of the panel
+  [P('training', 26, 16, 36), P('training', -18, 4, -10), 'quests'],
   ...STADIUM,
   [[A.x + 10, 30, A.z + 20], [A.x, 54, A.z - 88], 'awards'], // up to the great banner
-  [[280, 90, 120], [MX, 5, MZ], 'overVillage'], // back over the village
-  [[MX - 4, 7.6, MZ - 3], [MX + 8, 5.2, MZ + 16], 'memorial'], // inside the ring of photographs, the stone behind
-  [[80, 120, 120], [40, 190, CZ], 'rise'], // rising toward the cliff
-  [[34, 212, CZ + 52], [60, 216, CZ], 'onair'], // the radio mast and the ON AIR hut
-  [[12, 216, CZ + 32], [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
+  [[280, 90, 120], P('memorial', 0, 5, 0), 'overVillage'], // back over the village
+  [P('memorial', -4, 7.6, -3), P('memorial', 8, 5.2, 16), 'memorial'], // inside the ring of photographs, the stone behind
+  [[80, 140, 120], [40, 214, CZ], 'rise'], // rising toward the cliff
+  [P('mast', -36, 12, 52), P('mast', -10, 16, 0), 'onair'], // the radio mast and the ON AIR hut
+  [P('summit', 0, 14, 32), [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
 ];
 const V = (a) => new THREE.Vector3(...a);
 const railPos = new THREE.CatmullRomCurve3(STOPS.map((s) => V(s[0])), false, 'centripetal');
@@ -188,6 +191,7 @@ function setRoam(on) {
   roamBtn.setAttribute('aria-pressed', String(on));
   roamT.textContent = on ? 'Back to the path' : 'Free roam';
   roamHint.hidden = !on;
+  if (travel) travel.hidden = !on;
   if (on) {
     lenis?.stop();
     roamPos.copy(camera.position);
@@ -201,6 +205,21 @@ function setRoam(on) {
   }
 }
 roamBtn.addEventListener('click', () => setRoam(!roaming));
+// free roam: jump to any place on the journey (the camera glides there)
+const TRAVEL = [['gate', 'The gate'], ['tower', 'Headquarters'], ['monument', 'The monument'], ['sides', 'Two sides'], ['stats', 'Battle stats'],
+  ['moves', 'Special moves'], ['training', 'Training arc'], ['trophy', 'HackNITR 7.0'], ['memorial', 'Flashbacks'], ['onair', 'On air'], ['summit', 'Contact']];
+const travel = $('#w-travel');
+if (travel) {
+  travel.innerHTML = `<p class="label muted">Travel to</p>${TRAVEL.filter(([k]) => stop(k) >= 0).map(([k, n]) => `<button type="button" class="w-chip" data-stop="${k}">${n}</button>`).join('')}`;
+  travel.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-stop]');
+    if (!b) return;
+    const st = STOPS[stop(b.dataset.stop)];
+    roamPos.set(...st[0]);
+    const d = V(st[1]).sub(V(st[0]));
+    yaw = Math.atan2(-d.x, -d.z); pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
+  });
+}
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && roaming) { setRoam(false); return; }
   if (!roaming) return;
@@ -251,7 +270,7 @@ const look = new THREE.Vector3(), target = new THREE.Vector3(), lookM = new THRE
 const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
 window.addEventListener('pointermove', (e) => { mouse.x = e.clientX / window.innerWidth - 0.5; mouse.y = e.clientY / window.innerHeight - 0.5; }, { passive: true });
 const prog = $('#w-prog');
-let smooth = 0, last = performance.now();
+let smooth = 0, last = performance.now(), roamFade = 0;
 function railPose(p, outPos, outQ) {
   railPos.getPoint(p, outPos);
   railLook.getPoint(p, look);
@@ -290,7 +309,8 @@ function frame(now) {
   // (on the long journey they settle again once the camera has left the stadium)
   const settle = stop('overVillage') > 0 ? ss(p, at('awards') + 0.02, at('overVillage')) : 0;
   arena?.update(t, roaming ? 0.3 : ss(p, at('rim'), at('bowl')) * (1 - settle));
-  places?.update(t);
+  roamFade += ((roaming ? 1 : 0) - roamFade) * (1 - Math.exp(-dt * 4));
+  places?.update(t, camera.position, roamFade);
   leaves?.update(t, camera.position);
   post.render(scene, camera, t);
   requestAnimationFrame(frame);

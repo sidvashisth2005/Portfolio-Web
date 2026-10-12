@@ -2,6 +2,16 @@ import * as THREE from 'three';
 import { fbm, smooth, rng, Bins, box, paint, place, gableRoof, roofTiles } from './kit.js';
 import { toon, textTexture } from './toon.js';
 
+let fine = null;
+function fineSteps() {
+  if (fine) return fine;
+  fine = new THREE.DataTexture(new Uint8Array([46, 92, 140, 196, 255]), 5, 1, THREE.RedFormat);
+  fine.minFilter = fine.magFilter = THREE.NearestFilter;
+  fine.generateMipmaps = false;
+  fine.needsUpdate = true;
+  return fine;
+}
+
 // The valley: a flat village floor ringed by forested hills, a great cliff to the north carved with the village
 // crest, a river with an arched bridge, the village wall, and an anime sunset over all of it.
 export const LAYOUT = {
@@ -11,10 +21,13 @@ export const LAYOUT = {
   arena: new THREE.Vector3(470, 0, -60),
   cliffZ: -385,
   // the other stops on the journey: [x, ground, z] and the radius kept clear of houses and trees
-  shrine: { at: [-440, 16, -30], clear: 110 },
-  library: { at: [-160, 0, -102], clear: 42 },
-  training: { at: [65, 0, -178], clear: 46 },
-  memorial: { at: [90, 0, 246], clear: 34 },
+  // scale: each place is modelled at 1:1 and built bigger, so it reads from across the valley
+  shrine: { at: [-440, 16, -30], clear: 120, scale: 1.5 },
+  library: { at: [-160, 0, -102], clear: 52, scale: 1.4 },
+  training: { at: [65, 0, -178], clear: 58, scale: 1.35 },
+  memorial: { at: [90, 0, 246], clear: 46, scale: 1.5 },
+  mast: { at: [70, 214, -385], scale: 1.5 },
+  summit: { at: [12, 214, -385], scale: 1.3 },
 };
 // the carved portrait sits left of the headquarters as seen from the main street, so the crest disc never hides it
 export const FACE_X = -64;
@@ -127,7 +140,7 @@ export function buildLand(scene, { mobile, sunDir }) {
 
   // the cliff: a wall of stratified rock, its face carved with the village crest
   const cz = LAYOUT.cliffZ;
-  const cg = new THREE.BoxGeometry(560, 180, 80, 80, 30, 6);
+  const cg = new THREE.BoxGeometry(560, 210, 80, 96, 36, 6);
   const cp = cg.attributes.position;
   for (let i = 0; i < cp.count; i++) {
     const x = cp.getX(i), y = cp.getY(i), z = cp.getZ(i);
@@ -136,7 +149,8 @@ export function buildLand(scene, { mobile, sunDir }) {
     const crack = Math.pow(Math.abs(Math.sin(x * 0.11 + fbm(y * 0.02, x * 0.01) * 6)), 12); // vertical fissures
     let zz = z + front * (n * 26 + foot * 34 - crack * 6 - smooth(-20, 90, y) * 14) + (fbm(x * 0.008, 3) - 0.5) * 34;
     // a smoothed face in the middle of the cliff, where the portrait is carved
-    const face = front * smooth(92, 72, Math.abs(x - FACE_X)) * smooth(-50, -30, y) * (1 - smooth(66, 82, y));
+    // (and a second, smaller one to the right for the crest)
+    const face = front * Math.max(smooth(100, 84, Math.abs(x - FACE_X)) * smooth(-80, -60, y) * (1 - smooth(78, 94, y)), smooth(54, 40, Math.abs(x - 140)) * smooth(-30, -14, y) * (1 - smooth(52, 66, y)));
     zz += (36 - zz) * face;
     cp.setZ(i, zz);
     cp.setX(i, x * (1 + foot * 0.12) + (fbm(y * 0.05, x * 0.01) - 0.5) * 12);
@@ -153,7 +167,7 @@ export function buildLand(scene, { mobile, sunDir }) {
   }
   cg.setAttribute('color', new THREE.BufferAttribute(cc, 3));
   const cliff = new THREE.Mesh(cg, toon(0xffffff, { vertexColors: true }));
-  cliff.position.set(0, 88, cz);
+  cliff.position.set(0, 103, cz);
   g.add(cliff);
   // the crest: a ring cut by one slash, 一閃 down its side, painted into the stone
   const crest = textTexture((x, w, h) => {
@@ -168,16 +182,16 @@ export function buildLand(scene, { mobile, sunDir }) {
     x.fillText('一', w * 0.88, h * 0.36); x.fillText('閃', w * 0.88, h * 0.6);
   }, 1024, 1024);
   const crestM = new THREE.Mesh(new THREE.PlaneGeometry(76, 76), new THREE.MeshBasicMaterial({ map: crest, transparent: true, depthWrite: false, fog: true }));
-  crestM.position.set(120, 110, cz + 52);
+  crestM.position.set(140, 124, cz + 37);
   g.add(crestM);
 
   // the cliff's monument, made for this village: the portfolio's own face carved into the rock, as the anime's
   // villages carve their leaders. The relief is baked from a portrait (img/carve.webp: height in red, the carved
   // area in alpha) and raised out of the smoothed face; 作る戦略家 is cut down its left side.
   const carve = new THREE.Group();
-  carve.position.set(FACE_X, 108, cz + 36.4);
+  carve.position.set(FACE_X, 116, cz + 36.4);
   g.add(carve);
-  const CW = 104, CS = mobile ? 110 : 170;
+  const CW = 146, CS = mobile ? 130 : 240;
   const img = new Image();
   img.onload = () => {
     const cv = document.createElement('canvas');
@@ -197,13 +211,14 @@ export function buildLand(scene, { mobile, sunDir }) {
     for (let i = 0; i < p.count; i++) {
       const [h, a] = sample(uv.getX(i), uv.getY(i));
       // carved where alpha says so: the head stands out of the wall; elsewhere the plane sinks back into the rock
-      p.setZ(i, a * (h * 21 + 0.6) - (1 - a) * 4);
+      p.setZ(i, a * (h * 28 + 0.6) - (1 - a) * 5);
       c2.copy(deepC).lerp(stoneC, Math.min(1, 0.15 + h * 1.1));
       col.set([c2.r, c2.g, c2.b], i * 3);
     }
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     geo.computeVertexNormals();
-    carve.add(new THREE.Mesh(geo, toon(0xffffff, { vertexColors: true })));
+    // five tones of stone (the rest of the world uses three) so the features of the face read clearly
+    carve.add(new THREE.Mesh(geo, toon(0xffffff, { vertexColors: true, gradientMap: fineSteps() })));
   };
   img.src = 'img/carve.webp';
   const cut = textTexture((x, w, h) => {
@@ -216,7 +231,7 @@ export function buildLand(scene, { mobile, sunDir }) {
     });
   }, 160, 800);
   const cutM = new THREE.Mesh(new THREE.PlaneGeometry(14, 70), new THREE.MeshBasicMaterial({ map: cut, transparent: true, depthWrite: false, fog: true }));
-  cutM.position.set(FACE_X - 64, 106, cz + 37.2);
+  cutM.position.set(FACE_X - 90, 116, cz + 37.2);
   g.add(cutM);
 
   // river and banks
