@@ -46,7 +46,7 @@ on AI calls (`AI_DAILY_LIMIT`), input caps, and a strict Content-Security-Policy
 
 ## Performance
 
-Lighthouse (local production build): **mobile 95–96, desktop 99**, with Accessibility, Best Practices and SEO at 100.
+Lighthouse (local production build): **mobile 92–96, desktop 99**, with Accessibility, Best Practices and SEO at 100.
 Run it against the Vercel URL, not an embedded preview, since the host page affects the score.
 
 How the WebGL-heavy page stays fast:
@@ -63,6 +63,20 @@ How the WebGL-heavy page stays fast:
   screen. The render loop tracks visibility with IntersectionObserver instead of measuring every frame.
 - **Lean bytes.** Fonts are self-hosted and subset; only the display font is preloaded. Phones get a lighter hero
   image, GL textures use 560 px copies (`img/gallery/gl/`), and below-the-fold images load after first paint.
+
+## Loader sound
+
+The 一閃 loader has its own score, synthesized with Web Audio in `src/ui/loaderSound.js` (no audio files): a drone and
+breath, the brush stroke, a koto run as the name rises, ink drops, a riser into a subtle blade shing, a taiko hit on
+the white flash, a whoosh and ka-ka-DON as the halves part, and a koto chord as the hero lands.
+
+- **Sync.** Intro sounds are scheduled from the CSS animations' own start time; the cut's hits fire from the GSAP
+  timeline in `src/ui/loader.js` (as `sv:sfx` events), so each lands on its frame even when the page is busy.
+- **On by default.** `src/entry.js` tries to start it as the page opens. Browsers only allow that for some visitors,
+  so otherwise it starts on the first click, tap or key during the loader and joins the animation where it is.
+  The loader's sound button mutes it, and that choice is remembered (`localStorage` key `sv-sound`).
+- **Small speakers.** Drums carry mid-range body and a little saturation, with a limiter at the end, so it reads on
+  phone and laptop speakers. To retune a sound, edit its voice in `voices`.
 
 ## Type scale
 
@@ -82,7 +96,7 @@ Use a role instead of a new pixel size. Nothing goes below 13 px on desktop or 1
 
 | Section | Effect |
 | --- | --- |
-| Preloader | 一閃: the name rises over a brush stroke, then a blade of light cuts the screen and the halves slide apart |
+| Preloader | 一閃: the name rises over a brush stroke, then a blade of light cuts the screen and the halves slide apart, scored with synced sound |
 | Background | Fixed shader: topographic contours + silk light ribbons, inverts to crimson |
 | Hero | Kinetic outline type behind a portrait; a fluid cursor trail reveals colour under a crimson halftone ink layer |
 | The arc | Pinned: the hero card zooms out, the world turns crimson, a red strip reveals the title, curved photo cards orbit in 3D |
