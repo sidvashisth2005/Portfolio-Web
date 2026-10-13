@@ -1,16 +1,13 @@
-// The front door. A first visit to the site opens the 3D village (/world); the last button of its tour comes back
-// here with ?site=2d, and that choice is remembered, so later visits and refreshes stay on this 2D site.
-// Crawlers, browsers without WebGL 2, deep links (#section) and visitors whose storage is blocked stay here too.
+// The front door. Every visit to the site's address, a refresh included, opens the 3D village (/world). The last
+// button of its tour comes back here with ?site=2d, which shows this 2D site for that visit only: the flag is
+// dropped from the address straight away, so a refresh goes back to the village.
+// Crawlers, browsers without WebGL 2 and deep links (#section) stay on this 2D site.
 (function () {
-  var KEY = 'sv-site';
-  try {
-    if (/[?&]site=2d(&|$)/.test(location.search)) {
-      localStorage.setItem(KEY, '2d');
-      history.replaceState(null, '', location.pathname + location.hash);
-      return;
-    }
-    if (localStorage.getItem(KEY) === '2d') return;
-  } catch (e) { return; }
+  try { localStorage.removeItem('sv-site'); } catch (e) { /* storage blocked: nothing was remembered anyway */ }
+  if (/[?&]site=2d(&|$)/.test(location.search)) {
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* keep the flag */ }
+    return;
+  }
   if (location.hash || navigator.webdriver) return;
   if (/bot|crawl|spider|slurp|lighthouse|headless|facebookexternalhit|whatsapp|telegram|twitter|linkedin|embedly|preview/i.test(navigator.userAgent)) return;
   try { if (!document.createElement('canvas').getContext('webgl2')) return; } catch (e) { return; }
