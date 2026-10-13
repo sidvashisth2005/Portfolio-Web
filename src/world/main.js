@@ -181,7 +181,7 @@ const STOPS = mobile ? [
 // Every stop is a shot, planned like a film: a lens (fov, degrees on desktop), a tilt of the horizon (roll, degrees),
 // a slow push-in while the camera rests there (push, metres along the view) and a caption saying what is in frame.
 const SHOT = {
-  gate: { fov: 36, push: 7, cap: ['門', 'The great gate', 'The only way into the village. Scroll, and its doors swing open.'] },
+  gate: { fov: 36, push: 7, cap: ['門', 'The great gate', 'The only way into the village. Scroll, or tap its doors, and they swing open.'] },
   through: { fov: 58, roll: -2, cap: ['入', 'Through the gate', 'Under the 一閃 plaque and into the village.'] },
   street: { fov: 44, push: 6, cap: ['道', 'Main street', 'Lanterns, signboards and shops: everyday life on the way to the centre.'] },
   bridge: { fov: 50, roll: 2, cap: ['橋', 'The red bridge', 'Over the river that cuts the village in two.'] },
@@ -259,16 +259,15 @@ const readProgress = () => {
 lenis?.on('scroll', () => { progress = readProgress(); });
 window.addEventListener('scroll', () => { if (!lenis) progress = readProgress(); }, { passive: true });
 
-// in-page links ride the rail
-document.querySelectorAll('a[href^="#w-"]').forEach((a) => a.addEventListener('click', (e) => {
-  const panel = $(a.getAttribute('href'));
-  if (!panel?.dataset.range) return;
-  e.preventDefault();
-  const [from] = panel.dataset.range.split(',').map(Number);
-  const max = document.documentElement.scrollHeight - window.innerHeight;
-  const y = (from + 0.03) * max;
-  lenis ? lenis.scrollTo(y, { duration: 3 }) : window.scrollTo({ top: y, behavior: 'smooth' });
-}));
+// ride the rail to a named stop ('end' is the last): the hero's "Enter the arc" goes to the end of the journey,
+// a tap on the gate's doors starts it
+function goTo(name, duration = 2.6) {
+  const i = name === 'end' ? N : stop(name);
+  if (i < 0 || roaming) return;
+  const y = (i / N) * (document.documentElement.scrollHeight - window.innerHeight);
+  lenis ? lenis.scrollTo(y, { duration, easing: (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2) }) : window.scrollTo({ top: y, behavior: 'smooth' });
+}
+document.querySelectorAll('a[data-go]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); goTo(a.dataset.go, a.dataset.go === 'end' ? 3.2 : 2.6); }));
 
 // the later stops' panels come from the portfolio's data; each panel shows over its stretch of the journey
 $('#w-content').insertAdjacentHTML('beforeend', panelsHTML());
@@ -426,6 +425,25 @@ function roamStep(dt) {
   camera.position.lerp(roamPos, 1 - Math.exp(-dt * 10));
   camera.quaternion.slerp(roamQ.setFromEuler(eul.set(pitch, yaw, 0, 'YXZ')), 1 - Math.exp(-dt * 14));
 }
+
+// ---------- the gate's doors ----------
+// at the opening shot the doors are a button: the pointer shows it, and a tap (not a drag) walks through them
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const atGate = () => !roaming && rail.i === 0 && smooth < 0.4 / N;
+function onDoor(e) {
+  if (!village?.doorMeshes || !atGate()) return false;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.intersectObjects(village.doorMeshes, false).length > 0;
+}
+let tapAt = null;
+canvas.addEventListener('pointerdown', (e) => { tapAt = [e.clientX, e.clientY]; });
+canvas.addEventListener('click', (e) => {
+  const moved = tapAt && Math.hypot(e.clientX - tapAt[0], e.clientY - tapAt[1]) > 8;
+  if (!moved && onDoor(e)) goTo('through');
+});
+canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && !roaming) canvas.style.cursor = onDoor(e) ? 'pointer' : ''; }, { passive: true });
 
 // ---------- loop ----------
 const look = new THREE.Vector3(), target = new THREE.Vector3(), lookM = new THREE.Matrix4(), railQ = new THREE.Quaternion();

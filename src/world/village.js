@@ -553,6 +553,7 @@ export async function buildVillage(scene, { mobile, portrait, heightAt }) {
     group: g,
     colliders,
     // open: 0..1, the gate's doors swinging inward as the journey begins
+    doorMeshes: doors.map(({ pivot }) => pivot.children[0]), // tapping the gate's doors starts the journey
     update(t, open) { doors.forEach(({ pivot, s }) => { pivot.rotation.y = -s * open * 1.6; }); updates.forEach((f) => f(t)); },
   };
 }
