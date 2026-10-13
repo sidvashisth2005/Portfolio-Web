@@ -114,7 +114,7 @@ export function panelsHTML() {
       <div class="w-ctas">
         <a class="w-pill w-pill--red w-pill--lg" href="mailto:${profile.email}" data-scroll-open>Hire me ↗</a>
         <a class="w-pill w-pill--lg" href="resume.pdf" download>Résumé ↓</a>
-        <a class="w-pill w-pill--lg" href="./?site=2d">Open the full site ↗</a>
+        <a class="w-pill w-pill--lg w-pill--wide" href="./?site=2d">Open the full site ↗</a>
       </div>
       <p class="label w-links"><a href="mailto:${profile.email}">${profile.email}</a><br><a class="w-nowrap" href="tel:+918871592579">${profile.phone}</a></p>
       <div class="w-social">
