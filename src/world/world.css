@@ -123,6 +123,17 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 .w-links { line-height: 2; }
 .w-links a { color: var(--paper); }
 .w-nowrap { white-space: nowrap; }
+/* LinkedIn and GitHub: pill buttons with their marks in a badge, each filling with its own colour on hover */
+.w-social { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; pointer-events: auto; }
+.w-soc { display: inline-flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 20px 0 6px; border-radius: 999px; border: 1px solid rgba(244, 242, 238, .35); background: rgba(6, 6, 8, .6); color: var(--paper); font: 700 var(--fs-label)/1 var(--f-body); font-stretch: 125%; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; transition: background .25s, border-color .25s, color .25s, transform .25s var(--ease-out); }
+.w-soc__ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; transition: background .25s, color .25s; }
+.w-soc--in .w-soc__ic { background: #0a66c2; color: #fff; }
+.w-soc--gh .w-soc__ic { background: #f4f2ee; color: #0d1117; }
+.w-soc:hover, .w-soc:focus-visible { transform: translateY(-2px); }
+.w-soc--in:hover, .w-soc--in:focus-visible { background: #0a66c2; border-color: #0a66c2; color: #fff; }
+.w-soc--in:hover .w-soc__ic { background: #fff; color: #0a66c2; }
+.w-soc--gh:hover, .w-soc--gh:focus-visible { background: #f4f2ee; border-color: #f4f2ee; color: #0d1117; }
+.w-soc--gh:hover .w-soc__ic { background: #0d1117; color: #fff; }
 @media (max-width: 760px) {
   .w-two, .w-stats { grid-template-columns: 1fr; }
 }
