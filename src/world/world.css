@@ -122,6 +122,7 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 .w-eps li { display: flex; gap: 12px; align-items: baseline; font-size: var(--fs-body); }
 .w-links { line-height: 2; }
 .w-links a { color: var(--paper); }
+.w-nowrap { white-space: nowrap; }
 @media (max-width: 760px) {
   .w-two, .w-stats { grid-template-columns: 1fr; }
 }

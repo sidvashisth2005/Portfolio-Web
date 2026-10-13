@@ -110,7 +110,7 @@ export function panelsHTML() {
         <a class="w-pill w-pill--lg" href="resume.pdf" download>Résumé ↓</a>
         <a class="w-pill w-pill--lg" href="./?site=2d">Open the full site ↗</a>
       </div>
-      <p class="label w-links"><a href="mailto:${profile.email}">${profile.email}</a> · <a href="tel:+918871592579">${profile.phone}</a> · <a href="${profile.linkedin}" target="_blank" rel="noopener">LinkedIn</a> · <a href="${profile.github}" target="_blank" rel="noopener">GitHub</a></p>
+      <p class="label w-links"><a href="mailto:${profile.email}">${profile.email}</a><br><a class="w-nowrap" href="tel:+918871592579">${profile.phone}</a> · <a href="${profile.linkedin}" target="_blank" rel="noopener">LinkedIn</a> · <a href="${profile.github}" target="_blank" rel="noopener">GitHub</a></p>
     </section>`;
 }
 
