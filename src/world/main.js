@@ -14,6 +14,7 @@ import { createPost } from './post.js';
 import { buildPlaces } from './places.js';
 import { panelsHTML, wirePanels, PHOTO_SHOTS } from './panels.js';
 import { guard } from '../ui/guard.js';
+import { initScroll } from './scroll.js';
 import { stats, moves, dojos, gallery } from '../data.js';
 
 guard();
@@ -272,6 +273,8 @@ document.querySelectorAll('a[data-go]').forEach((a) => a.addEventListener('click
 // the later stops' panels come from the portfolio's data; each panel shows over its stretch of the journey
 $('#w-content').insertAdjacentHTML('beforeend', panelsHTML());
 wirePanels();
+// "Hire me" opens the contact form (after the panels exist, so their buttons are wired too)
+initScroll({ lenis });
 // scroll length: about a screen and a quarter per stop (the camera rests for part of it at every shot)
 $('#w-content').style.height = `${(N + 1) * (mobile ? 95 : 105)}vh`;
 const panels = [...document.querySelectorAll('.w-panel')].map((el) => {

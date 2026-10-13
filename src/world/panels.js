@@ -112,7 +112,7 @@ export function panelsHTML() {
       <h2 class="w-h2">The next arc starts with you.</h2>
       <p class="w-lede">Graduating 2027. Open to BD, business analyst, growth and product roles from Q4 2026. Based in Guna, happy to relocate or work remote.</p>
       <div class="w-ctas">
-        <a class="w-pill w-pill--red w-pill--lg" href="mailto:${profile.email}">Hire me ↗</a>
+        <a class="w-pill w-pill--red w-pill--lg" href="mailto:${profile.email}" data-scroll-open>Hire me ↗</a>
         <a class="w-pill w-pill--lg" href="resume.pdf" download>Résumé ↓</a>
         <a class="w-pill w-pill--lg" href="./?site=2d">Open the full site ↗</a>
       </div>

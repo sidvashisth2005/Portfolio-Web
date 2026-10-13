@@ -239,3 +239,42 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
   .wl.is-cut .wl__slash { animation: none; }
   @keyframes wl-fade { to { opacity: 0; } }
 }
+
+/* 巻物 · Send a scroll: the contact form in a dialog over the world (the full site's form, in the world's type) */
+.wdlg { position: fixed; inset: 0; z-index: 150; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.wdlg[hidden] { display: none; }
+.wdlg__scrim { position: absolute; inset: 0; background: rgba(6, 6, 8, .72); backdrop-filter: blur(6px); opacity: 0; transition: opacity .32s; }
+.wdlg__box { position: relative; width: min(660px, 100%); max-height: min(780px, calc(100svh - 32px)); overflow-y: auto; overscroll-behavior: contain; padding: 30px clamp(18px, 4vw, 36px) 26px; border-radius: 22px; background: linear-gradient(170deg, #17171d, #0a0a0d 70%); border: 1px solid rgba(224, 24, 45, .45); box-shadow: 0 50px 120px rgba(0, 0, 0, .7), 0 0 60px rgba(224, 24, 45, .18); opacity: 0; transform: translateY(40px); clip-path: inset(0 0 100% 0 round 22px); transition: opacity .3s, transform .3s, clip-path .3s; }
+.wdlg.is-open .wdlg__scrim { opacity: 1; }
+.wdlg.is-open .wdlg__box { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 22px); transition: opacity .5s var(--ease-out), transform .7s var(--ease-out), clip-path .7s var(--ease-out); }
+.wdlg__x { position: absolute; top: 14px; right: 14px; z-index: 2; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(244, 242, 238, .2); background: rgba(6, 6, 8, .6); color: var(--paper); cursor: pointer; }
+.wdlg__x:hover { border-color: var(--crimson); }
+.wdlg__form { display: flex; flex-direction: column; gap: 16px; }
+.wdlg__title { margin: 2px 0 4px; font: 400 clamp(34px, 4vw, 52px)/.95 var(--f-display); text-transform: uppercase; letter-spacing: .01em; }
+.wdlg__title span { color: var(--crimson); }
+.wdlg__row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.wfield { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.wfield label, .wintent legend { font: 700 13px/1 var(--f-body); font-stretch: 125%; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.wfield__err { min-height: 0; color: var(--crimson-hot); font-size: 14px; }
+.wdlg input, .wdlg textarea { width: 100%; font: 450 var(--fs-body)/1.45 var(--f-body); color: var(--paper); background: rgba(255, 255, 255, .04); border: 1px solid rgba(244, 242, 238, .14); border-radius: 12px; padding: 13px 15px; transition: border-color .2s, background .2s; }
+.wdlg input:focus, .wdlg textarea:focus { outline: none; border-color: var(--crimson-hot); background: rgba(224, 24, 45, .06); }
+.wdlg textarea { resize: vertical; min-height: 120px; }
+.wdlg [aria-invalid='true'] { border-color: var(--crimson-hot); }
+.wintent { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.wintent legend { margin-bottom: 10px; }
+.wintent label { position: relative; cursor: pointer; }
+.wintent input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.wintent span { display: inline-flex; align-items: center; min-height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(244, 242, 238, .16); color: var(--soft); font: 600 15px/1 var(--f-body); transition: background .2s, border-color .2s, color .2s; }
+.wintent input:checked + span { background: var(--crimson); border-color: var(--crimson); color: #fff; }
+.wintent input:focus-visible + span { outline: 2px solid var(--paper); outline-offset: 2px; }
+.whp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.wdlg__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 4px; }
+.wdlg__alt { margin: 0; font-size: 15px; }
+.wdlg__alt a { color: var(--paper); }
+.wdlg__status { margin: 0; min-height: 1.2em; color: var(--soft); font-size: 15px; }
+.wdlg__done { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 40px 10px 20px; }
+.wdlg__done h3 { margin: 12px 0 0; font: 400 clamp(32px, 4vw, 48px)/1 var(--f-display); text-transform: uppercase; }
+.wdlg__done p { margin: 0 0 12px; color: var(--soft); font-size: var(--fs-body); }
+.wstamp { display: grid; place-items: center; width: 110px; height: 110px; border-radius: 14px; border: 3px solid var(--crimson); color: var(--crimson-hot); font: 60px/1 var(--f-jp); transform: rotate(-8deg); box-shadow: 0 0 40px rgba(224, 24, 45, .4), inset 0 0 20px rgba(224, 24, 45, .3); }
+.wdlg.is-open .wdlg__done:not([hidden]) .wstamp { animation: wstamp .6s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes wstamp { from { transform: scale(2.4) rotate(-30deg); opacity: 0; } to { transform: rotate(-8deg); opacity: 1; } }
