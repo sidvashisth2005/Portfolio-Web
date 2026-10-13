@@ -55,12 +55,7 @@ export function initScroll({ lenis } = {}) {
     if (up) { form.classList.add('is-rolling'); await wait(520); form.hidden = true; flight.hidden = false; }
     else { flight.hidden = true; form.hidden = false; form.classList.remove('is-rolling'); }
   };
-  let live = false, openedAt = 0, opener = null;
-  // the backend decides whether the scroll is sent from here or handed to the visitor's email app
-  fetch('api/health', { cache: 'no-store' })
-    .then((r) => ((r.headers.get('content-type') || '').includes('application/json') ? r.json() : null))
-    .then((j) => { const s = j?.services; live = !!(s && (s.mail || s.redis)); })
-    .catch(() => {});
+  let openedAt = 0, opener = null;
 
   const focusables = () => [...el.querySelectorAll('a[href], button:not([disabled]), input:not([tabindex="-1"]), textarea')].filter((n) => n.offsetParent !== null);
   const onKey = (e) => {
@@ -91,6 +86,14 @@ export function initScroll({ lenis } = {}) {
   el.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
   document.querySelectorAll('[data-scroll-open]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); open(); }));
 
+  // when the site can't send (its mail service is off or down), nothing opens by itself: the visitor gets the
+  // message ready in an email, one click away
+  const offline = (d) => {
+    status.textContent = 'Couldn’t send from the site right now. ';
+    const a = document.createElement('a');
+    a.href = mailto(d); a.textContent = 'Send it from your email instead ↗';
+    status.append(a);
+  };
   const mailto = (d) => `mailto:${profile.email}?subject=${encodeURIComponent(`[Portfolio · ${d.intent}] ${d.name}`)}&body=${encodeURIComponent(`${d.message}\n\n${d.name}${d.company ? ` · ${d.company}` : ''}\n${d.email}`)}`;
   const setErr = (k, msg) => {
     const e = document.getElementById(`we-${k}`);
@@ -108,7 +111,6 @@ export function initScroll({ lenis } = {}) {
     if (!/^\S+@\S+\.\S{2,}$/.test((d.email || '').trim())) errs.email = 'That email looks off';
     if ((d.message || '').trim().length < 10) errs.message = 'A little more, please';
     if (Object.keys(errs).length) { Object.entries(errs).forEach(([k, v]) => setErr(k, v)); form[Object.keys(errs)[0]].focus(); return; }
-    if (!live) { status.textContent = 'Opening your email app…'; window.location.href = mailto(d); return; }
     send.disabled = true; send.textContent = 'Sending…'; status.textContent = '';
     let sent = false;
     try {
@@ -128,7 +130,7 @@ export function initScroll({ lenis } = {}) {
     } catch (err) {
       if (!sent) await roll(false);
       if (err.quiet) { /* the field errors are shown */ }
-      else if (err.message === 'fallback') { status.textContent = 'The courier is out. Opening your email app instead…'; window.location.href = mailto(d); }
+      else if (err.message === 'fallback') offline(d);
       else status.textContent = err.message;
     } finally {
       send.disabled = false; send.textContent = 'Send scroll ↗';

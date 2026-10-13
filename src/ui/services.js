@@ -287,7 +287,6 @@ function initScroll(services) {
   const dlg = dialog(el);
   const form = $('#scroll-form'), status = $('#scroll-status'), send = $('#scroll-send'), done = $('#scroll-done');
   let openedAt = 0;
-  const live = !!(services && (services.mail || services.redis));
 
   const open = (prefill = {}) => {
     form.hidden = false; done.hidden = true; status.textContent = '';
@@ -298,6 +297,14 @@ function initScroll(services) {
   };
   $$('[data-scroll-open]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); open(); }));
 
+  // when the site can't send (its mail service is off or down), nothing opens by itself: the visitor gets the
+  // message ready in an email, one click away
+  const offline = (d) => {
+    status.textContent = 'Couldn’t send from the site right now. ';
+    const a = document.createElement('a');
+    a.href = mailto(d); a.textContent = 'Send it from your email instead ↗';
+    status.append(a);
+  };
   const mailto = (d) => `mailto:${profile.email}?subject=${encodeURIComponent(`[Portfolio · ${d.intent}] ${d.name}`)}&body=${encodeURIComponent(`${d.message}\n\n${d.name}${d.company ? ` · ${d.company}` : ''}\n${d.email}`)}`;
   const setErr = (k, msg) => {
     const e = $(`#e-${k}`);
@@ -318,7 +325,6 @@ function initScroll(services) {
     if ((d.message || '').trim().length < 10) errs.message = 'A little more, please';
     if (Object.keys(errs).length) { Object.entries(errs).forEach(([k, v]) => setErr(k, v)); form[Object.keys(errs)[0]].focus(); return; }
 
-    if (!live) { status.textContent = 'Opening your email app…'; window.location.href = mailto(d); return; }
     send.disabled = true; send.textContent = 'Sending…'; status.textContent = '';
     try {
       const res = await post('contact', d);
@@ -332,7 +338,7 @@ function initScroll(services) {
       $('button', done).focus();
     } catch (err) {
       if (err.quiet) { /* field errors shown */ }
-      else if (err.message === 'fallback') { status.textContent = 'The courier is out. Opening your email app instead…'; window.location.href = mailto(d); }
+      else if (err.message === 'fallback') offline(d);
       else status.textContent = err.message;
     } finally {
       send.disabled = false; send.textContent = 'Send scroll ↗';
