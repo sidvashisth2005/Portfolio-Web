@@ -29,7 +29,12 @@ const html = `
         </div>
         <p class="wdlg__status" id="w-scroll-status" role="status" aria-live="polite"></p>
       </form>
+      <div class="wdlg__flight" id="w-scroll-flight" hidden aria-hidden="true">
+        <span class="wdlg__roll"><i></i><b lang="ja">巻</b><i></i></span>
+        <p>Sending your scroll…</p>
+      </div>
       <div class="wdlg__done" id="w-scroll-done" hidden>
+        <span class="wdlg__ring" aria-hidden="true"></span>
         <span class="wstamp" aria-hidden="true">送</span>
         <h3>Scroll delivered.</h3>
         <p>It’s in my inbox. I’ll get back to you soon.</p>
@@ -42,6 +47,14 @@ export function initScroll({ lenis } = {}) {
   document.body.insertAdjacentHTML('beforeend', html);
   const el = document.getElementById('w-scroll'), form = document.getElementById('w-scroll-form');
   const status = document.getElementById('w-scroll-status'), send = document.getElementById('w-scroll-send'), done = document.getElementById('w-scroll-done');
+  const flight = document.getElementById('w-scroll-flight');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+  // sending: the form rolls up into a scroll and flies off; it unrolls again if the send fails
+  const roll = async (up) => {
+    if (up) { form.classList.add('is-rolling'); await wait(520); form.hidden = true; flight.hidden = false; }
+    else { flight.hidden = true; form.hidden = false; form.classList.remove('is-rolling'); }
+  };
   let live = false, openedAt = 0, opener = null;
   // the backend decides whether the scroll is sent from here or handed to the visitor's email app
   fetch('api/health', { cache: 'no-store' })
@@ -61,7 +74,7 @@ export function initScroll({ lenis } = {}) {
   function open() {
     if (!el.hidden) return;
     opener = document.activeElement;
-    form.hidden = false; done.hidden = true; status.textContent = '';
+    form.hidden = false; form.classList.remove('is-rolling'); done.hidden = true; done.classList.remove('is-in'); flight.hidden = true; status.textContent = '';
     el.hidden = false;
     requestAnimationFrame(() => el.classList.add('is-open'));
     lenis?.stop();
@@ -97,16 +110,23 @@ export function initScroll({ lenis } = {}) {
     if (Object.keys(errs).length) { Object.entries(errs).forEach(([k, v]) => setErr(k, v)); form[Object.keys(errs)[0]].focus(); return; }
     if (!live) { status.textContent = 'Opening your email app…'; window.location.href = mailto(d); return; }
     send.disabled = true; send.textContent = 'Sending…'; status.textContent = '';
+    let sent = false;
     try {
-      const res = await fetch('api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+      const rolling = roll(true);
+      // the flight plays for at least a moment, however fast the courier is
+      const [res] = await Promise.all([fetch('api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }), wait(1300), rolling]);
       const r = (res.headers.get('content-type') || '').includes('application/json') ? await res.json() : null;
       if (res.status === 422 && r?.errors) { Object.entries(r.errors).forEach(([k, v]) => setErr(k, v)); throw Object.assign(new Error(''), { quiet: true }); }
       if (res.status === 429) throw new Error('That’s a lot of scrolls. Try again in a while, or email me directly.');
       if (!res.ok || !r?.ok) throw new Error('fallback');
       form.reset();
-      form.hidden = true; done.hidden = false;
-      done.querySelector('button').focus();
+      sent = true;
+      // delivered: the flight lands and the 送 stamp comes down
+      flight.hidden = true; done.hidden = false;
+      requestAnimationFrame(() => done.classList.add('is-in'));
+      done.querySelector('button').focus({ preventScroll: true });
     } catch (err) {
+      if (!sent) await roll(false);
       if (err.quiet) { /* the field errors are shown */ }
       else if (err.message === 'fallback') { status.textContent = 'The courier is out. Opening your email app instead…'; window.location.href = mailto(d); }
       else status.textContent = err.message;

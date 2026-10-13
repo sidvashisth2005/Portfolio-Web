@@ -24,6 +24,7 @@
   --f-jp: 'Dela Gothic One', 'Hiragino Kaku Gothic Pro', 'Noto Sans JP', sans-serif;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; } /* as on the full site: a hidden element stays hidden whatever its display */
 html { background: var(--void); }
 body { margin: 0; color: var(--paper); background: var(--void); font: 450 var(--fs-body)/1.6 var(--f-body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 body.is-loading { overflow: hidden; }
@@ -242,7 +243,7 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 
 /* 巻物 · Send a scroll: the contact form in a dialog over the world (the full site's form, in the world's type) */
 .wdlg { position: fixed; inset: 0; z-index: 150; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.wdlg[hidden] { display: none; }
+.wdlg[hidden], .wdlg__form[hidden], .wdlg__done[hidden], .wdlg__flight[hidden] { display: none; } /* their own display would otherwise beat [hidden] */
 .wdlg__scrim { position: absolute; inset: 0; background: rgba(6, 6, 8, .72); backdrop-filter: blur(6px); opacity: 0; transition: opacity .32s; }
 .wdlg__box { position: relative; width: min(660px, 100%); max-height: min(780px, calc(100svh - 32px)); overflow-y: auto; overscroll-behavior: contain; padding: 30px clamp(18px, 4vw, 36px) 26px; border-radius: 22px; background: linear-gradient(170deg, #17171d, #0a0a0d 70%); border: 1px solid rgba(224, 24, 45, .45); box-shadow: 0 50px 120px rgba(0, 0, 0, .7), 0 0 60px rgba(224, 24, 45, .18); opacity: 0; transform: translateY(40px); clip-path: inset(0 0 100% 0 round 22px); transition: opacity .3s, transform .3s, clip-path .3s; }
 .wdlg.is-open .wdlg__scrim { opacity: 1; }
@@ -276,5 +277,30 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 .wdlg__done h3 { margin: 12px 0 0; font: 400 clamp(32px, 4vw, 48px)/1 var(--f-display); text-transform: uppercase; }
 .wdlg__done p { margin: 0 0 12px; color: var(--soft); font-size: var(--fs-body); }
 .wstamp { display: grid; place-items: center; width: 110px; height: 110px; border-radius: 14px; border: 3px solid var(--crimson); color: var(--crimson-hot); font: 60px/1 var(--f-jp); transform: rotate(-8deg); box-shadow: 0 0 40px rgba(224, 24, 45, .4), inset 0 0 20px rgba(224, 24, 45, .3); }
-.wdlg.is-open .wdlg__done:not([hidden]) .wstamp { animation: wstamp .6s cubic-bezier(.34, 1.56, .64, 1); }
-@keyframes wstamp { from { transform: scale(2.4) rotate(-30deg); opacity: 0; } to { transform: rotate(-8deg); opacity: 1; } }
+/* sending: the form rolls up like a scroll and flies off while the courier runs */
+.wdlg__form { transform-origin: 50% 0; transition: clip-path .5s cubic-bezier(.7, 0, .84, 0), opacity .5s, transform .5s cubic-bezier(.7, 0, .84, 0); clip-path: inset(0 0 0 0); }
+.wdlg__form.is-rolling { clip-path: inset(0 0 100% 0); opacity: 0; transform: translateY(-30px) scaleY(.6); pointer-events: none; }
+.wdlg__flight { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-height: 340px; text-align: center; }
+.wdlg__flight p { margin: 0; font: 700 15px/1 var(--f-body); font-stretch: 125%; letter-spacing: .2em; text-transform: uppercase; color: var(--soft); animation: wpulse 1.2s ease-in-out infinite; }
+.wdlg__roll { position: relative; display: flex; align-items: center; height: 64px; animation: wfly 1.3s cubic-bezier(.45, 0, .2, 1) infinite; }
+.wdlg__roll b { display: grid; place-items: center; width: 120px; height: 52px; background: #efe4cf; color: #b8232c; font: 30px/1 var(--f-jp); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+.wdlg__roll i { display: block; width: 16px; height: 64px; border-radius: 8px; background: linear-gradient(90deg, #3a2418, #7a4a30, #3a2418); }
+.wdlg__roll::after { content: ''; position: absolute; left: -60px; right: -60px; top: 50%; height: 2px; background: linear-gradient(90deg, transparent, var(--crimson-hot), transparent); box-shadow: 0 0 12px var(--crimson); transform: translateY(46px) scaleX(.4); opacity: .7; }
+@keyframes wfly { 0% { transform: translate(-30px, 18px) rotate(-6deg); } 50% { transform: translate(30px, -18px) rotate(5deg); } 100% { transform: translate(-30px, 18px) rotate(-6deg); } }
+@keyframes wpulse { 50% { opacity: .45; } }
+/* delivered: the stamp slams down with a red ring, then the words rise */
+.wdlg__done { position: relative; }
+.wdlg__ring { position: absolute; left: 50%; top: 95px; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid var(--crimson-hot); opacity: 0; pointer-events: none; }
+.wdlg__done .wstamp, .wdlg__done h3, .wdlg__done p, .wdlg__done button { opacity: 0; }
+.wdlg__done.is-in .wstamp { animation: wstamp .7s cubic-bezier(.34, 1.56, .64, 1) forwards; }
+.wdlg__done.is-in .wdlg__ring { animation: wring .9s var(--ease-out) .28s forwards; }
+.wdlg__done.is-in h3 { animation: wrise .7s var(--ease-out) .45s forwards; }
+.wdlg__done.is-in p { animation: wrise .7s var(--ease-out) .6s forwards; }
+.wdlg__done.is-in button { animation: wrise .7s var(--ease-out) .75s forwards; }
+@keyframes wstamp { 0% { transform: scale(2.6) rotate(-34deg); opacity: 0; } 55% { transform: scale(.92) rotate(-6deg); opacity: 1; } 100% { transform: rotate(-8deg); opacity: 1; } }
+@keyframes wring { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes wrise { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .wdlg__roll, .wdlg__flight p { animation: none; }
+  .wdlg__done.is-in .wstamp, .wdlg__done.is-in h3, .wdlg__done.is-in p, .wdlg__done.is-in button { animation: none; opacity: 1; }
+}
