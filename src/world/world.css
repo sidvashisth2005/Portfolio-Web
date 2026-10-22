@@ -83,7 +83,6 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 .w-lede { margin: 0; font-size: var(--fs-lead); font-weight: 500; line-height: 1.45; color: var(--paper); text-shadow: 0 2px 18px rgba(0, 0, 0, .85); }
 .w-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
 .w-panel--end .w-ctas { justify-content: center; }
-.w-hint { margin-top: 6px; }
 .w-big { margin: 0; font: 400 clamp(96px, 17vw, 260px)/.86 var(--f-display); text-transform: uppercase; text-shadow: 0 12px 60px rgba(0, 0, 0, .7); }
 .w-jp { margin: 0; font: clamp(28px, 4vw, 56px)/1 var(--f-jp); color: var(--crimson); text-shadow: 0 0 30px rgba(224, 24, 45, .5); }
 .w-h2 { margin: 0; font: 400 var(--fs-h2)/.98 var(--f-display); letter-spacing: .01em; text-transform: uppercase; text-shadow: 0 6px 30px rgba(0, 0, 0, .7); }
@@ -266,7 +265,7 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
   body:not(.is-moved) .w-panel--hero { bottom: calc(var(--lbb) + 3vh + 92px); }
 }
 /* free roam needs a keyboard for now */
-@media (pointer: coarse) { #w-roam, .w-fine { display: none; } }
+@media (pointer: coarse) { #w-roam { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .w-cue, .w-cue__pill, .w-cue__mouse i { animation: none; }
   .w-cue__chev i { animation: none; opacity: .8; }
