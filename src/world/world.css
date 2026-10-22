@@ -150,6 +150,20 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
 .w-progress { position: fixed; z-index: 15; left: 0; right: 0; bottom: var(--lbb); height: 2px; transition: bottom 1s var(--ease-out); background: rgba(244, 242, 238, .08); }
 .w-progress i { display: block; height: 100%; width: 100%; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, var(--crimson), var(--crimson-hot)); box-shadow: 0 0 10px var(--crimson); }
 .is-roaming .w-progress { opacity: 0; bottom: 0; }
+/* 進 the scroll cue: centred just above the lower letterbox, until the first scroll; an ink drop runs down the line */
+.w-cue { position: fixed; z-index: 13; left: 50%; bottom: calc(var(--lbb) + 14px); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; opacity: 1; transition: opacity .6s var(--ease-out), translate .8s var(--ease-out), visibility 0s; }
+.w-cue__k { font: 26px/1 var(--f-jp); color: var(--crimson-hot); text-shadow: 0 0 18px rgba(224, 24, 45, .6); }
+.w-cue__t { font: 700 13px/1 var(--f-body); font-stretch: 125%; letter-spacing: .34em; margin-right: -.34em; text-transform: uppercase; color: var(--paper); text-shadow: 0 2px 12px rgba(0, 0, 0, .9); animation: w-cue-t 2.4s ease-in-out infinite; }
+.w-cue__line { position: relative; width: 2px; height: 58px; overflow: hidden; border-radius: 1px; background: linear-gradient(rgba(244, 242, 238, .55), rgba(244, 242, 238, .1)); }
+.w-cue__line i { position: absolute; left: 0; top: 0; width: 2px; height: 20px; border-radius: 2px; background: linear-gradient(transparent, var(--crimson-hot)); box-shadow: 0 0 10px var(--crimson); animation: w-cue-drop 2.4s cubic-bezier(.65, 0, .35, 1) infinite; }
+@keyframes w-cue-drop { 0% { transform: translateY(-18px); opacity: 0; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { transform: translateY(60px); opacity: 0; } }
+/* on phones the hero panel fills the lower frame, so the cue lives in its hint line instead */
+.w-hint__cue { display: none; position: relative; width: 2px; height: 1.6em; margin-right: 12px; vertical-align: middle; overflow: hidden; border-radius: 1px; background: rgba(244, 242, 238, .25); }
+.w-hint__cue i { position: absolute; left: 0; top: 0; width: 2px; height: 10px; background: linear-gradient(transparent, var(--crimson-hot)); box-shadow: 0 0 8px var(--crimson); animation: w-cue-drop-s 1.8s cubic-bezier(.65, 0, .35, 1) infinite; }
+@keyframes w-cue-drop-s { 0% { transform: translateY(-12px); opacity: 0; } 15%, 75% { opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+@keyframes w-cue-t { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+/* gone while the world loads, while a title card plays, once the journey starts, and in free roam */
+.is-loading .w-cue, .is-titling .w-cue, .is-moved .w-cue, .is-roaming .w-cue { opacity: 0; translate: -50% 12px; visibility: hidden; transition: opacity .4s, translate .4s, visibility 0s .4s; }
 .w-noscript { position: fixed; inset: auto 0 40% 0; text-align: center; z-index: 50; }
 
 /* the film: letterbox bars, the shot caption in the lower bar, the chapter slate beside it */
@@ -233,10 +247,15 @@ kbd { font: inherit; padding: 1px 6px; border: 1px solid rgba(244, 242, 238, .35
   .w-panel--arena { bottom: calc(var(--lbb) + 3vh); }
   .w-panel--right { top: auto; bottom: calc(var(--lbb) + 3vh); translate: none; }
   #w-roam { display: none; }
+  .w-cue { display: none; }
+  .w-hint__cue { display: inline-block; }
+  .w-hint { color: var(--soft); }
 }
 /* free roam needs a keyboard for now */
 @media (pointer: coarse) { #w-roam, .w-fine { display: none; } }
 @media (prefers-reduced-motion: reduce) {
+  .w-cue__t, .w-cue__line i, .w-hint__cue i { animation: none; }
+  .w-cue__line i { top: 15px; }
   .w-panel, .w-panel.is-on { transition: opacity .2s, visibility 0s; transform: none; }
   .wl.is-cut .wl__half--a, .wl.is-cut .wl__half--b { animation: wl-fade .3s forwards; }
   .wl.is-cut .wl__slash { animation: none; }
