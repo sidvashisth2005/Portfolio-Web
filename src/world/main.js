@@ -484,7 +484,6 @@ function railPose(p, outPos, outQ, t = 0) {
   rail.i = k; rail.d = d;
 }
 const ss = THREE.MathUtils.smoothstep;
-let wasMoved = false;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
@@ -509,9 +508,6 @@ function frame(now) {
     updateFilm(rail.i, rail.d);
     updateCard(dt);
     prog.style.transform = `scaleX(${smooth})`;
-    // the scroll cue stays until the journey has started
-    const moved = smooth > 0.12 / N;
-    if (moved !== wasMoved) { wasMoved = moved; document.body.classList.toggle('is-moved', moved); }
   }
   // each shot has its own lens; free roam goes back to the standard one
   const fov = roaming ? (mobile ? 60 : 48) : rail.fov;
