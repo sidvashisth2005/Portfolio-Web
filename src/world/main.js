@@ -118,8 +118,8 @@ const CZ = LAYOUT.cliffZ;
 // a point in the residents' quarter, in its own frame (see quarter.js: the lanes run along x, the gate at +x)
 const QP = (x, y, z) => { const q = LAYOUT.quarter.at; return [q[0] + x, q[1] + y, q[2] + z]; };
 const QUARTER = [
-  [QP(150, 62, 70), QP(10, 2, 0), 'quarter'], // from over the path: the terrace on the hill, the two lanes of houses
-  [QP(64, 4.6, -23.5), QP(-34, 3.4, -28), 'lane'], // down the first lane from the plaza at a visitor's eye height: noren, gates, lanterns
+  [QP(104, 22, 72), QP(-6, 4, -12), 'quarter'], // low over the hillside path at golden hour: the roofs in rows against the forest
+  [QP(66, 4.8, -21.5), QP(-30, 3.6, -31), 'lane'], // down the first lane from the plaza at a visitor's eye height: noren, gates, lanterns
 ];
 // A close-up of a flat thing (a board, a plaque, a photograph) at c in a place's own units, facing along n (x, z): the
 // camera stands d in front of it, and the subject sits off the centre of the frame by off (positive: on the left,
@@ -149,7 +149,7 @@ const START = [
   [[6, 3, 92], [0, 54, 0], 'ahead'], // from the plaza's edge, looking up: the headquarters, the biggest thing in the valley
   [mobile ? [90, 70, 230] : [110, 64, 196], mobile ? [-40, 74, -120] : [-48, 76, -120], 'tower'], // the headquarters with the carved face behind it
   // up to the monument: the face carved into the cliff above the village
-  [[FACE_X + 44, mobile ? 100 : 116, LAYOUT.cliffZ + (mobile ? 300 : 280)], [FACE_X + (mobile ? 0 : 40), mobile ? 128 : 118, LAYOUT.cliffZ + 30], 'monument'],
+  [[FACE_X + 50, mobile ? 96 : 92, LAYOUT.cliffZ + (mobile ? 345 : 330)], [FACE_X + (mobile ? 0 : 26), mobile ? 126 : 124, LAYOUT.cliffZ + 30], 'monument'], // from behind the headquarters, looking up: the face and the cliff it's cut into // low, looking up: the face and the cliff it's cut into
 ];
 const STADIUM = [
   [[330, 110, 60], [A.x, 20, A.z], 'toStadium'], // over the forest to the stadium
@@ -170,7 +170,7 @@ const STOPS = mobile ? [
   [P('shrine', 50, 22, 0), P('shrine', -4, 12, 0), 'sides'], // over the last torii: the two great boards either side of the path, the hall between
   // then each board in turn, a whip pan from one to the other
   [...board(1, 13), 'sideA'], [...board(-1, -13), 'sideB'],
-  [P('shrine', -6, 2.6, -3), P('shrine', -6, 3.4, -24), 'stats'], // the ema rack, up in the top half of the view
+  [P('shrine', -6, 3.8, 0), P('shrine', -6, 5.6, -24), 'stats'], // the ema rack, the whole row of plaques in the top half of the view
   // a sideways track along the rack, three plaques at a time
   [...face('shrine', [-11.5, 6.8, -23.5], [0, 1], 13, 0, 6.6, 4.6), 'statsL'], [...face('shrine', [3.5, 6.8, -23.5], [0, 1], 13, 0, 6.6, 4.6), 'statsR'],
   [PL(70, 8, 34), PL(0, 0, 8), 'toLibrary'], // back over the wall to the library
@@ -193,42 +193,44 @@ const STOPS = mobile ? [
   [P('summit', 0, 14, 32), [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
 ];
 // Every stop is a shot, planned like a film: a lens (fov, degrees on desktop), a tilt of the horizon (roll, degrees),
-// a slow push-in while the camera rests there (push, metres along the view) and a caption saying what is in frame.
+// and what the camera does while it rests there: a slow push-in (push, metres along the view), an arc round the
+// subject for parallax (arc, degrees about it), and a zoom against the push (zoom, degrees of fov: with a push in
+// it's the dolly zoom, the subject holding its size while the world behind it stretches). And a caption.
 const SHOT = {
-  gate: { fov: 36, push: 7, cap: ['門', 'The great gate', 'The only way into the village. Scroll, or tap its doors, and they swing open.'] },
+  gate: { fov: 36, push: 7, arc: 3, cap: ['門', 'The great gate', 'The only way into the village. Scroll, or tap its doors, and they swing open.'] },
   through: { fov: 58, roll: -2, cap: ['入', 'Through the gate', 'Under the 一閃 plaque and into the village.'] },
   street: { fov: 44, push: 6, cap: ['道', 'Main street', 'Lanterns, signboards and shops: everyday life on the way to the centre.'] },
   bridge: { fov: 50, roll: 2, cap: ['橋', 'The red bridge', 'Over the river that cuts the village in two.'] },
   ahead: { fov: 50, push: 8, cap: ['本部', 'Headquarters', 'The biggest building in the valley, where the strategist works.'] },
-  tower: { fov: 40, push: 8, cap: ['本部', 'Headquarters', 'Tiered roofs, thatch skirts, the 閃 crest on top.'] },
-  monument: { fov: 30, push: 14, cap: ['顔', 'The monument', 'His face, carved into the cliff that guards the village.'] },
-  overview: { fov: 46, roll: -3, cap: ['里', 'The hidden village', mobile ? 'From above: the whole valley at sunset, the carved cliff behind it.' : 'From above: the whole valley at sunset, the shrine hills to the west.'] },
+  tower: { fov: 40, push: 6, arc: -5, cap: ['本部', 'Headquarters', 'Tiered roofs, thatch skirts, the 閃 crest on top.'] },
+  monument: { fov: 40, push: 22, zoom: 6, cap: ['顔', 'The monument', 'His face, carved into the cliff that guards the village.'] },
+  overview: { fov: 46, roll: -3, arc: 5, cap: ['里', 'The hidden village', mobile ? 'From above: the whole valley at sunset, the carved cliff behind it.' : 'From above: the whole valley at sunset, the shrine hills to the west.'] },
   torii: { fov: 40, push: 6, cap: ['鳥居', 'The path of torii', 'Red gates climbing the hill to the shrine.'] },
-  sides: { fov: 44, push: 5, cap: ['二面', 'Two sides', 'Two great boards either side of the path: the strategist and the builder.'] },
+  sides: { fov: 44, push: 5, arc: -3, cap: ['二面', 'Two sides', 'Two great boards either side of the path: the strategist and the builder.'] },
   sideA: { fov: 58, push: 3, cap: ['略', 'Side A · The strategist', 'Market research, ROI, go-to-market and the pitch.'] },
   sideB: { fov: 58, push: 3, cap: ['技', 'Side B · The builder', 'Python and adversarial ML, Flutter, ARCore, IoT.'] },
-  stats: { fov: 36, push: 1.2, cap: ['絵馬', 'The plaque rack', 'Six wooden plaques, each one a real number from the arc.'] },
+  stats: { fov: 38, push: 1.2, cap: ['絵馬', 'The plaque rack', 'Six wooden plaques, each one a real number from the arc.'] },
   statsL: { fov: 40, push: 1.5, cap: ['絵馬', 'Plaques 1 to 3', stats.slice(0, 3).map((x) => `${x.kanji} ${x.meaning}: ${x.type.toLowerCase()}`).join(' · ')] },
   statsR: { fov: 40, push: 1.5, cap: ['絵馬', 'Plaques 4 to 6', stats.slice(3).map((x) => `${x.kanji} ${x.meaning}: ${x.type.toLowerCase()}`).join(' · ')] },
-  toLibrary: { fov: 48, roll: 2, cap: ['書庫', 'The library', 'Where the village keeps its scrolls.'] },
+  toLibrary: { fov: 48, roll: 2, arc: 4, cap: ['書庫', 'The library', 'Where the village keeps its scrolls.'] },
   moves: { fov: 38, push: 3, cap: ['巻', 'Four scrolls', 'One scroll for each flagship project. The case files are linked.'] },
-  toTraining: { fov: 46, roll: -2, cap: ['演習場', 'The training ground', 'A ring of posts and four stage stones.'] },
+  toTraining: { fov: 46, roll: -2, arc: -5, cap: ['演習場', 'The training ground', 'A ring of posts and four stage stones.'] },
   ...Object.fromEntries(moves.map((m, i) => [`scroll${i + 1}`, { fov: 44, push: 2, cap: [m.kanji, `Scroll ${i + 1} · ${m.title}`, `${m.category}: ${m.big} ${m.bigLabel}`] }])),
   ...Object.fromEntries([...dojos].reverse().map((d, i) => [`stage${i + 1}`, { fov: 44, push: 2, cap: [['壱', '弐', '参', '肆'][i], `Stage ${i + 1} · ${d.name || d.short}`, `${d.role}, ${d.period}`] }])),
   quests: { fov: 42, push: 4, cap: ['外伝', 'Side quests', 'The clubs, fests and teams run off the main path.'] },
-  toStadium: { fov: 44, roll: -3, cap: ['闘技場', 'The exam stadium', 'Beyond the forest: HackNITR 7.0, 6,200+ participants from 20+ countries.'] },
-  rim: { fov: 52, roll: 3, cap: ['闘技場', 'Over the rim', 'Every figure in the stands is one of the participants.'] },
+  toStadium: { fov: 44, roll: -3, arc: 5, cap: ['闘技場', 'The exam stadium', 'Beyond the forest: HackNITR 7.0, 6,200+ participants from 20+ countries.'] },
+  rim: { fov: 52, roll: 3, arc: -6, cap: ['闘技場', 'Over the rim', 'Every figure in the stands is one of the participants.'] },
   bowl: { fov: 56, push: 3, cap: ['会場', 'Into the arena', 'Down to the floor, where the final was decided.'] },
-  trophy: { fov: 34, push: 2, cap: ['優勝', 'Rank 1', 'The trophy. One team took the whole thing.'] },
+  trophy: { fov: 34, push: 3, zoom: 7, cap: ['優勝', 'Rank 1', 'The trophy. One team took the whole thing.'] },
   awards: { fov: 40, push: 4, cap: ['栄光', 'The honours', 'The great banner: the rest of the wins.'] },
-  overVillage: { fov: 46, roll: 2, cap: ['回想', 'Back over the village', 'To the grove where the photographs hang.'] },
+  overVillage: { fov: 46, roll: 2, arc: 4, cap: ['回想', 'Back over the village', 'To the grove where the photographs hang.'] },
   memorial: { fov: 40, push: 3, cap: ['写真', 'Flashbacks', 'Real photographs from the arc, hung in a ring around the stone.'] },
   ...Object.fromEntries(PHOTO_SHOTS.map((g, k) => [`photos${k + 1}`, { fov: 42, push: 2, cap: ['写真', `Frames ${g[0] + 1} to ${g[g.length - 1] + 1}`, g.map((i) => gallery[i].caption).join(' · ')] }])),
-  quarter: { fov: 40, roll: -2, cap: ['住人街', 'The residents’ quarter', 'Twenty-four houses on the hill outside the wall, for the people who visit.'] },
+  quarter: { fov: 38, roll: -2, push: 6, arc: -6, cap: ['住人街', 'The residents’ quarter', 'Twenty-four houses on the hill outside the wall, for the people who visit.'] },
   lane: { fov: 46, push: 4, cap: ['住', 'The lane', 'A lit window is someone living there. Tap any house to look inside.'] },
   rise: { fov: 48, roll: -2, cap: ['崖', 'Up the cliff', 'To the top of the rock, above the carved face.'] },
   onair: { fov: 38, push: 4, cap: ['放送', 'On air', 'The radio mast and the hut where the podcast is recorded.'] },
-  summit: { fov: 44, push: 6, cap: ['頂上', 'The summit', 'The whole village at sunset. The next chapter starts with you.'] },
+  summit: { fov: 44, push: 6, arc: 3, cap: ['頂上', 'The summit', 'The whole village at sunset. The next chapter starts with you.'] },
   sunset: { fov: 48, cap: ['夕日', 'Into the sunset', 'The rest of the story is in the full site.'] },
 };
 // the journey in chapters: a title card opens each one
@@ -541,12 +543,13 @@ const look = new THREE.Vector3(), target = new THREE.Vector3(), lookM = new THRE
 const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
 window.addEventListener('pointermove', (e) => { mouse.x = e.clientX / window.innerWidth - 0.5; mouse.y = e.clientY / window.innerHeight - 0.5; }, { passive: true });
 const prog = $('#w-prog');
-let smooth = 0, last = performance.now(), roamFade = 0;
+let smooth = 0, last = performance.now(), roamFade = 0, bank = 0;
+const side = new THREE.Vector3(), vel = new THREE.Vector3(), lastTarget = new THREE.Vector3();
 // The camera rests at every stop for HOLD of a stop's scroll either side, then cranes to the next one, easing out of
 // the old shot and into the new. While it rests it keeps a slow push-in and a faint handheld breath, so a held
 // shot is never a still frame.
 const HOLD = 0.2;
-const rollQ = new THREE.Quaternion(), zAxis = new THREE.Vector3(0, 0, 1), dolly = new THREE.Vector3();
+const rollQ = new THREE.Quaternion(), zAxis = new THREE.Vector3(0, 0, 1), dolly = new THREE.Vector3(), arcV = new THREE.Vector3();
 const lerp = THREE.MathUtils.lerp, sm = THREE.MathUtils.smootherstep, D2R = Math.PI / 180;
 const rail = { fov: lens(0), i: 0, d: 0 };
 function railPose(p, outPos, outQ, t = 0) {
@@ -556,8 +559,10 @@ function railPose(p, outPos, outQ, t = 0) {
   const k = Math.round(u), d = u - k, near = 1 - sm(Math.abs(d), HOLD, 0.5);
   const sh = shotOf(k);
   // the push-in: from half a push short of the mark to half a push past it, over the rest
+  const hold = THREE.MathUtils.clamp(d / HOLD, -1, 1) * 0.5 * near; // -0.5 → 0.5 across the rest at this stop
+  if (sh.arc) { arcV.subVectors(outPos, look).applyAxisAngle(up, sh.arc * D2R * hold); outPos.copy(look).add(arcV); }
   dolly.subVectors(look, outPos).normalize();
-  outPos.addScaledVector(dolly, (sh.push || 2) * THREE.MathUtils.clamp(d / HOLD, -1, 1) * 0.5 * near);
+  outPos.addScaledVector(dolly, (sh.push || 2) * hold);
   if (!reduce) {
     const breath = 0.18 * near;
     outPos.x += Math.sin(t * 0.61) * breath; outPos.y += Math.sin(t * 0.83 + 1.3) * breath * 0.6;
@@ -568,7 +573,7 @@ function railPose(p, outPos, outQ, t = 0) {
   outQ.setFromRotationMatrix(lookM);
   const roll = lerp(shotOf(i).roll || 0, shotOf(i + 1).roll || 0, g);
   if (roll) outQ.multiply(rollQ.setFromAxisAngle(zAxis, roll * D2R));
-  rail.fov = lerp(lens(i), lens(i + 1), g);
+  rail.fov = lerp(lens(i), lens(i + 1), g) + (sh.zoom || 0) * hold;
   rail.i = k; rail.d = d;
 }
 const ss = THREE.MathUtils.smoothstep;
@@ -589,6 +594,15 @@ function frame(now) {
   else {
     smooth += (progress - smooth) * (1 - Math.exp(-dt * (reduce ? 30 : 6)));
     railPose(smooth, target, railQ, t);
+    // the camera banks into its moves like a crane arm swinging or a drone turning: rolled against how fast the
+    // frame is sliding sideways, eased so it leans in and settles out
+    if (!reduce && dt > 0) {
+      side.set(1, 0, 0).applyQuaternion(railQ);
+      const slide = lastTarget.lengthSq() ? side.dot(vel.subVectors(target, lastTarget)) / dt : 0;
+      bank += (THREE.MathUtils.clamp(-slide * 0.0016, -0.09, 0.09) - bank) * (1 - Math.exp(-dt * 2.5));
+      railQ.multiply(rollQ.setFromAxisAngle(zAxis, bank));
+    }
+    lastTarget.copy(target);
     if (back > 0) {
       back = Math.max(0, back - dt / 1.1);
       const k = THREE.MathUtils.smootherstep(1 - back, 0, 1);

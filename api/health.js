@@ -5,6 +5,6 @@ import { json } from './_lib/http.js';
 export function GET() {
   return json({
     ok: true,
-    services: { ai: has.ai, model: has.ai ? env.model : null, redis: has.redis, mail: has.mail, notify: !!env.notifyWebhook, githubToken: !!env.githubToken },
+    services: { ai: has.ai, model: has.ai ? env.model : null, redis: has.redis, registry: has.redis, mail: has.mail, notify: !!env.notifyWebhook, githubToken: !!env.githubToken },
   });
 }

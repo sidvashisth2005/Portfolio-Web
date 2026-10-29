@@ -36,6 +36,8 @@ Zero-dependency Vercel functions. Each one switches off cleanly when its key is 
 | `POST /api/contact` | 巻物 Send a scroll: validation, honeypot, timing check, Claude spam/priority triage, Redis copy, Resend email, optional Discord/Slack ping |
 | `GET/POST /api/power` | 戦闘力 power level: unique daily visitors, live "watching now", hold-to-charge ki, résumé downloads |
 | `GET /api/github` | 修行中 live feed of the latest pushed repos, cached at the edge for 30 minutes |
+| `GET/POST /api/house` | 住人街 the residents' quarter: claim a house, save its things, hang a lantern, slip a note under the door (see below) |
+| `DELETE /api/house?id=N` | Evict house N, e.g. for abuse (needs `ADMIN_TOKEN` as a Bearer token) |
 | `GET /api/inbox` | Your private inbox and stats (needs `ADMIN_TOKEN`) |
 | `GET /api/health` | Which services are on (booleans only) |
 
@@ -43,6 +45,39 @@ Guardrails: same-origin checks on every POST, per-IP rate limits (IPs stored onl
 on AI calls (`AI_DAILY_LIMIT`), input caps, and a strict Content-Security-Policy.
 
 `npm run dev` and `npm run preview` run these functions locally too (put keys in `.env.local`).
+
+## The residents' quarter (住人街)
+
+Twenty-four townhouses on a terrace outside the village's south-west wall, a stop of their own on the 3D journey
+(and in Free roam). Any visitor can claim one: no account, just a **house key** that never leaves their browser.
+
+- **On the street:** the resident's crest is painted on the noren, their name hangs over the gate, the roof takes
+  their colour, the windows light up, and one more paper lantern hangs under the eaves at 3, 12 and 40 lanterns from
+  visitors. Empty houses stand dark with a 空き家 (vacant) board. The registry board at the entrance lists everyone.
+- **Inside:** a tatami room. The alcove scroll carries the crest, motto and seal; the shelves, chest, table and
+  corners hold up to 12 things (scroll, letter, ema plaque, books, blade, cup, lantern, bonsai, jar, lacquer box),
+  each with a title, a note and a link. Visitors can hang a lantern (one a day) and slip a note under the door that
+  only the resident reads.
+- **Private things** are sealed in the browser with AES-GCM under a key derived from the house key, so the server
+  stores ciphertext it can't open. The server is sent `SHA-256("auth|" + key)` and keeps only a hash of that.
+- **Guardrails:** one claim per visitor per day, rate limits on everything, public text checked by a word list and
+  (when `ANTHROPIC_API_KEY` is set) by Claude, links limited to http(s). `DELETE /api/house?id=N` evicts a house.
+- **Without Redis** (local dev, a static preview) the quarter still works, kept in that browser only, and says so.
+- The shared rules (plots, palettes, limits, validation) live in `src/registry.js`, read by both the page and the API.
+
+## The houses
+
+Every building in the village is built the way the real ones are (`src/world/house.js`): machiya townhouses with
+timber frames, kōshi lattices, sliding doors under noren, pent roofs and tiled gable roofs with ridge tiles; stucco
+townhouses with framed windows, shop fronts and awnings, balconies and roof tanks; apartment houses with open
+corridors, a door and lamp per flat and an outside stair. Each is merged into one mesh per material across the
+whole village, so the detail costs geometry, not draw calls.
+
+## Camera
+
+Each stop on the journey is a shot with its own lens, horizon tilt and move while it holds: a push-in, an arc round
+the subject for parallax, or a dolly zoom (the monument, the trophy). Between shots the camera banks into its moves
+like a crane arm. All of it is in the `SHOT` table in `src/world/main.js`.
 
 ## Performance
 

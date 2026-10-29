@@ -6,7 +6,8 @@
   "functions": {
     "api/clone.js": { "maxDuration": 30 },
     "api/scout.js": { "maxDuration": 30 },
-    "api/contact.js": { "maxDuration": 20 }
+    "api/contact.js": { "maxDuration": 20 },
+    "api/house.js": { "maxDuration": 20 }
   },
   "rewrites": [{ "source": "/world", "destination": "/world.html" }],
   "headers": [

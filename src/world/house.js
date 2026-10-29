@@ -164,3 +164,155 @@ export function machiya(r, { wall = 0xeadcc2, roof = 0x4a4552, dry = false, deta
   const eave = two ? [F1 + 0.12 - Math.sin(0.36) * 1.6 - 0.2, fz + 0.1 + Math.cos(0.36) * 1.6] : [Y0 - 0.3, half - 0.1];
   return { P, w: w + 1.6, d: d + 3, h: Y0 + rise + 1, door: [doorX, fz + 1.2], body: [w, d], eave };
 }
+
+// the shared piece-makers for the builders below: every piece is skipped in a dry run, and slabs, lattices and
+// panes keep their texture's scale in metres
+function maker(dry) {
+  const P = [];
+  const add = (k, make) => { if (!dry) P.push([k, make()]); };
+  const pose = (g, rx, ry, at) => g.rotateX(rx).rotateY(ry).translate(...at);
+  return {
+    P, add,
+    B: (k, w, h, d, c, o) => add(k, () => box(w, h, d, c, o)),
+    C: (k, rt, rb, h, seg, c, o) => add(k, () => cyl(rt, rb, h, seg, c, o)),
+    lattice: (w, h, c, at, ry = 0) => add('lattice', () => pose(paint(metric(new THREE.BoxGeometry(w, h, 0.08), w, h, LAT), c), 0, ry, at)),
+    pane: (lit, w, h, at, ry = 0) => add(lit ? 'lit' : 'glass', () => pose(paint(new THREE.BoxGeometry(w, h, 0.06), 0), 0, ry, at)),
+    slab: (k, w, l, t, c, rx, ry, at) => add(k, () => pose(paint(metric(new THREE.BoxGeometry(w, t, l), w, l, 0.9), c), rx, ry, at)),
+  };
+}
+// a window as it is really built: a frame set into the wall, the glass in two leaves either side of a mullion, a
+// sill under it; facing +z at the origin, then turned (ry) and moved (at)
+function windowAt(m, lit, w, h, at, ry = 0, trim = 0xd8cfc2) {
+  const [x, y, z] = at, s = Math.sin(ry), c = Math.cos(ry);
+  const off = (dz, dy = 0) => [x + s * dz, y + dy, z + c * dz];
+  m.add('plaster', () => box(w + 0.36, h + 0.36, 0.1, trim, { at: off(0.03), rot: [0, ry, 0] }));
+  m.pane(lit, w, h, off(0.07), ry);
+  m.add('wood', () => box(0.08, h, 0.08, 0x4a4040, { at: off(0.1), rot: [0, ry, 0] }));
+  m.add('stone', () => box(w + 0.5, 0.14, 0.32, 0xb8ad9e, { at: off(0.16, -h / 2 - 0.22), rot: [0, ry, 0] }));
+}
+
+// The stucco townhouse: the village's other kind of house, the plastered blocks with a water tank on the roof.
+// A stone plinth, a band at every floor, framed windows with sills, a glazed shop front under a striped awning
+// (or a front door under a concrete canopy with a lamp), balconies with railings on some floors, an air-con unit
+// here and there, a drainpipe, a parapet with its coping, and on the roof the tank on its stand, the stair hut and
+// an aerial. Sixteen draws, up front, as machiya.
+const AWNING = [0xb3262e, 0x3f7f7a, 0xd9772b, 0x3f6fae, 0x2f5d3a];
+export function townhouse(r, { wall = 0xeadcc2, dry = false, detail = 1, shop = false, width } = {}) {
+  const R = Array.from({ length: 16 }, () => r());
+  const m = maker(dry), { B, C } = m;
+  const w = width ?? 10 + R[0] * 6.5, d = 9 + R[1] * 5.5, fl = 2 + Math.floor(R[2] * 3), fh = 3.5, h = fl * fh + 0.4, fz = d / 2;
+  const trim = R[3] < 0.5 ? 0xd8cfc2 : 0xf2ece2, lit = (k) => R[(k * 3 + 5) % 16] < 0.42;
+  B('stone', w + 0.4, 0.5, d + 0.4, STONE, { at: [0, 0.25, 0] });
+  B('plaster', w, h - 0.5, d, wall, { at: [0, h / 2 + 0.25, 0] });
+  for (let f = 1; f < fl; f++) B('plaster', w + 0.22, 0.24, d + 0.22, trim, { at: [0, f * fh + 0.2, 0] }); // floor bands
+  // the parapet and its coping
+  B('plaster', w + 0.3, 0.9, d + 0.3, wall, { at: [0, h + 0.45, 0] });
+  B('stone', w + 0.5, 0.16, d + 0.5, 0xa49c92, { at: [0, h + 0.98, 0] });
+  // the ground floor
+  const sf = shop || R[4] < 0.3;
+  if (sf) {
+    // a shop front: a wide window in a dark frame, a sign band over it, a striped awning
+    const sw = w * 0.62;
+    B('wood', sw + 0.4, 2.6, 0.14, 0x2a2228, { at: [-w * 0.1, 1.85, fz + 0.03] });
+    m.pane(true, sw, 2.2, [-w * 0.1, 1.8, fz + 0.09]);
+    for (let k = 1; k < 4; k++) B('wood', 0.08, 2.2, 0.08, 0x2a2228, { at: [-w * 0.1 - sw / 2 + k * sw / 4, 1.8, fz + 0.13] });
+    B('wood', sw + 0.6, 0.7, 0.2, R[6] < 0.5 ? 0x1a1214 : 0x6b4630, { at: [-w * 0.1, 3.5, fz + 0.1] });
+    m.add('cloth', () => paint(metric(new THREE.BoxGeometry(sw + 0.4, 0.08, 1.6), sw + 0.4, 1.6, 0.9), AWNING[Math.floor(R[7] * AWNING.length)]).rotateX(0.38).translate(-w * 0.1, 3.05, fz + 0.75));
+    B('wood', 1.3, 2.4, 0.1, 0x3a2a24, { at: [w / 2 - 1.2, 1.7, fz + 0.04] }); // the door to the rooms above
+  } else {
+    const dx = (R[6] - 0.5) * (w - 4);
+    B('plaster', 1.7, 2.7, 0.12, trim, { at: [dx, 1.85, fz + 0.02] });
+    B('wood', 1.3, 2.4, 0.1, R[7] < 0.5 ? 0x3a2a24 : 0x5d6870, { at: [dx, 1.7, fz + 0.08] });
+    B('stone', 2.4, 0.16, 1.2, 0xa49c92, { at: [dx, 3.25, fz + 0.6] }); // the canopy
+    m.add('lit', () => box(0.22, 0.3, 0.14, 0, { at: [dx + 1.1, 2.5, fz + 0.12] }));
+    B('stone', 1.8, 0.24, 0.9, 0xa8a098, { at: [dx, 0.12, fz + 0.6] });
+    const nw = Math.max(1, Math.floor((w - 3) / 3.4));
+    for (let i = 0; i < nw; i++) {
+      const x = -w / 2 + 1.6 + (i + 0.5) * ((w - 3.2) / nw);
+      if (Math.abs(x - dx) > 1.9) windowAt(m, lit(i), 1.4, 1.4, [x, 2.0, fz], 0, trim);
+    }
+  }
+  // the floors above: framed windows on the front and down one side, a balcony on some
+  for (let f = 1; f < fl; f++) {
+    const y = f * fh + 1.85, n = Math.max(2, Math.floor(w / 3.3));
+    for (let i = 0; i < n; i++) windowAt(m, lit(f * 4 + i), 1.5, 1.45, [-w / 2 + (i + 0.5) * (w / n), y, fz], 0, trim);
+    if (detail) for (let i = 0; i < 2; i++) windowAt(m, lit(f + i + 9), 1.3, 1.3, [w / 2, y, -d / 2 + (i + 0.5) * (d / 2)], Math.PI / 2, trim);
+    if (R[(f + 8) % 16] < 0.4) {
+      const bw = w * 0.5;
+      B('stone', bw, 0.2, 1.3, 0xc9c1b4, { at: [-w * 0.12, f * fh + 0.38, fz + 0.65] });
+      m.lattice(bw, 1.0, 0x3a3a40, [-w * 0.12, f * fh + 0.98, fz + 1.28]);
+      B('wood', bw + 0.1, 0.08, 0.1, 0x3a3a40, { at: [-w * 0.12, f * fh + 1.5, fz + 1.28] });
+      if (detail && R[12] < 0.6) [0xf4efe6, 0x6f8fae].forEach((c, k) => m.add('cloth', () => place(paint(new THREE.PlaneGeometry(0.7, 0.9), c), { at: [-w * 0.12 - 0.6 + k * 1.1, f * fh + 1.3, fz + 1.2] })));
+    }
+    if (detail && R[(f + 10) % 16] < 0.5) B('tank', 0.9, 0.6, 0.5, 0xd9d6d0, { at: [w / 2 + 0.3, y - 1.1, -d * 0.2], rot: [0, Math.PI / 2, 0] }); // air-con
+  }
+  if (detail) C('tank', 0.08, 0.08, h, 6, 0x8a8478, { at: [w / 2 - 0.25, h / 2, fz + 0.12] }); // the drainpipe
+  // the roof: the water tank on its stand, the stair hut, an aerial
+  const tx = (R[13] - 0.5) * (w - 5), tz = (R[14] - 0.5) * (d - 5);
+  C('tank', 1.9, 1.9, 3.2, 16, R[15] < 0.5 ? 0x8a9aa6 : 0xa58a6e, { at: [tx, h + 3.2, tz] });
+  C('tank', 2.0, 2.0, 0.4, 16, 0x5d6870, { at: [tx, h + 4.9, tz] });
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => B('wood', 0.25, 1.6, 0.25, DARK, { at: [tx + a * 1.2, h + 0.8, tz + b * 1.2] }));
+  if (R[11] < 0.6) {
+    const hx = -tx * 0.6, hz = -tz * 0.6 + 1;
+    B('plaster', 3, 2.5, 3, wall, { at: [hx, h + 1.25, hz] });
+    B('stone', 3.4, 0.2, 3.4, 0xa49c92, { at: [hx, h + 2.6, hz] });
+    B('wood', 1, 1.9, 0.08, 0x3a2a24, { at: [hx, h + 0.95, hz + 1.52] });
+  }
+  if (detail && R[9] < 0.5) { C('tank', 0.04, 0.04, 3, 4, 0x3a3a40, { at: [w / 2 - 1, h + 1.5, -d / 2 + 1] }); B('tank', 1.6, 0.05, 0.05, 0x3a3a40, { at: [w / 2 - 1, h + 2.6, -d / 2 + 1] }); }
+  return { P: m.P, w: w + 0.6, d: d + (sf ? 1.6 : 0.8), h: h + 5 };
+}
+
+// The apartment house (an "apāto"): three to five floors of flats opening onto a corridor along the front, a
+// railing all along it, a door and a lamp for every flat, the stair climbing one end in flights, and the tanks on
+// the roof.
+export function apartment(r, { wall = 0xe9dcc6, dry = false, detail = 1 } = {}) {
+  const R = Array.from({ length: 16 }, () => r());
+  const m = maker(dry), { B, C } = m;
+  const w = 13 + R[0] * 6, d = 10 + R[1] * 3, fl = 3 + Math.floor(R[2] * 3), fh = 3.2, h = fl * fh + 0.3;
+  const cd = 1.6, fz = d / 2 - cd; // the corridor is cut out of the front of the block
+  const units = Math.max(3, Math.floor(w / 3.6)), uw = w / units, rail = R[3] < 0.5 ? 0x3a3a40 : 0x6a2a2a;
+  B('stone', w + 0.4, 0.4, d + 0.4, STONE, { at: [0, 0.2, 0] });
+  B('plaster', w, h, d - cd, wall, { at: [0, h / 2, -cd / 2] });
+  B('plaster', w + 0.5, 0.8, d + 0.5, wall, { at: [0, h + 0.4, 0] });
+  B('stone', w + 0.7, 0.14, d + 0.7, 0xa49c92, { at: [0, h + 0.86, 0] });
+  for (let f = 0; f < fl; f++) {
+    const y0 = f * fh;
+    // the corridor floor and the slab over it, the railing along its edge
+    if (f > 0) {
+      B('stone', w, 0.24, cd, 0xc9c1b4, { at: [0, y0 + 0.1, fz + cd / 2] });
+      m.lattice(w, 1.05, rail, [0, y0 + 0.75, d / 2 - 0.05]);
+      B('wood', w + 0.1, 0.1, 0.14, rail, { at: [0, y0 + 1.3, d / 2 - 0.05] });
+    }
+    for (let u = 0; u < units; u++) {
+      const x = -w / 2 + (u + 0.5) * uw;
+      B('wood', 0.95, 2.1, 0.08, [0x5d6870, 0x7a5a40, 0x3a4a5a][(u + f) % 3], { at: [x - uw * 0.22, y0 + 1.3, fz + 0.04] });
+      m.pane(lit(f * units + u), 0.9, 0.7, [x + uw * 0.22, y0 + 1.85, fz + 0.03]);
+      m.add('lit', () => box(0.18, 0.18, 0.1, 0, { at: [x - uw * 0.22 + 0.7, y0 + 2.45, fz + 0.06] }));
+      if (detail && f > 0 && (u + f) % 3 === 0) B('tank', 0.8, 0.55, 0.45, 0xd9d6d0, { at: [x + uw * 0.3, y0 + 0.62, fz + 0.3] }); // a washing machine
+    }
+    // the back of the block: windows, and one balcony per flat
+    if (detail) for (let u = 0; u < units; u++) {
+      const x = -w / 2 + (u + 0.5) * uw;
+      windowAt(m, lit(u + f * 2 + 3), 1.6, 1.4, [x, y0 + 1.75, -d / 2], Math.PI, 0xd8cfc2);
+    }
+  }
+  function lit(k) { return R[(k * 7 + 4) % 16] < 0.42; }
+  // the stair: a flight per floor up the end wall, a landing at each floor
+  const run = d * 0.7, ang = Math.atan2(fh, run);
+  for (let f = 0; f < fl - 1; f++) {
+    const dir = f % 2 ? 1 : -1;
+    B('stone', 1.5, 0.3, Math.hypot(run, fh), 0xb3aa9c, { at: [w / 2 + 1, f * fh + fh / 2 + 0.2, 0], rot: [dir * ang, 0, 0] });
+    B('stone', 1.6, 0.3, 1.8, 0xb3aa9c, { at: [w / 2 + 1, (f + 1) * fh + 0.2, -dir * (run / 2 + 0.6)] });
+    B('wood', 0.1, 1, Math.hypot(run, fh), rail, { at: [w / 2 + 1.75, f * fh + fh / 2 + 0.9, 0], rot: [dir * ang, 0, 0] });
+  }
+  // the tanks on the roof
+  const tx = (R[13] - 0.5) * (w - 6), tz = (R[14] - 0.5) * (d - 6);
+  [0, 1].forEach((k) => {
+    if (k && R[15] < 0.5) return;
+    const ox = tx + k * 4.2;
+    C('tank', 1.7, 1.7, 3, 16, k ? 0xa58a6e : 0x8a9aa6, { at: [ox, h + 3.1, tz] });
+    C('tank', 1.8, 1.8, 0.35, 16, 0x5d6870, { at: [ox, h + 4.7, tz] });
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => B('wood', 0.22, 1.6, 0.22, DARK, { at: [ox + a * 1.1, h + 0.8, tz + b * 1.1] }));
+  });
+  return { P: m.P, w: w + 2.6, d, h: h + 5 };
+}

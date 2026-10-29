@@ -30,7 +30,7 @@ export const LAYOUT = {
   mast: { at: [70, 214, -385], scale: 1.5 },
   summit: { at: [12, 214, -385], scale: 1.3 },
   // the residents' quarter: a terrace on the hillside outside the south-west wall (see quarter.js)
-  quarter: { at: [-232, 12, 390], clear: 100 },
+  quarter: { at: [-232, 12, 390], clear: 125 },
 };
 // the carved portrait sits left of the headquarters as seen from the main street, so the crest disc never hides it
 export const FACE_X = -64;

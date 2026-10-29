@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { rng, fbm, Bins, box, cyl, sphere, place, paint, gableRoof, gableEnd, roofTiles, latticeTex, breathe } from './kit.js';
+import { rng, fbm, Bins, box, cyl, sphere, place, paint, metric, gableRoof, gableEnd, roofTiles, latticeTex, breathe } from './kit.js';
 import { toon, triToon, glow, textTexture, PAL } from './toon.js';
-import { machiya } from './house.js';
+import { machiya, townhouse, apartment } from './house.js';
 import { plaster, wood, stone, thatch, paving } from './textures.js';
 import { LAYOUT, reserved } from './land.js';
 
@@ -61,7 +61,15 @@ function house(r, kind, detail = 1) {
     };
     for (let f = 0; f < fl; f++) {
       const n = Math.max(2, Math.floor(w / 3.2));
-      for (let i = 0; i < n; i++) P.push([r() < 0.4 ? 'lit' : 'glass', bx(1.5, 1.5, 0.2, 0x000000, { at: [-w / 2 + (i + 0.5) * (w / n), 1.9 + f * fh, d / 2 + 0.08] })]);
+      for (let i = 0; i < n; i++) {
+        // each window in a dark timber frame behind a lattice, with a sill
+        const x = -w / 2 + (i + 0.5) * (w / n), y = 1.9 + f * fh;
+        if (!f && Math.abs(x - w * 0.28) < 2.4) { r(); continue; } // the doorway's bay
+        P.push(['wood', bx(1.85, 1.85, 0.1, 0x4a3226, { at: [x, y, d / 2 + 0.04] })]);
+        P.push([r() < 0.4 ? 'lit' : 'glass', bx(1.5, 1.5, 0.08, 0x000000, { at: [x, y, d / 2 + 0.1] })]);
+        if (!DRY) P.push(['lattice', place(paint(metric(new THREE.BoxGeometry(1.5, 1.5, 0.06), 1.5, 1.5, 0.16), 0x5a3b2a), { at: [x, y, d / 2 + 0.16] })]);
+        P.push(['stone', bx(2, 0.14, 0.34, 0xb8ad9e, { at: [x, y - 1.0, d / 2 + 0.17] })]);
+      }
       if (f < fl - 1) {
         P.push(['plaster', bx(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, (f + 1) * fh - 0.9, 0] })]);
         P.push(['roof', hip(w + 3.4, d + 3.4, w + 0.4, d + 0.4, 1.4, (f + 1) * fh - 0.6, skirtC)]);
@@ -70,68 +78,17 @@ function house(r, kind, detail = 1) {
     P.push(['plaster', bx(w + 0.5, 0.7, d + 0.5, bandC, { at: [0, h - 0.3, 0] })]);
     P.push(['roof', hip(w + 3, d + 3, w * 0.35, d * 0.2, 3.6, h, skirtC)]);
     if (r() < 0.5) P.push(['tank', cy(1.4, 1.4, 2.2, 14, 0x8a9aa6, { at: [w * 0.3, h + 2.6, -d * 0.2] })]);
-    P.push(['wood', bx(2.2, 3, 0.3, DARK, { at: [w * 0.28, 1.5, d / 2 + 0.1] })]);
+    // the doorway: a timber frame, sliding doors, a noren across it, a step; posts at the corners
+    P.push(['wood', bx(3, 3.4, 0.24, 0x5a3b2a, { at: [w * 0.28, 2.15, d / 2 + 0.06] })]);
+    P.push(['wood', bx(2.4, 2.9, 0.1, DARK, { at: [w * 0.28, 1.9, d / 2 + 0.16] })]);
+    P.push(['cloth', bx(2.6, 1, 0.04, skirtC === 0xc0392b ? 0x1f3a5f : 0xb8232c, { at: [w * 0.28, 2.95, d / 2 + 0.4] })]);
+    P.push(['stone', bx(2.6, 0.3, 1, 0x9a9088, { at: [w * 0.28, 0.15, d / 2 + 0.8] })]);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, c]) => P.push(['wood', bx(0.4, h, 0.4, 0x7d6a5c, { at: [a * w / 2, h / 2, c * d / 2] })]));
     return { P, w: w + 3.4, d: d + 3.4, h: h + 4 };
   }
-  if (kind === 'apt') {
-    // the mid-rise: 3-5 floors, balconies on the street side, a zigzag stair climbing the outside wall
-    const w = 12 + r() * 6, d = 10 + r() * 4, fl = 3 + Math.floor(r() * 3), fh = 3.6, h = fl * fh;
-    P.push(['plaster', bx(w, h, d, wall, { at: [0, h / 2, 0] })]);
-    P.push(['plaster', bx(w + 0.6, 1, d + 0.6, 0xd8cfc2, { at: [0, h + 0.5, 0] })]);
-    P.push(['wood', bx(w + 0.2, 1, d + 0.2, 0x7d6a5c, { at: [0, 0.5, 0] })]);
-    for (let f = 0; f < fl; f++) {
-      const n = Math.max(2, Math.floor(w / 3.4));
-      for (let i = 0; i < n; i++) {
-        const x = -w / 2 + (i + 0.5) * (w / n);
-        P.push([r() < 0.38 ? 'lit' : 'glass', bx(1.6, 1.6, 0.2, 0x000000, { at: [x, 1.9 + f * fh, d / 2 + 0.08] })]);
-        if (i < 3) P.push([r() < 0.3 ? 'lit' : 'glass', bx(0.2, 1.6, 1.6, 0x000000, { at: [-w / 2 - 0.08, 1.9 + f * fh, -d / 2 + (i + 0.7) * (d / 3.2)] })]);
-      }
-      if (f > 0) {
-        P.push(['plaster', bx(w * 0.56, 0.35, 1.7, 0xd8cfc2, { at: [-w * 0.12, f * fh, d / 2 + 0.85] })]);
-        P.push(['wood', bx(w * 0.56, 1, 0.14, DARK, { at: [-w * 0.12, f * fh + 0.65, d / 2 + 1.65] })]);
-      }
-    }
-    // the outside stair: a flight per floor, alternating direction, with a landing at each floor
-    const run = d * 0.7, ang = Math.atan2(fh, run);
-    for (let f = 0; f < fl - 1; f++) {
-      const dir = f % 2 ? 1 : -1;
-      P.push(['wood', bx(1.5, 0.3, Math.hypot(run, fh), 0x6b5a50, { at: [w / 2 + 1, f * fh + fh / 2 + 0.2, 0], rot: [dir * ang, 0, 0] })]);
-      P.push(['wood', bx(1.6, 0.3, 1.8, 0x6b5a50, { at: [w / 2 + 1, (f + 1) * fh + 0.2, -dir * (run / 2 + 0.6)] })]);
-      P.push(['wood', bx(0.12, 1, Math.hypot(run, fh), DARK, { at: [w / 2 + 1.75, f * fh + fh / 2 + 0.9, 0], rot: [dir * ang, 0, 0] })]);
-    }
-    const tx = (r() - 0.5) * (w - 6), tz = (r() - 0.5) * (d - 6);
-    [0, 1].forEach((k) => {
-      if (k && r() < 0.5) return;
-      const ox = tx + k * 4.2;
-      P.push(['tank', cy(1.7, 1.7, 3, 16, k ? 0xa58a6e : 0x8a9aa6, { at: [ox, h + 3.1, tz] })]);
-      P.push(['tank', cy(1.8, 1.8, 0.35, 16, 0x5d6870, { at: [ox, h + 4.7, tz] })]);
-      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => P.push(['wood', bx(0.22, 1.6, 0.22, DARK, { at: [ox + a * 1.1, h + 0.8, tz + b * 1.1] })]));
-    });
-    if (r() < 0.6) P.push(['plaster', bx(3.2, 2.6, 3.2, wall, { at: [-w / 2 + 2.4, h + 1.3, -d / 2 + 2.4] })]);
-    return { P, w: w + 2.6, d, h: h + 5 };
-  }
-  // the stucco block: 2-4 floors, flat roof with a parapet, a round water tank on legs, a little roof hut
-  const w = 10 + r() * 7, d = 9 + r() * 6, fl = 2 + Math.floor(r() * 3), h = fl * 3.8;
-  P.push(['plaster', bx(w, h, d, wall, { at: [0, h / 2, 0] })]);
-  P.push(['plaster', bx(w + 0.6, 0.9, d + 0.6, 0xd8cfc2, { at: [0, h + 0.45, 0] })]);
-  P.push(['wood', bx(w + 0.2, 1, d + 0.2, 0x7d6a5c, { at: [0, 0.5, 0] })]);
-  for (let f = 0; f < fl; f++) {
-    const n = Math.max(1, Math.floor(w / 3.6));
-    for (let i = 0; i < n; i++) {
-      const x = -w / 2 + (i + 0.5) * (w / n);
-      P.push([r() < 0.35 ? 'lit' : 'glass', bx(1.8, 1.6, 0.2, 0x000000, { at: [x, 2 + f * 3.8, d / 2 + 0.08] })]);
-      if (r() < 0.5) P.push([r() < 0.35 ? 'lit' : 'glass', bx(0.2, 1.6, 1.8, 0x000000, { at: [w / 2 + 0.08, 2 + f * 3.8, -d / 2 + (i + 0.5) * (d / n)] })]);
-    }
-    // a striped awning over some ground floors
-    if (f === 0 && r() < 0.35) P.push(['red', bx(w * 0.6, 0.25, 2, ROOFS[Math.floor(r() * 3)], { at: [0, 3.3, d / 2 + 1], rot: [0.25, 0, 0] })]);
-  }
-  const tx = (r() - 0.5) * (w - 5), tz = (r() - 0.5) * (d - 5);
-  P.push(['tank', cy(1.9, 1.9, 3.2, 16, r() < 0.5 ? 0x8a9aa6 : 0xa58a6e, { at: [tx, h + 3.2, tz] })]);
-  P.push(['tank', cy(2.0, 2.0, 0.4, 16, 0x5d6870, { at: [tx, h + 4.9, tz] })]);
-  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => P.push(['wood', bx(0.25, 1.6, 0.25, DARK, { at: [tx + a * 1.2, h + 0.8, tz + b * 1.2] })]));
-  if (r() < 0.5) P.push(['plaster', bx(3, 2.4, 3, wall, { at: [-tx * 0.5, h + 1.2, -tz * 0.5 + 1] })]);
-  if (r() < 0.5) P.push(['tank', bx(1.6, 1.1, 1, 0x9aa0a6, { at: [w / 2 - 1.2, h + 1.4, d / 2 - 1] })]); // AC unit
-  return { P, w, d, h: h + 5 };
+  // the apartment house and the stucco townhouse (a shop on the main street): built as they really are, see house.js
+  if (kind === 'apt') return apartment(r, { wall, dry: DRY, detail });
+  return townhouse(r, { wall, dry: DRY, detail, shop: kind === 'shop' });
 }
 
 export async function buildVillage(scene, { mobile, portrait, heightAt }) {
@@ -172,7 +129,7 @@ export async function buildVillage(scene, { mobile, portrait, heightAt }) {
   const GAP = 2.6, SET = 3;
   const kindFor = (zone) => {
     const k0 = r();
-    if (zone === 'shop') return k0 < 0.45 ? 'trad' : k0 < 0.65 ? 'pagoda' : 'block';
+    if (zone === 'shop') return k0 < 0.5 ? 'trad' : k0 < 0.64 ? 'pagoda' : 'shop';
     if (zone === 'core') return k0 < 0.3 ? 'apt' : k0 < 0.58 ? 'pagoda' : k0 < 0.8 ? 'block' : 'trad';
     return k0 < 0.45 ? 'trad' : k0 < 0.6 ? 'pagoda' : k0 < 0.85 ? 'block' : 'apt';
   };
