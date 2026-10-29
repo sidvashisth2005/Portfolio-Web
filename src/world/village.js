@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { rng, fbm, Bins, box, cyl, sphere, place, paint, gableRoof, gableEnd, roofTiles, breathe } from './kit.js';
+import { rng, fbm, Bins, box, cyl, sphere, place, paint, gableRoof, gableEnd, roofTiles, latticeTex, breathe } from './kit.js';
 import { toon, triToon, glow, textTexture, PAL } from './toon.js';
+import { machiya } from './house.js';
 import { plaster, wood, stone, thatch, paving } from './textures.js';
 import { LAYOUT, reserved } from './land.js';
 
@@ -22,43 +23,27 @@ let DRY = false;
 const bx = (...a) => (DRY ? null : box(...a)), cy = (...a) => (DRY ? null : cyl(...a));
 const pl = (g, o) => (DRY ? null : place(g, o)), pt = (g, c) => (DRY ? null : paint(g, c));
 const gr = (...a) => (DRY ? [] : gableRoof(...a)), ge = (...a) => (DRY ? null : gableEnd(...a));
-function plan(r, kind) {
+function plan(r, kind, detail = 1) {
   const s0 = r.save();
   DRY = true;
-  const H = house(r, kind);
+  const H = house(r, kind, detail);
   DRY = false;
-  return { ...H, kind, s0 };
+  return { ...H, kind, detail, s0 };
 }
 // build a planned house: replay its draws from where the plan started, then carry on from where the plan ended
 function realize(r, H) {
   const s1 = r.save();
   r.load(H.s0);
-  const R = house(r, H.kind);
+  const R = house(r, H.kind, H.detail);
   r.load(s1);
   return R.P;
 }
 
-function house(r, kind) {
+function house(r, kind, detail = 1) {
   const P = [];
   const wall = WALLS[Math.floor(r() * WALLS.length)], roof = ROOFS[Math.floor(r() * ROOFS.length)];
-  if (kind === 'trad') {
-    const w = 9 + r() * 6, d = 8 + r() * 5, fl = r() < 0.4 ? 2 : 1, h = fl * 4.4;
-    P.push(['plaster', bx(w, h, d, wall, { at: [0, h / 2, 0] })]);
-    P.push(['wood', bx(w + 0.3, 0.9, d + 0.3, WOOD, { at: [0, 0.45, 0] })]);
-    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => P.push(['wood', bx(0.5, h, 0.5, WOOD, { at: [sx * w / 2, h / 2, sz * d / 2] })]));
-    if (fl === 2) P.push(['wood', bx(w + 0.4, 0.4, d + 0.4, WOOD, { at: [0, 4.4, 0] })]);
-    // windows: lattice panels, some lit for the evening
-    for (let f = 0; f < fl; f++) for (let i = 0; i < Math.max(1, Math.floor(w / 4.5)); i++) {
-      const x = -w / 2 + (i + 0.5) * (w / Math.max(1, Math.floor(w / 4.5)));
-      P.push([r() < 0.45 ? 'lit' : 'glass', bx(2, 1.6, 0.2, 0x000000, { at: [x, 2.4 + f * 4.4, d / 2 + 0.08] })]);
-    }
-    P.push(['wood', bx(2, 3, 0.3, DARK, { at: [w * 0.25, 1.5, d / 2 + 0.1] })]); // door
-    const rise = 2.4 + r() * 1.4;
-    gr(w, d, rise, 1.4, roof).forEach((g) => P.push(['roof', pl(g, { at: [0, h, 0] })]));
-    [-1, 1].forEach((s) => P.push(['plaster', pl(ge(w, rise, 0.3, wall), { at: [0, h, s * d / 2], rot: [0, s < 0 ? Math.PI : 0, 0] })]));
-    if (r() < 0.3) P.push(['tank', cy(1.5, 1.5, 2.6, 14, 0x8a9aa6, { at: [w / 2 - 2, h + rise * 0.4 + 1.3, -d / 4] })]);
-    return { P, w, d, h: h + rise };
-  }
+  // the traditional townhouse: a real one, frame, lattices, noren and all (see house.js)
+  if (kind === 'trad') return machiya(r, { wall, roof, dry: DRY, detail });
   if (kind === 'pagoda') {
     // white walls under stacked hip-roof skirts, red tiles over a green fascia at every floor, in the anime's manner
     const w = 12 + r() * 5, d = 10 + r() * 3, fl = 2 + Math.floor(r() * 2), fh = 4.2, h = fl * fh;
@@ -220,7 +205,7 @@ export async function buildVillage(scene, { mobile, portrait, heightAt }) {
     while (z > 104) {
       await breathe();
       if (Math.abs(z - LAYOUT.riverZ) < 20) { z -= 4; continue; }
-      const H = plan(r, kindFor('shop'));
+      const H = plan(r, kindFor('shop'), 1);
       // the house faces the street: its front normal points toward the centre line
       if (put(H, side * (MAIN + 2), z - H.w / 2, -side, 0, SET, fr, i++, true)) z -= H.w + GAP; else z -= 3;
     }
@@ -234,7 +219,7 @@ export async function buildVillage(scene, { mobile, portrait, heightAt }) {
       while (a < Math.PI * 2) {
         await breathe();
         if (mobile && zone === 'edge' && i % 2) { a += 14 / rad0; i++; continue; }
-        const H = plan(r, kindFor(zone));
+        const H = plan(r, kindFor(zone), !mobile && zone === 'core' ? 1 : 0);
         const am = a + (H.w / 2) / rad0;
         const nx = Math.cos(am) * -side, nz = Math.sin(am) * -side; // facing the road
         if (put(H, Math.cos(am) * rad0, Math.sin(am) * rad0, nx, nz, SET, fr, i++, false)) a += (H.w + GAP) / rad0; else a += 4 / rad0;
@@ -249,7 +234,7 @@ export async function buildVillage(scene, { mobile, portrait, heightAt }) {
       let d = 100, i = 0;
       while (d < LAYOUT.wallR - 20) {
         await breathe();
-        const H = plan(r, kindFor(d < 160 ? 'core' : 'edge'));
+        const H = plan(r, kindFor(d < 160 ? 'core' : 'edge'), 0);
         const cx = dx * (d + H.w / 2) + px0 * side * 7, cz = dz * (d + H.w / 2) + pz0 * side * 7;
         if (put(H, cx, cz, -px0 * side, -pz0 * side, SET, fr, i++, false)) d += H.w + GAP; else d += 4;
       }
@@ -260,7 +245,7 @@ export async function buildVillage(scene, { mobile, portrait, heightAt }) {
   for (let n = 0, tries = 0; n < (mobile ? 40 : 140) && tries < 4000; tries++) {
     await breathe();
     const rr = 100 + r() * 185, a = r() * Math.PI * 2, x = Math.cos(a) * rr, z = Math.sin(a) * rr;
-    const H = plan(r, 'trad');
+    const H = plan(r, 'trad', 0);
     const face = Math.atan2(-x, -z);
     const rad = Math.hypot(H.w, H.d) * 0.42 + 2;
     if (!free(x, z, rad, fr, -9)) continue;
@@ -546,6 +531,7 @@ export async function buildVillage(scene, { mobile, portrait, heightAt }) {
     plaster: triToon(plaster(), 0.16), wood: triToon(wood(), 0.32), stone: triToon(stone(), 0.2), red: triToon(plaster(), 0.08),
     thatch: triToon(thatch(), 0.26), tank: toon(0xffffff, { vertexColors: true }), roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }),
     glass: toon(0x2a2430), lit: glow(0xffc070),
+    lattice: toon(0xffffff, { vertexColors: true, map: latticeTex(), alphaTest: 0.5 }), cloth: toon(0xffffff, { vertexColors: true, side: THREE.DoubleSide }),
   };
   bins.build(mats, g);
 

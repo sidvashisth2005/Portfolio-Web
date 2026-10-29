@@ -29,10 +29,12 @@ export const LAYOUT = {
   memorial: { at: [90, 0, 246], clear: 46, scale: 1.5 },
   mast: { at: [70, 214, -385], scale: 1.5 },
   summit: { at: [12, 214, -385], scale: 1.3 },
+  // the residents' quarter: a terrace on the hillside outside the south-west wall (see quarter.js)
+  quarter: { at: [-232, 12, 390], clear: 100 },
 };
 // the carved portrait sits left of the headquarters as seen from the main street, so the crest disc never hides it
 export const FACE_X = -64;
-export const reserved = (x, z) => ['shrine', 'library', 'training', 'memorial'].some((k) => Math.hypot(x - LAYOUT[k].at[0], z - LAYOUT[k].at[2]) < LAYOUT[k].clear);
+export const reserved = (x, z) => ['shrine', 'library', 'training', 'memorial', 'quarter'].some((k) => Math.hypot(x - LAYOUT[k].at[0], z - LAYOUT[k].at[2]) < LAYOUT[k].clear);
 
 export function heightAt(x, z) {
   const r = Math.hypot(x, z);
@@ -45,7 +47,9 @@ export function heightAt(x, z) {
   if (z > LAYOUT.gateZ - 20) h *= smooth(24, 90, Math.abs(x)); // the road out of the gate runs level through the hills
   const s = LAYOUT.shrine.at; // the shrine stands on a levelled terrace in the western hills
   const k = smooth(120, 70, Math.hypot(x - s[0], z - s[2]));
-  return h + (s[1] - h) * k;
+  h += (s[1] - h) * k;
+  const q = LAYOUT.quarter.at; // and the residents' quarter on its own, a little lower, outside the south-west wall
+  return h + (q[1] - h) * smooth(150, 104, Math.hypot(x - q[0], z - q[2]));
 }
 
 const skyVert = 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';

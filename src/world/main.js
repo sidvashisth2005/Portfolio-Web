@@ -12,6 +12,9 @@ import { buildForest, buildLeaves } from './nature.js';
 import { buildArena, ARENA } from './arena.js';
 import { createPost } from './post.js';
 import { buildPlaces } from './places.js';
+import { buildQuarter } from './quarter.js';
+import { createRoom } from './room.js';
+import { initResidents } from './residents.js';
 import { panelsHTML, wirePanels, PHOTO_SHOTS } from './panels.js';
 import { guard } from '../ui/guard.js';
 import { initScroll } from './scroll.js';
@@ -63,7 +66,7 @@ scene.add(sun, new THREE.HemisphereLight(0xffa98a, 0x3a3a5a, 1.1), new THREE.Amb
 
 const portrait = new Promise((res, rej) => new THREE.TextureLoader().load(mobile ? 'img/hero-ink-m.webp' : 'img/hero-ink.webp', (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, rej));
 
-let land, village, arena, leaves, places;
+let land, village, arena, leaves, places, quarter;
 async function build() {
   // painted signs use the site's fonts, so wait for them first
   await Promise.all([
@@ -81,6 +84,8 @@ async function build() {
   // phones travel the shorter journey, so the places beyond it aren't built there
   await tick();
   if (!mobile) places = buildPlaces(scene, { mobile });
+  await tick();
+  quarter = buildQuarter(scene, { mobile });
   leaves = buildLeaves(scene, { mobile });
   setLoad(0.82);
   resize();
@@ -110,6 +115,12 @@ const LF = [-LX / Math.hypot(LX, LZ), -LZ / Math.hypot(LX, LZ)]; // the library'
 const LR = [LF[1], -LF[0]]; // to the right as you face into it
 const PL = (f, r, y) => [LX + (LF[0] * f + LR[0] * r) * LK, y * LK, LZ + (LF[1] * f + LR[1] * r) * LK];
 const CZ = LAYOUT.cliffZ;
+// a point in the residents' quarter, in its own frame (see quarter.js: the lanes run along x, the gate at +x)
+const QP = (x, y, z) => { const q = LAYOUT.quarter.at; return [q[0] + x, q[1] + y, q[2] + z]; };
+const QUARTER = [
+  [QP(150, 62, 70), QP(10, 2, 0), 'quarter'], // from over the path: the terrace on the hill, the two lanes of houses
+  [QP(64, 4.6, -23.5), QP(-34, 3.4, -28), 'lane'], // down the first lane from the plaza at a visitor's eye height: noren, gates, lanterns
+];
 // A close-up of a flat thing (a board, a plaque, a photograph) at c in a place's own units, facing along n (x, z): the
 // camera stands d in front of it, and the subject sits off the centre of the frame by off (positive: on the left,
 // leaving the right for a panel).
@@ -150,6 +161,7 @@ const STOPS = mobile ? [
   ...START,
   [[130, 150, 170], [0, 0, -110], 'overview'], // the whole village, the cliff and the sun
   ...STADIUM,
+  ...QUARTER,
   [[A.x - 90, 74, A.z - 60], [-300, 110, -700], 'sunset'], // up and out, into the sunset
 ] : [
   ...START,
@@ -175,6 +187,7 @@ const STOPS = mobile ? [
   [P('memorial', -4, 7.6, -3), P('memorial', 15.6, 5.2, 11.2), 'memorial'], // inside the ring of photographs, the stone behind
   // a slow pan round the ring, a few photographs at a time
   ...PHOTO_SHOTS.map((g, k) => [...photoShot((g[0] + g[g.length - 1]) / 2), `photos${k + 1}`]),
+  ...QUARTER,
   [[80, 140, 120], [40, 214, CZ], 'rise'], // rising toward the cliff
   [P('mast', -40, 16, 50), P('mast', 8, 14, 9), 'onair'], // the radio mast and the ON AIR hut
   [P('summit', 0, 14, 32), [-10, 40, 200], 'summit'], // past the summit rail: the whole village at sunset
@@ -211,6 +224,8 @@ const SHOT = {
   overVillage: { fov: 46, roll: 2, cap: ['回想', 'Back over the village', 'To the grove where the photographs hang.'] },
   memorial: { fov: 40, push: 3, cap: ['写真', 'Flashbacks', 'Real photographs from the arc, hung in a ring around the stone.'] },
   ...Object.fromEntries(PHOTO_SHOTS.map((g, k) => [`photos${k + 1}`, { fov: 42, push: 2, cap: ['写真', `Frames ${g[0] + 1} to ${g[g.length - 1] + 1}`, g.map((i) => gallery[i].caption).join(' · ')] }])),
+  quarter: { fov: 40, roll: -2, cap: ['住人街', 'The residents’ quarter', 'Twenty-four houses on the hill outside the wall, for the people who visit.'] },
+  lane: { fov: 46, push: 4, cap: ['住', 'The lane', 'A lit window is someone living there. Tap any house to look inside.'] },
   rise: { fov: 48, roll: -2, cap: ['崖', 'Up the cliff', 'To the top of the rock, above the carved face.'] },
   onair: { fov: 38, push: 4, cap: ['放送', 'On air', 'The radio mast and the hut where the podcast is recorded.'] },
   summit: { fov: 44, push: 6, cap: ['頂上', 'The summit', 'The whole village at sunset. The next chapter starts with you.'] },
@@ -219,12 +234,12 @@ const SHOT = {
 // the journey in chapters: a title card opens each one
 const CHAPTERS = (mobile ? [
   ['gate', '一', 'The village', 'A hidden village at sunset'], ['monument', '二', 'The monument', 'The face on the cliff'],
-  ['toStadium', '三', 'The exam', 'HackNITR 7.0'], ['sunset', '終', 'To be continued', 'The rest of the arc'],
+  ['toStadium', '三', 'The exam', 'HackNITR 7.0'], ['quarter', '四', 'The quarter', 'A house of your own'], ['sunset', '終', 'To be continued', 'The rest of the arc'],
 ] : [
   ['gate', '一', 'The village', 'A hidden village at sunset'], ['monument', '二', 'The monument', 'The face on the cliff'],
   ['overview', '三', 'The shrine', 'Two sides and six plaques'], ['toLibrary', '四', 'The library', 'Four projects, four scrolls'],
   ['toTraining', '五', 'The training ground', 'Where I levelled up'], ['toStadium', '六', 'The exam', 'HackNITR 7.0'],
-  ['overVillage', '七', 'Flashbacks', 'Frames from the arc'], ['rise', '八', 'On air', 'The podcast'],
+  ['overVillage', '七', 'Flashbacks', 'Frames from the arc'], ['quarter', '八', 'The quarter', 'A house of your own'], ['rise', '九', 'On air', 'The podcast'],
   ['summit', '終', 'To be continued', 'The next arc starts with you'],
 ]).filter((c) => STOPS.some((s) => s[2] === c[0]));
 
@@ -247,6 +262,7 @@ const SHOW = {
   scroll1: ['scroll1', 0.3, 0.34], scroll2: ['scroll2', 0.3, 0.34], scroll3: ['scroll3', 0.3, 0.34], scroll4: ['scroll4', 0.3, 0.34],
   stage1: ['stage1', 0.3, 0.34], stage2: ['stage2', 0.3, 0.34], stage3: ['stage3', 0.3, 0.34], stage4: ['stage4', 0.3, 0.34],
   photos1: ['photos1', 0.3, 0.34], photos2: ['photos2', 0.3, 0.34], photos3: ['photos3', 0.3, 0.34],
+  quarter: ['lane', 0.3, 0.36],
   awards: ['awards', 0.3, 0.36], flashbacks: ['memorial', 0.3, 0.36], onair: ['onair', 0.3, 0.36], contact: ['summit', 0.3, 0.1],
 };
 
@@ -371,7 +387,7 @@ function setRoam(on) {
 roamBtn.addEventListener('click', () => setRoam(!roaming));
 // free roam: jump to any place on the journey (the camera glides there)
 const TRAVEL = [['gate', 'The gate'], ['tower', 'Headquarters'], ['monument', 'The monument'], ['sides', 'Two sides'], ['stats', 'Battle stats'],
-  ['moves', 'Special moves'], ['toTraining', 'Training arc'], ['trophy', 'HackNITR 7.0'], ['memorial', 'Flashbacks'], ['onair', 'On air'], ['summit', 'Contact']];
+  ['moves', 'Special moves'], ['toTraining', 'Training arc'], ['trophy', 'HackNITR 7.0'], ['memorial', 'Flashbacks'], ['lane', 'Residents'], ['onair', 'On air'], ['summit', 'Contact']];
 const travel = $('#w-travel');
 if (travel) {
   travel.innerHTML = `<p class="label muted">Travel to</p>${TRAVEL.filter(([k]) => stop(k) >= 0).map(([k, n]) => `<button type="button" class="w-chip" data-stop="${k}">${n}</button>`).join('')}`;
@@ -393,15 +409,15 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 window.addEventListener('blur', () => keys.clear());
 let drag = null;
-canvas.addEventListener('pointerdown', (e) => { if (!roaming) return; drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointerdown', (e) => { if (!roaming || inside) return; drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
 canvas.addEventListener('pointermove', (e) => {
-  if (!roaming || !drag) return;
+  if (!roaming || inside || !drag) return;
   yaw -= (e.clientX - drag.x) * 0.0032; pitch -= (e.clientY - drag.y) * 0.0032;
   pitch = Math.max(-1.3, Math.min(1.3, pitch));
   drag = { x: e.clientX, y: e.clientY };
 });
 canvas.addEventListener('pointerup', () => { drag = null; });
-canvas.addEventListener('wheel', (e) => { if (!roaming) return; e.preventDefault(); roamPos.addScaledVector(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion), -e.deltaY * 0.05); }, { passive: false });
+canvas.addEventListener('wheel', (e) => { if (!roaming || inside) return; e.preventDefault(); roamPos.addScaledVector(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion), -e.deltaY * 0.05); }, { passive: false });
 
 const fwd = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), mv = new THREE.Vector3(), roamQ = new THREE.Quaternion(), eul = new THREE.Euler();
 function roamStep(dt) {
@@ -419,7 +435,7 @@ function roamStep(dt) {
   roamPos.z = THREE.MathUtils.clamp(roamPos.z, -1300, 1300);
   roamPos.y = THREE.MathUtils.clamp(roamPos.y, heightAt(roamPos.x, roamPos.z) + 2.5, 420);
   // buildings are solid: step out through the nearest side, or stand on the roof
-  for (const [x, z, rad, h] of [...(village?.colliders || []), ...(places?.colliders || [])]) {
+  for (const [x, z, rad, h] of [...(village?.colliders || []), ...(places?.colliders || []), ...(quarter?.colliders || [])]) {
     const dx = roamPos.x - x, dz = roamPos.z - z, d = Math.hypot(dx, dz), m = rad + 1.5;
     if (d >= m || roamPos.y >= h + 1.5) continue;
     if (h + 1.5 - roamPos.y < m - d) roamPos.y = h + 1.5;
@@ -432,7 +448,7 @@ function roamStep(dt) {
 // ---------- the gate's doors ----------
 // at the opening shot the doors are a button: the pointer shows it, and a tap (not a drag) walks through them
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-const atGate = () => !roaming && rail.i === 0 && smooth < 0.4 / N;
+const atGate = () => !roaming && !inside && rail.i === 0 && smooth < 0.4 / N;
 function onDoor(e) {
   if (!village?.doorMeshes || !atGate()) return false;
   const r = canvas.getBoundingClientRect();
@@ -444,9 +460,81 @@ let tapAt = null;
 canvas.addEventListener('pointerdown', (e) => { tapAt = [e.clientX, e.clientY]; });
 canvas.addEventListener('click', (e) => {
   const moved = tapAt && Math.hypot(e.clientX - tapAt[0], e.clientY - tapAt[1]) > 8;
-  if (!moved && onDoor(e)) goTo('through');
+  if (moved) return;
+  if (onDoor(e)) { goTo('through'); return; }
+  const h = onHouse(e);
+  if (h >= 0) residents.plotClick(h);
 });
-canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && !roaming) canvas.style.cursor = onDoor(e) ? 'pointer' : ''; }, { passive: true });
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'mouse' || inside) return;
+  const h = onHouse(e);
+  quarter?.hover(h);
+  residents.hover(h, e.clientX, e.clientY);
+  if (!roaming) canvas.style.cursor = h >= 0 || onDoor(e) ? 'pointer' : '';
+}, { passive: true });
+canvas.addEventListener('pointerleave', () => { quarter?.hover(-1); residents.hover(-1); });
+
+// ---------- the residents' quarter: pointing at a house, going inside ----------
+// the houses answer the pointer at the quarter's own shots, and anywhere in free roam, when they're near enough
+const quarterShot = () => ['quarter', 'lane'].includes(STOPS[rail.i]?.[2]) && Math.abs(rail.d) < 0.4;
+function onHouse(e) {
+  if (!quarter || inside || !(roaming || quarterShot())) return -1;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const { id, dist } = quarter.pick(ray.ray);
+  return dist < 260 ? id : -1;
+}
+let room = null, inside = false;
+const fadeEl = () => document.getElementById('w-fade');
+const fade = (on) => { fadeEl().classList.toggle('is-on', on); return new Promise((r) => setTimeout(r, reduce ? 0 : 420)); };
+const residents = initResidents({
+  lenis, quarter: null,
+  hooks: {
+    async enter(h, items) {
+      await fade(true);
+      room ||= createRoom({ mobile });
+      room.setHouse(h, items);
+      room.reset();
+      inside = true;
+      hideCard();
+      document.body.classList.add('is-home');
+      sized = ''; resize();
+      setTimeout(() => fade(false), 120);
+    },
+    async exit() {
+      await fade(true);
+      inside = false;
+      room.hover(null);
+      document.body.classList.remove('is-home');
+      sized = ''; resize();
+      setTimeout(() => fade(false), 120);
+    },
+    update(h, items) { room?.setHouse(h, items); },
+    focus(id) { room?.focus(id); },
+  },
+});
+// inside: drag to look round the room, point at a thing to see what it is, tap it to turn to it
+let peer = null;
+canvas.addEventListener('pointerdown', (e) => { if (inside) { peer = { x: e.clientX, y: e.clientY, moved: 0 }; canvas.setPointerCapture(e.pointerId); } });
+canvas.addEventListener('pointermove', (e) => {
+  if (!inside) return;
+  if (peer) { const dx = e.clientX - peer.x, dy = e.clientY - peer.y; peer.moved += Math.abs(dx) + Math.abs(dy); room.turn(dx * 0.004, dy * 0.004); peer.x = e.clientX; peer.y = e.clientY; return; }
+  const r = canvas.getBoundingClientRect();
+  const id = room.pick(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1));
+  room.hover(id);
+  residents.itemHover(id, e.clientX, e.clientY);
+  canvas.style.cursor = id ? 'pointer' : 'grab';
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (!inside || !peer) return;
+  const tap = peer.moved < 8;
+  peer = null;
+  if (!tap) return;
+  const r = canvas.getBoundingClientRect();
+  const id = room.pick(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1));
+  if (id) { room.focus(id); residents.itemPick(id); }
+});
 
 // ---------- loop ----------
 const look = new THREE.Vector3(), target = new THREE.Vector3(), lookM = new THREE.Matrix4(), railQ = new THREE.Quaternion();
@@ -491,6 +579,12 @@ function frame(now) {
   lenis?.raf(now);
   mouse.sx += (mouse.x - mouse.sx) * (1 - Math.exp(-dt * 3));
   mouse.sy += (mouse.y - mouse.sy) * (1 - Math.exp(-dt * 3));
+  if (inside) {
+    room.update(t, dt);
+    post.render(room.scene, room.camera, t);
+    requestAnimationFrame(frame);
+    return;
+  }
   if (roaming) roamStep(dt);
   else {
     smooth += (progress - smooth) * (1 - Math.exp(-dt * (reduce ? 30 : 6)));
@@ -521,6 +615,7 @@ function frame(now) {
   arena?.update(t, roaming ? 0.3 : ss(p, at('rim'), at('bowl')) * (1 - settle));
   roamFade += ((roaming ? 1 : 0) - roamFade) * (1 - Math.exp(-dt * 4));
   places?.update(t, camera.position, roamFade);
+  quarter?.update(t);
   leaves?.update(t, camera.position);
   post.render(scene, camera, t);
   requestAnimationFrame(frame);
@@ -536,6 +631,7 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   post.setSize(w, h);
+  room?.resize(w, h);
 }
 window.addEventListener('resize', resize);
 
@@ -547,9 +643,17 @@ window.history.scrollRestoration = 'manual';
 window.__rail = {
   N, names: STOPS.map((x) => x[2]),
   jump(p) { lenis?.scrollTo(p * (document.documentElement.scrollHeight - window.innerHeight), { immediate: true }); progress = smooth = p; },
+  // free roam, standing at pos and looking at look
+  view(pos, look) {
+    setRoam(true);
+    roamPos.set(...pos); camera.position.set(...pos);
+    const d = V(look).sub(V(pos));
+    yaw = Math.atan2(-d.x, -d.z); pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
+  },
 };
 window.scrollTo(0, 0);
 build().then(() => {
+  residents.attach(quarter);
   requestAnimationFrame(frame);
   // the cut opens the world
   setTimeout(() => {

@@ -131,3 +131,28 @@ export function roofTiles() {
   tileTex.colorSpace = THREE.SRGBColorSpace;
   return tileTex;
 }
+
+// a lattice (kōshi): one slat and one gap across u, the gap see-through (draw it with alphaTest), multiplied with the
+// piece's colour, so dark wood slats over a shop window and white plaster slats over an upper window share it
+let latTex = null;
+export function latticeTex() {
+  if (latTex) return latTex;
+  const c = document.createElement('canvas');
+  c.width = 32; c.height = 8;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 32, 8);
+  const gr = g.createLinearGradient(0, 0, 20, 0);
+  gr.addColorStop(0, '#bdbdbd'); gr.addColorStop(0.35, '#ffffff'); gr.addColorStop(1, '#9a9a9a');
+  g.fillStyle = gr; g.fillRect(0, 0, 20, 8);
+  latTex = new THREE.CanvasTexture(c);
+  latTex.wrapS = latTex.wrapT = THREE.RepeatWrapping;
+  latTex.colorSpace = THREE.SRGBColorSpace;
+  latTex.magFilter = THREE.NearestFilter;
+  return latTex;
+}
+// uv in metres: a texture keeps its size on any piece (tile rows, lattice slats)
+export function metric(geo, w, h, unit) {
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / unit, uv.getY(i) * h / unit);
+  return geo;
+}
