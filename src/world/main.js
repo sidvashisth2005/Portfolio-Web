@@ -560,8 +560,7 @@ const look = new THREE.Vector3(), target = new THREE.Vector3(), lookM = new THRE
 const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
 window.addEventListener('pointermove', (e) => { mouse.x = e.clientX / window.innerWidth - 0.5; mouse.y = e.clientY / window.innerHeight - 0.5; }, { passive: true });
 const prog = $('#w-prog');
-let smooth = 0, last = performance.now(), roamFade = 0, bank = 0;
-const side = new THREE.Vector3(), vel = new THREE.Vector3(), lastTarget = new THREE.Vector3();
+let smooth = 0, last = performance.now(), roamFade = 0;
 // The camera rests at every stop for HOLD of a stop's scroll either side, then cranes to the next one, easing out of
 // the old shot and into the new. While it rests it keeps a slow push-in and a faint handheld breath, so a held
 // shot is never a still frame.
@@ -632,15 +631,6 @@ function frame(now) {
   else {
     smooth += (progress - smooth) * (1 - Math.exp(-dt * (reduce ? 30 : 6)));
     railPose(smooth, target, railQ, t);
-    // the camera banks into its moves like a crane arm swinging or a drone turning: rolled against how fast the
-    // frame is sliding sideways, eased so it leans in and settles out
-    if (!reduce && dt > 0) {
-      side.set(1, 0, 0).applyQuaternion(railQ);
-      const slide = lastTarget.lengthSq() ? side.dot(vel.subVectors(target, lastTarget)) / dt : 0;
-      bank += (THREE.MathUtils.clamp(-slide * 0.0016, -0.09, 0.09) - bank) * (1 - Math.exp(-dt * 2.5));
-      railQ.multiply(rollQ.setFromAxisAngle(zAxis, bank));
-    }
-    lastTarget.copy(target);
     if (back > 0) {
       back = Math.max(0, back - dt / 1.1);
       const k = THREE.MathUtils.smootherstep(1 - back, 0, 1);

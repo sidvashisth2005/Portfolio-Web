@@ -97,8 +97,7 @@ whole village, so the detail costs geometry, not draw calls.
 ## Camera
 
 Each stop on the journey is a shot with its own lens, horizon tilt and move while it holds: a push-in, an arc round
-the subject for parallax, or a dolly zoom (the monument, the trophy). Between shots the camera banks into its moves
-like a crane arm. All of it is in the `SHOT` table in `src/world/main.js`.
+the subject for parallax, or a dolly zoom (the monument, the trophy). All of it is in the `SHOT` table in `src/world/main.js`.
 
 ## Performance
 
