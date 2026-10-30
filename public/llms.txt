@@ -1,0 +1,24 @@
+# Siddhant Vashisth
+
+> Portfolio of Siddhant Vashisth: a business strategist who builds. Final-year B.Tech CSE at JUET Guna (class of 2027), research intern in adversarial ML at IIITDM Jabalpur, Rank 1 of 6,200+ at HackNITR 7.0. Open to BD, business analyst, growth and product roles from Q4 2026.
+
+The site has two faces: a 2D portfolio and a 3D village (the same story, told as a journey). Every fact on both comes from one data file and the résumé.
+
+## Pages
+
+- [Portfolio](/?site=2d): the full site: about, two sides (strategist and builder), battle stats, four flagship projects, internships, awards, photographs, podcast, contact
+- [The 3D village](/world): the portfolio as a hidden village at sunset; includes Siddhant's study (his projects and awards as objects in a room) and the residents' quarter, where visitors can claim a house
+- [Résumé (PDF)](/resume.pdf)
+
+## Projects
+
+- [Livestock Monitoring System](https://github.com/RISHABH12005/LMS): IoT and AI AgriTech, ~65% cheaper per head; won Rank 1 at HackNITR 7.0
+- [ARound You](https://github.com/sidvashisth2005/NEW-CODE-AROUND-YOU): geo-tagged AR memories with ARCore and Vuforia
+- [TravelGo](https://github.com/sidvashisth2005/Travelling-App): AI travel planning across 4 APIs
+- Superstore marketing consultancy: +25% customer footfall after three recommendations shipped
+
+## Contact
+
+- [Email](mailto:siddhantvashisth05@gmail.com)
+- [LinkedIn](https://www.linkedin.com/in/siddhant-vashisth-04887b29b/)
+- [GitHub](https://github.com/sidvashisth2005)

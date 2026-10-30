@@ -84,6 +84,16 @@ townhouses with framed windows, shop fronts and awnings, balconies and roof tank
 corridors, a door and lamp per flat and an outside stair. Each is merged into one mesh per material across the
 whole village, so the detail costs geometry, not draw calls.
 
+## Life, phones and resolution
+
+- **People and birds** (`src/world/life.js`): villagers walk the main street, the ring roads, the headquarters'
+  plaza and the residents' lanes (some under paper umbrellas, some stopping to talk); flocks wheel over the valley.
+- **Phones take the whole journey**, every place included, with wider lenses and lighter buildings. Panels trim to
+  their essentials on narrow screens, and phones held sideways get a slimmer letterbox.
+- **Dynamic resolution**: the render loop watches the frame rate and trades sharpness for smoothness (down to about
+  half resolution on a struggling phone, back up when there's headroom).
+- `llms.txt` and schema.org `Person` data on both pages, for search engines and AI agents.
+
 ## Camera
 
 Each stop on the journey is a shot with its own lens, horizon tilt and move while it holds: a push-in, an arc round

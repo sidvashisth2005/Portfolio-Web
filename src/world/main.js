@@ -16,6 +16,7 @@ import { buildQuarter } from './quarter.js';
 import { createRoom } from './room.js';
 import { initResidents } from './residents.js';
 import { initFounder } from './founder.js';
+import { buildLife } from './life.js';
 import { panelsHTML, wirePanels, PHOTO_SHOTS } from './panels.js';
 import { guard } from '../ui/guard.js';
 import { initScroll } from './scroll.js';
@@ -52,7 +53,12 @@ const soft = (() => {
     return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
   } catch { return false; }
 })();
-renderer.setPixelRatio(soft ? 0.75 : Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75));
+// Dynamic resolution: the frame starts at the screen's own sharpness (within reason) and the render loop trades it
+// for frame rate as it goes (see adapt()): a phone that struggles drops toward half resolution and the image stays
+// smooth, one with headroom climbs back up. A software renderer starts low and stays there.
+const PR_MAX = soft ? 0.75 : Math.min(window.devicePixelRatio || 1, mobile ? 1.6 : 1.75), PR_MIN = soft ? 0.6 : mobile ? 0.55 : 0.75;
+let pr = soft ? 0.75 : Math.min(PR_MAX, mobile ? 1.25 : PR_MAX);
+renderer.setPixelRatio(pr);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0xd8704e, mobile ? 320 : 420, mobile ? 1500 : 1900);
@@ -67,7 +73,7 @@ scene.add(sun, new THREE.HemisphereLight(0xffa98a, 0x3a3a5a, 1.1), new THREE.Amb
 
 const portrait = new Promise((res, rej) => new THREE.TextureLoader().load(mobile ? 'img/hero-ink-m.webp' : 'img/hero-ink.webp', (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); }, undefined, rej));
 
-let land, village, arena, leaves, places, quarter;
+let land, village, arena, leaves, places, quarter, life;
 async function build() {
   // painted signs use the site's fonts, so wait for them first
   await Promise.all([
@@ -82,11 +88,11 @@ async function build() {
   buildForest(scene, { mobile, heightAt });
   setLoad(0.7); await tick();
   arena = buildArena(scene, { mobile });
-  // phones travel the shorter journey, so the places beyond it aren't built there
   await tick();
-  if (!mobile) places = buildPlaces(scene, { mobile });
+  places = buildPlaces(scene, { mobile });
   await tick();
-  quarter = buildQuarter(scene, { mobile });
+  quarter = await buildQuarter(scene, { mobile });
+  life = buildLife(scene, { mobile });
   leaves = buildLeaves(scene, { mobile });
   setLoad(0.82);
   resize();
@@ -106,8 +112,6 @@ async function build() {
 
 // ---------- the rail ----------
 // where the camera is and what it looks at, stop by stop (each stop gets an equal share of the scroll).
-// Desktop takes the whole journey; phones take the shorter one (gate, street, tower, stadium) and the full site
-// carries the rest.
 const G = LAYOUT.gateZ, A = ARENA;
 // a point near one of the places, in its own 1:1 units (the places are built bigger by their scale)
 const P = (key, x, y, z) => { const { at: c, scale: k } = LAYOUT[key]; return [c[0] + x * k, c[1] + y * k, c[2] + z * k]; };
@@ -158,13 +162,8 @@ const STADIUM = [
   [[A.x + 30, mobile ? 22 : 20, A.z + 26], [A.x, mobile ? 2 : 7, A.z], 'bowl'], // into the bowl
   [[A.x - 4, 12, A.z + 25], [A.x, mobile ? 3 : 8.5, A.z], 'trophy'], // face to face with the trophy
 ];
-const STOPS = mobile ? [
-  ...START,
-  [[130, 150, 170], [0, 0, -110], 'overview'], // the whole village, the cliff and the sun
-  ...STADIUM,
-  ...QUARTER,
-  [[A.x - 90, 74, A.z - 60], [-300, 110, -700], 'sunset'], // up and out, into the sunset
-] : [
+// every device takes the whole journey: phones get wider lenses (lens()) and lighter buildings, not fewer places
+const STOPS = [
   ...START,
   [[-120, 150, 160], [-300, 20, -40], 'overview'], // over the village, turning west to the hills
   [P('shrine', 70, 7, 7), P('shrine', 8, 9, -3), 'torii'], // the path of torii up to the shrine
@@ -235,10 +234,7 @@ const SHOT = {
   sunset: { fov: 48, cap: ['夕日', 'Into the sunset', 'The rest of the story is in the full site.'] },
 };
 // the journey in chapters: a title card opens each one
-const CHAPTERS = (mobile ? [
-  ['gate', '一', 'The village', 'A hidden village at sunset'], ['monument', '二', 'The monument', 'The face on the cliff'],
-  ['toStadium', '三', 'The exam', 'HackNITR 7.0'], ['quarter', '四', 'The quarter', 'A house of your own'], ['sunset', '終', 'To be continued', 'The rest of the arc'],
-] : [
+const CHAPTERS = ([
   ['gate', '一', 'The village', 'A hidden village at sunset'], ['monument', '二', 'The monument', 'The face on the cliff'],
   ['overview', '三', 'The shrine', 'Two sides and six plaques'], ['toLibrary', '四', 'The library', 'Four projects, four scrolls'],
   ['toTraining', '五', 'The training ground', 'Where I levelled up'], ['toStadium', '六', 'The exam', 'HackNITR 7.0'],
@@ -598,9 +594,30 @@ function railPose(p, outPos, outQ, t = 0) {
   rail.i = k; rail.d = d;
 }
 const ss = THREE.MathUtils.smoothstep;
+// measure the frame rate over a second or so; two slow seconds in a row and the resolution steps down, three fast
+// ones and it steps up (so it settles instead of see-sawing)
+const perf = { t: 0, n: 0, slow: 0, fast: 0, from: performance.now() + 4000 };
+function adapt(dtRaw, now) {
+  if (now < perf.from || dtRaw > 0.25) return; // ignore the opening, and a tab coming back from the background
+  perf.t += dtRaw; perf.n++;
+  if (perf.t < 1.1) return;
+  const avg = perf.t / perf.n;
+  perf.t = perf.n = 0;
+  perf.slow = avg > 1 / 42 ? perf.slow + 1 : 0;
+  perf.fast = avg < 1 / 57 ? perf.fast + 1 : 0;
+  let next = pr;
+  if (perf.slow >= 2) next = Math.max(PR_MIN, pr - 0.15);
+  else if (perf.fast >= 3) next = Math.min(PR_MAX, pr + 0.1);
+  if (Math.abs(next - pr) < 0.01) return;
+  pr = next; perf.slow = perf.fast = 0;
+  renderer.setPixelRatio(pr);
+  sized = ''; resize();
+}
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const dtRaw = (now - last) / 1000;
+  const dt = Math.min(0.05, dtRaw);
   last = now;
+  adapt(dtRaw, now);
   const t = now / 1000;
   lenis?.raf(now);
   mouse.sx += (mouse.x - mouse.sx) * (1 - Math.exp(-dt * 3));
@@ -651,6 +668,7 @@ function frame(now) {
   roamFade += ((roaming ? 1 : 0) - roamFade) * (1 - Math.exp(-dt * 4));
   places?.update(t, camera.position, roamFade);
   quarter?.update(t);
+  life?.update(t, camera.position);
   leaves?.update(t, camera.position);
   post.render(scene, camera, t);
   requestAnimationFrame(frame);

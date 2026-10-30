@@ -129,7 +129,7 @@ async function call(method, { id, body, auth } = {}) {
   } catch { throw Object.assign(new Error('Couldn’t reach the village registry. Check your connection and try again.'), { status: 0 }); }
   const data = (res.headers.get('content-type') || '').includes('json') ? await res.json().catch(() => null) : null;
   // no registry behind this site: the village keeps houses in this browser instead
-  if (!data || res.status === 404 || (res.status === 503 && data.error === 'offline')) { offline = true; return local.handle(method, id, body, auth); }
+  if (!data || res.status === 404 || data.error === 'offline') { offline = true; return local.handle(method, id, body, auth); }
   if (!res.ok || !data.ok) {
     const msg = data.message || (res.status === 429 ? 'That’s a lot at once. Try again in a while.' : 'The registry couldn’t do that just now. Try again in a moment.');
     throw Object.assign(new Error(msg), { status: res.status, data });

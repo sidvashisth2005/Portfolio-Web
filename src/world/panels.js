@@ -101,14 +101,14 @@ export function panelsHTML() {
     <section class="w-panel w-panel--left w-card" data-key="quarter" aria-label="The residents' quarter">
       <p class="label label--red">住人街 · The residents’ quarter</p>
       <h2 class="w-h2">A house of your own in the village.</h2>
-      <p class="w-intro">Claim one of twenty-four houses on the hill. Your crest goes on the noren, your name over the gate, and your things on the shelves inside: links, notes, projects, public or sealed so only you can open them. Every visitor can drop by and hang a lantern at your door.</p>
+      <p class="w-intro w-hide-m">Claim one of twenty-four houses on the hill. Your crest goes on the noren, your name over the gate, and your things on the shelves inside: links, notes, projects, public or sealed so only you can open them. Every visitor can drop by and hang a lantern at your door.</p>
       <p class="w-meta" data-q-count>24 houses on the hill</p>
       <div class="w-ctas">
         <button class="w-pill w-pill--red w-pill--lg" type="button" data-claim>Claim a house ↗</button>
         <button class="w-pill w-pill--red w-pill--lg" type="button" data-q-home data-q-mine hidden>Go home ↗</button>
         <button class="w-pill w-pill--lg" type="button" data-registry>Who lives here</button>
       </div>
-      <p class="label muted">Or tap any house to look inside</p>
+      <p class="label muted w-hide-m">Or tap any house to look inside</p>
     </section>
 
     <section class="w-panel w-panel--right w-card" data-key="onair" aria-label="On air">

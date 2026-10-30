@@ -29,7 +29,7 @@ export function plotAt(id) {
 }
 const cell = (id, u, v) => [((id % NC) + u) / NC, 1 - (Math.floor(id / NC) + 1 - v) / NR];
 
-export function buildQuarter(scene, { mobile }) {
+export async function buildQuarter(scene, { mobile }) {
   const { at } = LAYOUT.quarter, Q = new THREE.Vector3(...at);
   const g = new THREE.Group();
   g.position.copy(Q);
@@ -65,6 +65,7 @@ export function buildQuarter(scene, { mobile }) {
 
   // the houses
   for (let id = 0; id < PLOTS; id++) {
+    await breathe(); // a house at a time, so the page keeps answering while the quarter builds
     const p = plotAt(id), r = rng(4100 + id * 17);
     const width = 10.6 + ((id * 7) % 5) * 0.7, depth = 9.6 + ((id * 3) % 4) * 0.6;
     const H = machiya(r, {
@@ -235,6 +236,7 @@ export function buildQuarter(scene, { mobile }) {
     roof: toon(0xffffff, { vertexColors: true, map: roofTiles() }), glass: toon(0x2a2430), lit: glow(0xffc070),
     lattice: toon(0xffffff, { vertexColors: true, map: latticeTex(), alphaTest: 0.5 }), cloth: toon(0xffffff, { vertexColors: true, side: THREE.DoubleSide }),
   };
+  await breathe();
   bins.build(mats, g);
 
   // ---------- painting the registry onto the quarter ----------

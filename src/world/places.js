@@ -227,7 +227,7 @@ export function buildPlaces(scene, { mobile }) {
   g.add(memStone);
   bins.add('stone', box(14, 1, 8, 0x8d847c, { at: [mx, 0.5, mz - 4] }));
   S.col([mx, mz - 4, 6, 12]);
-  const photos = gallery.slice(0, mobile ? 6 : 10);
+  const photos = gallery.slice(0, 10);
   photos.forEach((ph, i) => {
     const n = photos.length, a2 = Math.PI * (1.15 + (i / (n - 1)) * 0.7); // a half ring opening toward the street
     const fx = mx + Math.cos(a2) * 20, fz = mz - Math.sin(a2) * 20 - 4;

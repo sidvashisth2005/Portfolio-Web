@@ -28,7 +28,8 @@ const say = (status, message, extra = {}) => fail(status, message, { message, ..
 const summary = (h) => ({ id: h.id, name: h.name, crest: h.crest, color: h.color, roof: h.roof, motto: h.motto, since: h.since, items: h.items.filter((i) => i.pub).length });
 
 export async function GET(req) {
-  if (!has.redis) return fail(503, 'offline');
+  // no registry: not an error for the page, which keeps houses in the browser instead (and keeps the console clean)
+  if (!has.redis) return json({ ok: false, error: 'offline' }, 200, { 'Cache-Control': 'public, s-maxage=300' });
   const q = new URL(req.url).searchParams;
   try {
     if (!q.has('id')) {
