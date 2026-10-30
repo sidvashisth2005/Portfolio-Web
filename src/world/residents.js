@@ -138,17 +138,20 @@ export function initResidents({ lenis, quarter, hooks }) {
       ? `<div class="wres__mine"><span class="whome__crest" style="--c:${NOREN[houses[mine.id].color]}">${esc(houses[mine.id].crest)}</span><div><p class="label label--red">Your house · No. ${no(mine.id)}</p><b>${esc(houses[mine.id].name)}</b></div><button class="w-pill w-pill--red" type="button" data-visit="${mine.id}">Go home ↗</button></div>`
       : `<div class="wres__mine wres__mine--cta"><div><p class="label label--red">${PLOTS - n} houses free</p><b>A place of your own in the village.</b></div><button class="w-pill w-pill--red" type="button" data-claim-open ${n >= PLOTS ? 'disabled' : ''}>Claim a house ↗</button></div>`;
     const list = houses.map((h, id) => h && { h, id }).filter(Boolean).sort((a, b) => b.h.lanterns - a.h.lanterns || a.id - b.id);
-    $('w-reg-list').innerHTML = list.length ? list.map(({ h, id }) => `<li>
+    // the founder's own house heads the list: his study in the headquarters
+    const founderRow = `<li class="wres__founder"><span class="whome__crest" style="--c:#b8232c" lang="ja">閃</span><div><b>Siddhant Vashisth</b><span>Founder of the village · the study in the headquarters</span></div><button class="w-pill w-pill--sm w-pill--red" type="button" data-me>Visit</button></li>`;
+    $('w-reg-list').innerHTML = founderRow + (list.length ? list.map(({ h, id }) => `<li>
         <span class="whome__crest" style="--c:${NOREN[h.color]}" lang="ja">${esc(h.crest)}</span>
         <div><b>${esc(h.name)}</b><span>${h.motto ? esc(h.motto) : `<i class="muted">No. ${no(id)}</i>`}</span></div>
         <em title="Lanterns hung by visitors">灯 ${h.lanterns}</em>
         <button class="w-pill w-pill--sm" type="button" data-visit="${id}" aria-label="Visit ${esc(h.name)}’s house">Visit</button>
-      </li>`).join('') : '<li class="wres__empty">Nobody has moved in yet. The first house is waiting for you.</li>';
+      </li>`).join('') : '<li class="wres__empty">Nobody has moved in yet. The first house is waiting for you.</li>');
   }
   reg.addEventListener('click', (e) => {
     const v = e.target.closest('[data-visit]');
     if (v) { hide(reg); visit(+v.dataset.visit); }
     if (e.target.closest('[data-claim-open]')) { hide(reg); setTimeout(() => openClaim(), 330); }
+    if (e.target.closest('[data-me]')) hide(reg);
   });
   $('w-reg-key').addEventListener('submit', async (e) => {
     e.preventDefault();

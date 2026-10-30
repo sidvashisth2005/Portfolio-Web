@@ -15,6 +15,7 @@ import { buildPlaces } from './places.js';
 import { buildQuarter } from './quarter.js';
 import { createRoom } from './room.js';
 import { initResidents } from './residents.js';
+import { initFounder } from './founder.js';
 import { panelsHTML, wirePanels, PHOTO_SHOTS } from './panels.js';
 import { guard } from '../ui/guard.js';
 import { initScroll } from './scroll.js';
@@ -292,7 +293,7 @@ document.querySelectorAll('a[data-go]').forEach((a) => a.addEventListener('click
 $('#w-content').insertAdjacentHTML('beforeend', panelsHTML());
 wirePanels();
 // "Hire me" opens the contact form (after the panels exist, so their buttons are wired too)
-initScroll({ lenis });
+const scrollDlg = initScroll({ lenis });
 // scroll length: about a screen and a quarter per stop (the camera rests for part of it at every shot)
 $('#w-content').style.height = `${(N + 1) * (mobile ? 95 : 105)}vh`;
 const panels = [...document.querySelectorAll('.w-panel')].map((el) => {
@@ -465,14 +466,21 @@ canvas.addEventListener('click', (e) => {
   if (moved) return;
   if (onDoor(e)) { goTo('through'); return; }
   const h = onHouse(e);
-  if (h >= 0) residents.plotClick(h);
+  if (h >= 0) { residents.plotClick(h); return; }
+  if (onHQ(e)) founder.enter();
 });
 canvas.addEventListener('pointermove', (e) => {
   if (e.pointerType !== 'mouse' || inside) return;
-  const h = onHouse(e);
+  const h = onHouse(e), hq = h < 0 && onHQ(e);
   quarter?.hover(h);
   residents.hover(h, e.clientX, e.clientY);
-  if (!roaming) canvas.style.cursor = h >= 0 || onDoor(e) ? 'pointer' : '';
+  if (hq) {
+    const tp = document.getElementById('w-tip');
+    tp.innerHTML = '<span class="whome__crest" style="--c:#b8232c" lang="ja">閃</span><span><b>Siddhant’s study</b><em>In the headquarters · tap to step inside</em></span>';
+    tp.style.transform = `translate(${Math.min(e.clientX + 18, innerWidth - 300)}px, ${e.clientY + 18}px)`;
+    tp.hidden = false;
+  }
+  if (!roaming) canvas.style.cursor = h >= 0 || hq || onDoor(e) ? 'pointer' : '';
 }, { passive: true });
 canvas.addEventListener('pointerleave', () => { quarter?.hover(-1); residents.hover(-1); });
 
@@ -487,16 +495,28 @@ function onHouse(e) {
   const { id, dist } = quarter.pick(ray.ray);
   return dist < 260 ? id : -1;
 }
-let room = null, inside = false;
+// the headquarters is Siddhant's own house: at its shots (and in free roam) it opens his study
+const hqBall = new THREE.Sphere(new THREE.Vector3(0, 40, 0), 52);
+const hqShot = () => ['ahead', 'tower'].includes(STOPS[rail.i]?.[2]) && Math.abs(rail.d) < 0.4;
+function onHQ(e) {
+  if (inside || !(roaming || hqShot())) return false;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.ray.intersectsSphere(hqBall) && ray.ray.distanceToPoint(hqBall.center) < 400 + hqBall.radius;
+}
+let room = null, inside = false, ui = null;
+// the ink portrait, for the scroll in Siddhant's alcove
+const portraitImage = () => portrait.then((t) => t.image, () => null);
 const fadeEl = () => document.getElementById('w-fade');
 const fade = (on) => { fadeEl().classList.toggle('is-on', on); return new Promise((r) => setTimeout(r, reduce ? 0 : 420)); };
-const residents = initResidents({
-  lenis, quarter: null,
-  hooks: {
-    async enter(h, items) {
+// going inside a house, whoever's it is: the room is the same, the panel beside it (ui) is the residents' or his
+const homeHooks = {
+    async enter(h, items, by = residents) {
+      ui = by;
       await fade(true);
       room ||= createRoom({ mobile });
-      room.setHouse(h, items);
+      room.setHouse(h.founder ? { ...h, portrait: await portraitImage() } : h, items);
       room.reset();
       inside = true;
       hideCard();
@@ -514,8 +534,9 @@ const residents = initResidents({
     },
     update(h, items) { room?.setHouse(h, items); },
     focus(id) { room?.focus(id); },
-  },
-});
+};
+const residents = initResidents({ lenis, quarter: null, hooks: homeHooks });
+const founder = initFounder({ hooks: homeHooks, scroll: scrollDlg });
 // inside: drag to look round the room, point at a thing to see what it is, tap it to turn to it
 let peer = null;
 canvas.addEventListener('pointerdown', (e) => { if (inside) { peer = { x: e.clientX, y: e.clientY, moved: 0 }; canvas.setPointerCapture(e.pointerId); } });
@@ -525,7 +546,7 @@ canvas.addEventListener('pointermove', (e) => {
   const r = canvas.getBoundingClientRect();
   const id = room.pick(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1));
   room.hover(id);
-  residents.itemHover(id, e.clientX, e.clientY);
+  ui?.itemHover(id, e.clientX, e.clientY);
   canvas.style.cursor = id ? 'pointer' : 'grab';
 });
 canvas.addEventListener('pointerup', (e) => {
@@ -535,7 +556,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!tap) return;
   const r = canvas.getBoundingClientRect();
   const id = room.pick(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1));
-  if (id) { room.focus(id); residents.itemPick(id); }
+  if (id) { room.focus(id); ui?.itemPick(id); }
 });
 
 // ---------- loop ----------

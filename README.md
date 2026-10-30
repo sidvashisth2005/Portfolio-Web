@@ -65,6 +65,17 @@ Twenty-four townhouses on a terrace outside the village's south-west wall, a sto
 - **Without Redis** (local dev, a static preview) the quarter still works, kept in that browser only, and says so.
 - The shared rules (plots, palettes, limits, validation) live in `src/registry.js`, read by both the page and the API.
 
+## The strategist's study (書斎)
+
+The headquarters is Siddhant's own house. Tap it at its shots (or in Free roam), press **Meet Siddhant** in the
+header, or **Step inside my study** on the About panel, and you're in his room: his ink portrait on the alcove
+scroll and his real things on the shelves (the HackNITR and HACKSAGON trophies, the four projects, the IIITDM
+research, the paper, the Trustique team-lead story, the podcast, the résumé, GitHub). Every thing opens its story,
+taken from `src/data.js` (`src/world/founder.js`). Beside the room: a character sheet (class, guild, origin, what
+he's looking for, self-assessed ability bars), **Ask me** (the shadow clone, `api/clone`, with the same scripted
+answers as the full site when the AI is off; they live in `src/clone-script.js`) and **On my desk now** (the latest
+GitHub pushes, `api/github`).
+
 ## The houses
 
 Every building in the village is built the way the real ones are (`src/world/house.js`): machiya townhouses with

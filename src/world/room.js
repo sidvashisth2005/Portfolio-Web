@@ -255,14 +255,23 @@ export function createRoom({ mobile }) {
       x.fillStyle = '#8a6a4a'; x.fillRect(0, 0, w, hh); // the mounting
       x.fillStyle = '#f6efe0'; x.fillRect(w * 0.1, hh * 0.08, w * 0.8, hh * 0.84);
       const c = NOREN[h.color] || NOREN[0];
-      x.fillStyle = c; x.beginPath(); x.arc(w / 2, hh * 0.26, w * 0.28, 0, Math.PI * 2); x.fill();
-      x.fillStyle = '#f6efe0'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.font = `${w * (graphemeCount(h.crest) > 1 && /^[\x20-\x7e]+$/.test(h.crest) ? 0.2 : 0.3)}px "Dela Gothic One", sans-serif`;
-      x.fillText(h.crest || '家', w / 2, hh * 0.265);
+      x.textAlign = 'center'; x.textBaseline = 'middle';
+      if (h.portrait) {
+        // a portrait in ink, cut to fill its panel, with a red rule under it
+        const img = h.portrait, bw = w * 0.72, bh = hh * 0.36, k = Math.max(bw / img.width, bh / img.height);
+        const sw = bw / k, sh = bh / k;
+        x.drawImage(img, (img.width - sw) / 2, Math.max(0, (img.height - sh) * 0.2), sw, sh, w * 0.14, hh * 0.1, bw, bh);
+        x.fillStyle = c; x.fillRect(w * 0.14, hh * 0.47, bw, 4);
+      } else {
+        x.fillStyle = c; x.beginPath(); x.arc(w / 2, hh * 0.26, w * 0.28, 0, Math.PI * 2); x.fill();
+        x.fillStyle = '#f6efe0';
+        x.font = `${w * (graphemeCount(h.crest) > 1 && /^[\x20-\x7e]+$/.test(h.crest) ? 0.2 : 0.3)}px "Dela Gothic One", sans-serif`;
+        x.fillText(h.crest || '家', w / 2, hh * 0.265);
+      }
       // the motto, in lines, then the resident's name and a red seal
       x.fillStyle = '#1a1214'; x.font = `600 ${w * 0.062}px "Archivo", sans-serif`;
       const lines = wrap(x, h.motto || '', w * 0.66).slice(0, 7);
-      lines.forEach((l, i) => x.fillText(l, w / 2, hh * 0.47 + i * w * 0.085));
+      lines.forEach((l, i) => x.fillText(l, w / 2, hh * (h.portrait ? 0.54 : 0.47) + i * w * 0.085));
       x.font = `800 ${w * 0.07}px "Archivo", sans-serif`; x.fillStyle = '#3a2418';
       x.fillText(h.name, w / 2, hh * 0.82);
       x.fillStyle = '#b8232c'; x.fillRect(w * 0.62, hh * 0.86, w * 0.1, w * 0.1);
